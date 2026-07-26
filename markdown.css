@@ -1,0 +1,170 @@
+.markdown-body {
+  overflow-wrap: anywhere;
+}
+
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p {
+  margin: .65em 0;
+  white-space: pre-wrap;
+}
+
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5 {
+  margin: 1em 0 .45em;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.markdown-body h3 {
+  font-size: 1.22em;
+}
+
+.markdown-body h4 {
+  font-size: 1.1em;
+}
+
+.markdown-body h5 {
+  font-size: 1em;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: .65em 0;
+  padding-left: 1.55em;
+}
+
+.markdown-body li + li {
+  margin-top: .28em;
+}
+
+.markdown-body li {
+  white-space: pre-wrap;
+}
+
+.markdown-body blockquote {
+  margin: .8em 0;
+  padding: .25em 0 .25em .85em;
+  color: var(--muted);
+  border-left: 3px solid #b7cafa;
+}
+
+.markdown-body pre {
+  margin: .8em 0;
+  padding: .8em;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #eef3fc;
+  font: 12px/1.55 Consolas, "Courier New", monospace;
+  white-space: pre;
+}
+
+.markdown-body code {
+  padding: .12em .35em;
+  color: #244a99;
+  border-radius: 4px;
+  background: #e9f0ff;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: .9em;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font-size: inherit;
+}
+
+.markdown-body a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.markdown-body hr {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.markdown-task-item {
+  list-style: none;
+}
+
+.markdown-task-item input {
+  margin: 0 .5em 0 -1.45em;
+  accent-color: var(--accent);
+}
+
+.multicursor-shell {
+  position: relative;
+  width: 100%;
+}
+
+.multicursor-shell textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.multicursor-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: pre-wrap;
+  border-style: solid;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.multicursor-layer {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.multicursor-caret {
+  position: absolute;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .65);
+  animation: multicursor-blink 1s steps(1) infinite;
+}
+
+.multicursor-badge {
+  position: absolute;
+  z-index: 3;
+  right: 9px;
+  bottom: 9px;
+  padding: 4px 7px;
+  color: white;
+  border-radius: 6px;
+  background: var(--accent);
+  box-shadow: 0 3px 10px rgba(47, 111, 237, .22);
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.multicursor-shell.has-multicursor textarea {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, .12);
+}
+
+@keyframes multicursor-blink {
+  50% {
+    opacity: 0;
+  }
+}

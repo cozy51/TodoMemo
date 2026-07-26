@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 28" role="img">
+  <defs>
+    <linearGradient id="notebook-a" x1="3" y1="24" x2="27" y2="7" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8e88ff"/>
+      <stop offset=".48" stop-color="#5797ff"/>
+      <stop offset="1" stop-color="#1687f8"/>
+    </linearGradient>
+  </defs>
+  <path d="M3 24v-3.2C3 12.07 9.72 5 18 5s15 7.07 15 15.8V24" fill="none" stroke="url(#notebook-a)" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M8 24v-3c0-5.52 4.25-10 9.5-10S27 15.48 27 21v3" fill="none" stroke="#4b9bff" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M13 24v-2.7c0-2.93 2.24-5.3 5-5.3s5 2.37 5 5.3V24" fill="none" stroke="#187ff2" stroke-width="3.2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,74 @@
+const fs = require("fs");
+const vm = require("vm");
+
+const context = {
+  crypto: { randomUUID: () => "test-uuid" },
+  URL,
+  Date,
+  Intl,
+  Set,
+  Map,
+  Number,
+  String,
+  Boolean,
+  Array
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync("storage.js", "utf8"), context);
+
+const copied = vm.runInContext(`
+  formatTaskForCopy({
+    caseNumber: "TD26-0701",
+    title: "企画書を作る",
+    content: "構成を確認\\r\\n初稿を作成"
+  })
+`, context);
+const expected = "(TD26-0701) 企画書を作る [\n構成を確認\n初稿を作成\n]\n";
+
+if (copied !== expected) {
+  throw new Error(`Unexpected copy format: ${JSON.stringify(copied)}`);
+}
+
+const copiedWithoutContent = vm.runInContext(`
+  formatTaskForCopy({
+    caseNumber: "TD26-0702",
+    title: "本文なし",
+    content: ""
+  })
+`, context);
+if (copiedWithoutContent !== "(TD26-0702) 本文なし [\n\n]\n") {
+  throw new Error(`Unexpected empty-content format: ${JSON.stringify(copiedWithoutContent)}`);
+}
+
+const copiedTasks = vm.runInContext(`
+  formatTasksForCopy([
+    {
+      caseNumber: "TD26-0701",
+      title: "企画書を作る",
+      content: "構成を確認\\n初稿を作成"
+    },
+    {
+      caseNumber: "TD26-0702",
+      title: "図面を確認",
+      content: "寸法を確認"
+    }
+  ])
+`, context);
+const expectedTasks =
+  "TD26-0701 企画書を作る [\n" +
+  "構成を確認\n" +
+  "初稿を作成\n" +
+  "]\n\n" +
+  "TD26-0702 図面を確認 [\n" +
+  "寸法を確認\n" +
+  "]\n";
+if (copiedTasks !== expectedTasks) {
+  throw new Error(`Unexpected multi-task format: ${JSON.stringify(copiedTasks)}`);
+}
+
+const copiedEmptyTasks = vm.runInContext("formatTasksForCopy([])", context);
+if (copiedEmptyTasks !== "") {
+  throw new Error(`Unexpected empty task-list format: ${JSON.stringify(copiedEmptyTasks)}`);
+}
+
+console.log("Task-copy format test: OK");

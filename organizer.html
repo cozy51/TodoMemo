@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TodoMemo — 整理</title>
+    <link rel="stylesheet" href="organizer.css">
+    <link rel="stylesheet" href="markdown.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span>TodoMemo</span>
+          </div>
+          <h1>することを整理する</h1>
+          <p>一番上が「今すること」です。新しいタスクは、そのすぐ下に追加されます。</p>
+        </div>
+        <div class="app-header-actions">
+          <button id="restoreBackupButton" class="restore-backup-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/>
+            </svg>
+            バックアップから復元
+          </button>
+          <input id="restoreFileInput" class="visually-hidden" type="file" accept=".json,application/json">
+          <button id="addTaskButton" class="primary-button" type="button">
+            <span aria-hidden="true">＋</span>
+            新しいタスク
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
+          <div class="section-heading calendar-section-heading">
+            <div>
+              <p class="section-kicker">今月から3ヶ月</p>
+              <h2 id="deadlineCalendarHeading">期限カレンダー</h2>
+            </div>
+            <p class="calendar-description">案件リンクから該当カードへ移動できます</p>
+          </div>
+          <div id="deadlineCalendar" class="calendar-months" aria-live="polite"></div>
+        </section>
+
+        <section class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
+          <div class="section-heading compact-task-heading">
+            <div>
+              <p class="section-kicker">コンパクト表示</p>
+              <h2 id="compactTaskHeading">案件一覧 <span id="compactTaskCount" class="count"></span></h2>
+            </div>
+            <p class="compact-task-description">行をクリックすると詳細カードへ移動できます</p>
+          </div>
+          <div class="compact-task-table-shell">
+            <table class="compact-task-table">
+              <colgroup>
+                <col class="compact-case-column">
+                <col class="compact-title-column">
+                <col class="compact-links-column">
+                <col class="compact-due-column">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">案件番号</th>
+                  <th scope="col">タイトル</th>
+                  <th scope="col">関連リンク</th>
+                  <th scope="col">期限</th>
+                </tr>
+              </thead>
+              <tbody id="compactTaskTableBody"></tbody>
+            </table>
+            <p id="compactTaskEmpty" class="compact-task-empty" hidden>表示する案件はありません。</p>
+          </div>
+        </section>
+
+        <section id="activeTaskSection" class="task-section" aria-labelledby="activeHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">優先順位</p>
+              <h2 id="activeHeading">すること <span id="activeCount" class="count"></span></h2>
+            </div>
+            <div class="priority-tools">
+              <button id="toggleActiveListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="activeList">一覧を折りたたむ</button>
+              <button id="copyActiveTasksButton" class="bulk-copy-button" type="button">すること案件COPY</button>
+              <span class="current-legend">1番目が「今すること」</span>
+              <span class="reorder-hint">つかんで並び替え</span>
+            </div>
+          </div>
+          <button id="activeCollapsedNotice" class="active-collapsed-notice" type="button" aria-controls="activeList" hidden>
+            <span aria-hidden="true">▸</span>
+            <strong>すること一覧を折りたたんでいます</strong>
+            <span id="activeCollapsedCount"></span>
+            <span class="active-collapsed-action">クリックして表示</span>
+          </button>
+          <div id="activeList" class="task-list" aria-live="polite"></div>
+          <div id="activeEmpty" class="empty-state" hidden>
+            <p>することはありません。</p>
+            <button id="addFirstTaskButton" class="text-button" type="button">最初のタスクを追加</button>
+          </div>
+        </section>
+
+        <section class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">案件をまとめる</p>
+              <h2 id="parentCaseHeading">親案件 <span id="parentCaseCount" class="count"></span></h2>
+            </div>
+            <div class="parent-case-view-switch" role="tablist" aria-label="親案件の表示切り替え">
+              <button id="parentCaseManageModeButton" type="button" role="tab" aria-selected="false" aria-controls="parentCaseManageView">親案件を管理</button>
+              <button id="parentCaseGroupModeButton" class="is-active" type="button" role="tab" aria-selected="true" aria-controls="parentCaseGroupView">案件を表示</button>
+            </div>
+          </div>
+          <div id="parentCaseManageView" class="parent-case-settings-card" role="tabpanel" aria-labelledby="parentCaseManageModeButton" hidden>
+            <form id="parentCaseForm" class="parent-case-form" novalidate>
+              <div>
+                <h3>親案件を追加</h3>
+                <p>親案件番号は保存時に自動採番します。</p>
+              </div>
+              <label>
+                <span>親案件名 <strong>必須</strong></span>
+                <input id="parentCaseNameInput" type="text" maxlength="100" autocomplete="off" placeholder="例：新製品A 設計プロジェクト" required>
+              </label>
+              <label>
+                <span>親案件URL <em>任意・1件</em></span>
+                <input id="parentCaseUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://…">
+              </label>
+              <button class="secondary-button" type="submit">親案件を追加</button>
+              <small id="parentCaseError" class="field-error" aria-live="polite"></small>
+            </form>
+            <div id="parentCaseList" class="parent-case-list"></div>
+            <p id="parentCaseEmpty" class="parent-case-empty">親案件はまだありません。</p>
+          </div>
+          <div id="parentCaseGroupView" class="parent-case-group-view" role="tabpanel" aria-labelledby="parentCaseGroupModeButton">
+            <div id="parentCaseGroups" class="parent-case-groups" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="task-section tag-settings-section" aria-labelledby="tagHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">分類</p>
+              <h2 id="tagHeading">分類タグ <span id="tagCount" class="count"></span></h2>
+            </div>
+          </div>
+          <div class="tag-settings-card">
+            <div>
+              <h3>タグを追加</h3>
+              <p>タスクを用途や場面ごとに見分けやすくします。</p>
+            </div>
+            <form id="tagForm" class="tag-form">
+              <label class="visually-hidden" for="tagNameInput">新しいタグ名</label>
+              <input id="tagNameInput" type="text" maxlength="20" autocomplete="off" placeholder="例：仕事、個人、連絡">
+              <button class="secondary-button" type="submit">追加</button>
+            </form>
+            <p id="tagError" class="tag-error" aria-live="polite"></p>
+            <div id="tagList" class="managed-tag-list"></div>
+            <p id="tagEmpty" class="tag-empty">タグはまだありません。</p>
+          </div>
+        </section>
+
+        <section class="task-section completed-section" aria-labelledby="completedHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">アーカイブ</p>
+              <h2 id="completedHeading">完了 <span id="completedCount" class="count"></span></h2>
+            </div>
+            <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>完了をすべて削除</button>
+          </div>
+          <div id="completedList" class="task-list completed-list"></div>
+          <p id="completedEmpty" class="completed-empty">完了したタスクはここに移動します。</p>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="restoreDialog" class="task-dialog restore-dialog">
+      <div class="restore-dialog-body">
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">バックアップ</p>
+            <h2>復元内容を確認</h2>
+          </div>
+          <button id="closeRestoreDialogButton" class="icon-button" type="button" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="restore-summary">
+          <div>
+            <span>ファイル</span>
+            <strong id="restoreFileName"></strong>
+          </div>
+          <div>
+            <span>作成日時</span>
+            <strong id="restoreExportedAt"></strong>
+          </div>
+          <div>
+            <span>タスク</span>
+            <strong id="restoreTaskCount"></strong>
+          </div>
+          <div>
+            <span>分類タグ</span>
+            <strong id="restoreTagCount"></strong>
+          </div>
+          <div>
+            <span>親案件</span>
+            <strong id="restoreParentCaseCount"></strong>
+          </div>
+        </div>
+
+        <p class="restore-warning">
+          現在のタスク・分類タグ・親案件は、バックアップの内容に置き換わります。この操作を続けますか？
+        </p>
+
+        <div class="dialog-actions">
+          <button id="cancelRestoreButton" class="secondary-button" type="button">キャンセル</button>
+          <button id="confirmRestoreButton" class="primary-button" type="button">この内容で復元</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="taskDialog" class="task-dialog">
+      <form id="taskForm" method="dialog" novalidate>
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">TodoMemo</p>
+            <h2 id="dialogTitle">新しいタスク</h2>
+            <p id="dialogCaseNumber" class="case-number" hidden></p>
+          </div>
+          <div class="dialog-header-actions">
+            <span id="taskAutoSaveStatus" class="save-status" role="status" aria-live="polite" hidden></span>
+            <button id="closeDialogButton" class="icon-button" type="button" aria-label="閉じる">×</button>
+          </div>
+        </div>
+
+        <input id="taskId" type="hidden">
+
+        <label class="field">
+          <span>タイトル <strong>必須</strong></span>
+          <input id="titleInput" name="title" type="text" maxlength="100" autocomplete="off" required placeholder="例：企画書の構成を決める">
+          <small id="titleError" class="field-error" aria-live="polite"></small>
+        </label>
+
+        <label class="field">
+          <span>親案件 <em>任意</em></span>
+          <select id="parentCaseSelect" name="parentCaseId">
+            <option value="">親案件なし</option>
+          </select>
+          <small class="field-hint">登録済みの親案件から選択できます。</small>
+        </label>
+
+        <div class="field due-field">
+          <label for="dueDateInput">期限 <em>任意</em></label>
+          <div class="date-input-row">
+            <input id="dueDateInput" name="dueDate" type="date">
+            <button id="clearDueDateButton" class="clear-date-button" type="button" hidden>期限を削除</button>
+          </div>
+        </div>
+
+        <fieldset id="taskTagsField" class="task-tags-field" hidden>
+          <legend>分類タグ <em>任意</em></legend>
+          <div id="taskTagOptions" class="tag-options"></div>
+        </fieldset>
+
+        <div class="links-field">
+          <div class="links-field-heading">
+            <span class="links-field-label">関連リンク <em>3件まで</em></span>
+            <button id="pasteLinkButton" class="paste-link-button" type="button">📋 クリップボードから追加</button>
+          </div>
+          <div id="linkInputs" class="link-inputs"></div>
+          <small id="linkMessage" class="field-hint" role="status" aria-live="polite">URLまたはメールアドレスを登録できます。</small>
+        </div>
+
+        <label class="field content-field">
+          <span>内容</span>
+          <textarea id="contentInput" name="content" rows="10" maxlength="5000" placeholder="Markdown記法が使えます。例：**重要**、- リスト、[リンク](https://example.com)"></textarea>
+          <small class="field-hint">Markdownに対応。Alt+クリックで編集位置を追加し、矢印キーで同時移動できます。</small>
+        </label>
+
+        <div class="dialog-actions">
+          <button id="cancelButton" class="secondary-button" type="button">キャンセル</button>
+          <button id="saveTaskButton" class="primary-button" type="submit">保存する</button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="activeTaskTemplate">
+      <article class="task-card" draggable="true">
+        <button class="drag-handle" type="button" aria-label="ドラッグして並び替え" title="ドラッグして並び替え">
+          <svg viewBox="0 0 12 20" aria-hidden="true"><path d="M3 3h.01M9 3h.01M3 10h.01M9 10h.01M3 17h.01M9 17h.01"/></svg>
+        </button>
+        <button class="complete-toggle" type="button" aria-label="完了にする"></button>
+        <span class="parent-task-item-priority card-priority-number"></span>
+        <div class="task-copy">
+          <div class="card-case-row">
+            <p class="card-case-number case-number"></p>
+            <button class="copy-task-button" type="button">案件COPY</button>
+          </div>
+          <p class="card-parent-case" hidden></p>
+          <h3></h3>
+          <div class="card-content markdown-body"></div>
+          <div class="card-tags" hidden></div>
+          <p class="card-due" hidden></p>
+          <div class="card-links" aria-label="関連リンク" hidden></div>
+        </div>
+        <div class="task-actions">
+          <button class="move-button move-up" type="button" aria-label="優先順位を上げる" title="上へ">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 19V5M6 11l6-6 6 6"/>
+            </svg>
+          </button>
+          <button class="move-button move-down" type="button" aria-label="優先順位を下げる" title="下へ">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M6 13l6 6 6-6"/>
+            </svg>
+          </button>
+          <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
+          <div class="action-menu" hidden>
+            <button class="edit-button" type="button">編集</button>
+            <button class="delete-button danger-text" type="button">削除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="completedTaskTemplate">
+      <article class="task-card completed-card">
+        <button class="complete-toggle is-complete" type="button" aria-label="未完了に戻す">✓</button>
+        <div class="task-copy">
+          <div class="card-case-row">
+            <p class="card-case-number case-number"></p>
+            <button class="copy-task-button" type="button">案件COPY</button>
+          </div>
+          <p class="card-parent-case" hidden></p>
+          <h3></h3>
+          <div class="card-content markdown-body"></div>
+          <div class="card-tags" hidden></div>
+          <p class="card-due" hidden></p>
+          <p class="card-completed-at"></p>
+          <div class="card-links" aria-label="関連リンク" hidden></div>
+        </div>
+        <div class="task-actions">
+          <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
+          <div class="action-menu" hidden>
+            <button class="restore-button" type="button">未完了に戻す</button>
+            <button class="delete-button danger-text" type="button">削除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="storage.js"></script>
+    <script src="markdown.js"></script>
+    <script src="organizer.js"></script>
+  </body>
+</html>
