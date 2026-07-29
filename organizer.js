@@ -1099,23 +1099,19 @@ function renderParentCaseSettings() {
     usedCount.textContent =
       `${tasks.filter((task) => task.parentCaseId === parentCase.id).length}件`;
 
-    const save = document.createElement("button");
-    save.className = "parent-case-save";
-    save.type = "button";
-    save.textContent = "保存";
-    save.addEventListener("click", async () => {
+    const saveParentCaseEdits = async () => {
       const nextName = name.value.trim();
       const rawUrl = url.value.trim();
       const nextUrl = normalizeParentCaseUrl(rawUrl);
       if (!nextName) {
         showToast("親案件名を入力してください");
         name.focus();
-        return;
+        return false;
       }
       if (rawUrl && !nextUrl) {
         showToast("親案件URLはhttp://またはhttps://で入力してください");
         url.focus();
-        return;
+        return false;
       }
       if (
         parentCases.some((item) =>
@@ -1125,14 +1121,29 @@ function renderParentCaseSettings() {
       ) {
         showToast("同じ名前の親案件があります");
         name.focus();
-        return;
+        return false;
       }
+      if (parentCase.name === nextName && parentCase.url === nextUrl) return true;
       parentCase.name = nextName;
       parentCase.url = nextUrl;
       parentCases = await saveParentCases(parentCases);
       render();
       showToast("親案件を更新しました");
+      return true;
+    };
+
+    const save = document.createElement("button");
+    save.className = "parent-case-save";
+    save.type = "button";
+    save.textContent = "保存";
+    save.addEventListener("click", saveParentCaseEdits);
+
+    [name, url].forEach((input) => {
+      input.addEventListener("input", () => {
+        row.dataset.dirty = "true";
+      });
     });
+    row.saveEdits = saveParentCaseEdits;
 
     const remove = document.createElement("button");
     remove.className = "parent-case-remove danger-text";
@@ -1257,6 +1268,12 @@ function setParentCaseViewMode(mode) {
   parentCaseGroupModeButton.classList.toggle("is-active", showGroups);
   parentCaseManageModeButton.setAttribute("aria-selected", String(!showGroups));
   parentCaseGroupModeButton.setAttribute("aria-selected", String(showGroups));
+}
+
+async function showParentCaseGroups() {
+  const dirtyRow = parentCaseList.querySelector('.parent-case-row[data-dirty="true"]');
+  if (dirtyRow && !(await dirtyRow.saveEdits())) return;
+  setParentCaseViewMode("group");
 }
 
 function setActiveListCollapsed(collapsed) {
@@ -1582,9 +1599,18 @@ async function addParentCase(event) {
     return;
   }
 
+  let caseNumber;
+  try {
+    caseNumber = generateParentCaseNumber(parentCases);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    parentCaseError.textContent = "今月の親案件番号はすべて使用されています";
+    return;
+  }
+
   const parentCase = {
     id: crypto.randomUUID(),
-    caseNumber: generateParentCaseNumber(parentCases),
+    caseNumber,
     name,
     url,
     createdAt: new Date().toISOString()
@@ -1638,7 +1664,7 @@ activeCollapsedNotice.addEventListener("click", () => {
 tagForm.addEventListener("submit", addTag);
 parentCaseForm.addEventListener("submit", addParentCase);
 parentCaseManageModeButton.addEventListener("click", () => setParentCaseViewMode("manage"));
-parentCaseGroupModeButton.addEventListener("click", () => setParentCaseViewMode("group"));
+parentCaseGroupModeButton.addEventListener("click", showParentCaseGroups);
 restoreBackupButton.addEventListener("click", () => restoreFileInput.click());
 restoreFileInput.addEventListener("change", handleRestoreFile);
 document.querySelector("#closeRestoreDialogButton").addEventListener("click", closeRestoreDialog);
