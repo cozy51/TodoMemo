@@ -1599,9 +1599,18 @@ async function addParentCase(event) {
     return;
   }
 
+  let caseNumber;
+  try {
+    caseNumber = generateParentCaseNumber(parentCases);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    parentCaseError.textContent = "今月の親案件番号はすべて使用されています";
+    return;
+  }
+
   const parentCase = {
     id: crypto.randomUUID(),
-    caseNumber: generateParentCaseNumber(parentCases),
+    caseNumber,
     name,
     url,
     createdAt: new Date().toISOString()

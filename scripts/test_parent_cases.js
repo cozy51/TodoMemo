@@ -47,6 +47,64 @@ if (nextMonth !== "TD26-08P1") {
   throw new Error(`Expected TD26-08P1, received ${nextMonth}`);
 }
 
+const firstLetter = run(`
+  generateParentCaseNumber(
+    "123456789".split("").map((suffix) => ({ caseNumber: "TD26-07P" + suffix })),
+    new Date(2026, 6, 25)
+  )
+`);
+if (firstLetter !== "TD26-07PA") {
+  throw new Error(`Expected TD26-07PA after 9, received ${firstLetter}`);
+}
+
+const skippedLetters = run(`
+  generateParentCaseNumber(
+    [..."123456789ABCDEFGH"].map((suffix) => ({ caseNumber: "TD26-07P" + suffix })),
+    new Date(2026, 6, 25)
+  )
+`);
+if (skippedLetters !== "TD26-07PJ") {
+  throw new Error(`Expected I to be skipped, received ${skippedLetters}`);
+}
+
+const skippedLetterO = run(`
+  generateParentCaseNumber(
+    [..."123456789ABCDEFGHJKLMN"].map((suffix) => ({ caseNumber: "TD26-07P" + suffix })),
+    new Date(2026, 6, 25)
+  )
+`);
+if (skippedLetterO !== "TD26-07PP") {
+  throw new Error(`Expected O to be skipped, received ${skippedLetterO}`);
+}
+
+const exhausted = run(`
+  (() => {
+    try {
+      generateParentCaseNumber(
+        [..."123456789ABCDEFGHJKLMNPQRSTUVWXYZ"].map((suffix) => ({
+          caseNumber: "TD26-07P" + suffix
+        })),
+        new Date(2026, 6, 25)
+      );
+      return false;
+    } catch (error) {
+      return error instanceof RangeError;
+    }
+  })()
+`);
+if (!exhausted) {
+  throw new Error("Expected exhausted parent-case suffixes to throw RangeError");
+}
+
+const legacyMultiDigit = run(`
+  assignParentCaseNumbers([
+    { caseNumber: "TD26-07P10", createdAt: "2026-07-01T00:00:00Z" }
+  ])[0].caseNumber
+`);
+if (legacyMultiDigit !== "TD26-07P1") {
+  throw new Error(`Expected legacy multi-digit number to be reassigned, received ${legacyMultiDigit}`);
+}
+
 const migrated = run(`
   assignParentCaseNumbers([
     { caseNumber: "", createdAt: "2026-07-01T00:00:00Z" },
