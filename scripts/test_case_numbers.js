@@ -47,8 +47,69 @@ const afterNinetyNine = run(`
     new Date(2026, 6, 25)
   )
 `);
-if (afterNinetyNine !== "TD26-07100") {
-  throw new Error(`Expected TD26-07100, received ${afterNinetyNine}`);
+if (afterNinetyNine !== "TD26-07A0") {
+  throw new Error(`Expected TD26-07A0, received ${afterNinetyNine}`);
+}
+
+const afterA9 = run(`
+  generateCaseNumber(
+    [
+      ...Array.from({ length: 99 }, (_, index) => ({
+        caseNumber: "TD26-07" + String(index + 1).padStart(2, "0")
+      })),
+      ...Array.from({ length: 10 }, (_, digit) => ({ caseNumber: "TD26-07A" + digit }))
+    ],
+    new Date(2026, 6, 25)
+  )
+`);
+if (afterA9 !== "TD26-07B0") {
+  throw new Error(`Expected TD26-07B0, received ${afterA9}`);
+}
+
+const allowedLetters = "ABCDEFGHJKLMNQRSTUVWXYZ";
+for (const [previousLetter, expectedLetter] of [["H", "J"], ["N", "Q"]]) {
+  const nextLetter = run(`
+    generateCaseNumber(
+      [
+        ...Array.from({ length: 99 }, (_, index) => ({
+          caseNumber: "TD26-07" + String(index + 1).padStart(2, "0")
+        })),
+        ...[..."${allowedLetters.slice(0, allowedLetters.indexOf(previousLetter) + 1)}"].flatMap((letter) =>
+          Array.from({ length: 10 }, (_, digit) => ({ caseNumber: "TD26-07" + letter + digit }))
+        )
+      ],
+      new Date(2026, 6, 25)
+    )
+  `);
+  if (nextLetter !== `TD26-07${expectedLetter}0`) {
+    throw new Error(`Expected ambiguous letters after ${previousLetter} to be skipped, received ${nextLetter}`);
+  }
+}
+
+const legacyThreeDigits = run(`
+  assignCaseNumbers([
+    { caseNumber: "TD26-07100", createdAt: "2026-07-01T00:00:00Z" }
+  ])[0].caseNumber
+`);
+if (legacyThreeDigits !== "TD26-0701") {
+  throw new Error(`Expected legacy three-digit number to be reassigned, received ${legacyThreeDigits}`);
+}
+
+const exhausted = run(`
+  (() => {
+    try {
+      generateCaseNumber(
+        TODO_MEMO_CASE_SEQUENCE.map((suffix) => ({ caseNumber: "TD26-07" + suffix })),
+        new Date(2026, 6, 25)
+      );
+      return false;
+    } catch (error) {
+      return error instanceof RangeError;
+    }
+  })()
+`);
+if (!exhausted) {
+  throw new Error("Expected exhausted case-number suffixes to throw RangeError");
 }
 
 const migrated = run(`

@@ -1456,9 +1456,18 @@ async function persistEditedTask() {
   if (!task) {
     const active = getActiveTasks();
     const completed = tasks.filter((item) => item.completed);
+    let caseNumber;
+    try {
+      caseNumber = generateCaseNumber(tasks);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      taskAutoSaveStatus.textContent = "今月の案件番号はすべて使用されています";
+      taskAutoSaveStatus.dataset.state = "error";
+      return false;
+    }
     task = {
       id: crypto.randomUUID(),
-      caseNumber: generateCaseNumber(tasks),
+      caseNumber,
       title,
       content: "",
       dueDate: "",

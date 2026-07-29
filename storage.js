@@ -2,7 +2,14 @@ const TODO_MEMO_STORAGE_KEY = "todoMemoTasks";
 const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
 const TODO_MEMO_MAX_LINKS = 3;
-const TODO_MEMO_CASE_NUMBER_PATTERN = /^TD\d{2}-(?:0[1-9]|1[0-2])(?:0[1-9]|[1-9]\d+)$/;
+const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
+const TODO_MEMO_CASE_SEQUENCE = [
+  ...Array.from({ length: 99 }, (_, index) => String(index + 1).padStart(2, "0")),
+  ...TODO_MEMO_CASE_LETTERS.flatMap((letter) =>
+    Array.from({ length: 10 }, (_, digit) => `${letter}${digit}`)
+  )
+];
+const TODO_MEMO_CASE_NUMBER_PATTERN = /^TD\d{2}-(?:0[1-9]|1[0-2])(?:0[1-9]|[1-9]\d|[A-HJ-NQ-Z]\d)$/;
 const TODO_MEMO_PARENT_CASE_SEQUENCE = [..."123456789ABCDEFGHJKLMNPQRSTUVWXYZ"];
 const TODO_MEMO_PARENT_CASE_NUMBER_PATTERN = /^TD\d{2}-(?:0[1-9]|1[0-2])P[1-9A-HJ-NP-Z]$/;
 
@@ -14,17 +21,18 @@ function getCaseNumberPrefix(date = new Date()) {
 
 function generateCaseNumber(tasks, date = new Date()) {
   const prefix = getCaseNumberPrefix(date);
-  const usedNumbers = new Set(
+  const usedSuffixes = new Set(
     tasks
-      .map((task) => String(task.caseNumber || ""))
+      .map((task) => String(task.caseNumber || "").trim().toUpperCase())
       .filter((caseNumber) => caseNumber.startsWith(prefix))
-      .map((caseNumber) => Number(caseNumber.slice(prefix.length)))
-      .filter((number) => Number.isSafeInteger(number) && number > 0)
+      .map((caseNumber) => caseNumber.slice(prefix.length))
   );
 
-  let sequence = 1;
-  while (usedNumbers.has(sequence)) sequence += 1;
-  return `${prefix}${String(sequence).padStart(2, "0")}`;
+  const suffix = TODO_MEMO_CASE_SEQUENCE.find((candidate) => !usedSuffixes.has(candidate));
+  if (!suffix) {
+    throw new RangeError(`${prefix}の案件番号をこれ以上採番できません`);
+  }
+  return `${prefix}${suffix}`;
 }
 
 function getTaskCaseNumberDate(task) {
