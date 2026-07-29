@@ -1142,6 +1142,7 @@ function renderParentCaseSettings() {
       input.addEventListener("input", () => {
         row.dataset.dirty = "true";
       });
+      input.addEventListener("change", saveParentCaseEdits);
     });
     row.saveEdits = saveParentCaseEdits;
 
@@ -1167,7 +1168,7 @@ function renderParentCaseSettings() {
       showToast("親案件を削除しました");
     });
 
-    row.append(number, name, url, usedCount, save, remove);
+    row.append(number, name, url, usedCount, remove);
     return row;
   }));
 }
