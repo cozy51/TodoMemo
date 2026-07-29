@@ -1132,6 +1132,12 @@ function renderParentCaseSettings() {
       return true;
     };
 
+    const save = document.createElement("button");
+    save.className = "parent-case-save";
+    save.type = "button";
+    save.textContent = "保存";
+    save.addEventListener("click", saveParentCaseEdits);
+
     [name, url].forEach((input) => {
       input.addEventListener("input", () => {
         row.dataset.dirty = "true";
