@@ -1726,7 +1726,7 @@ button {
 
 .parent-case-row {
   display: grid;
-  grid-template-columns: minmax(105px, .55fr) minmax(260px, 1.4fr) minmax(280px, 1.6fr) 55px auto auto;
+  grid-template-columns: minmax(105px, .55fr) minmax(260px, 1.4fr) minmax(280px, 1.6fr) 55px auto;
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -1751,7 +1751,6 @@ button {
   white-space: nowrap;
 }
 
-.parent-case-save,
 .parent-case-remove {
   padding: 8px 10px;
   cursor: pointer;
@@ -1760,14 +1759,6 @@ button {
   background: white;
   font-size: 11px;
   font-weight: 700;
-}
-
-.parent-case-save {
-  color: #6842b8;
-}
-
-.parent-case-save:hover {
-  background: #eee7fb;
 }
 
 .parent-case-remove:hover {
