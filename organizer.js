@@ -32,7 +32,6 @@ const titleError = document.querySelector("#titleError");
 const dialogTitle = document.querySelector("#dialogTitle");
 const taskAutoSaveStatus = document.querySelector("#taskAutoSaveStatus");
 const cancelButton = document.querySelector("#cancelButton");
-const saveTaskButton = document.querySelector("#saveTaskButton");
 const toast = document.querySelector("#toast");
 const tagForm = document.querySelector("#tagForm");
 const tagNameInput = document.querySelector("#tagNameInput");
@@ -1132,12 +1131,6 @@ function renderParentCaseSettings() {
       return true;
     };
 
-    const save = document.createElement("button");
-    save.className = "parent-case-save";
-    save.type = "button";
-    save.textContent = "保存";
-    save.addEventListener("click", saveParentCaseEdits);
-
     [name, url].forEach((input) => {
       input.addEventListener("input", () => {
         row.dataset.dirty = "true";
@@ -1407,7 +1400,6 @@ function openTaskDialog(task = null) {
     taskAutoSaveStatus.dataset.state = "saved";
     taskAutoSaveStatus.hidden = false;
     cancelButton.textContent = "閉じる";
-    saveTaskButton.hidden = true;
   } else {
     dialogTitle.textContent = "新しいタスク";
     dialogCaseNumber.textContent = "案件番号は保存時に自動採番します";
@@ -1416,9 +1408,10 @@ function openTaskDialog(task = null) {
     renderParentCaseOptions();
     renderTaskTagOptions();
     renderLinkInputs();
-    taskAutoSaveStatus.hidden = true;
-    cancelButton.textContent = "キャンセル";
-    saveTaskButton.hidden = false;
+    taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
+    taskAutoSaveStatus.dataset.state = "saved";
+    taskAutoSaveStatus.hidden = false;
+    cancelButton.textContent = "閉じる";
   }
 
   updateDueDateClearButton();
@@ -1431,7 +1424,8 @@ function openTaskDialog(task = null) {
 }
 
 async function closeTaskDialog() {
-  if (taskIdInput.value && !(await persistEditedTask())) return;
+  if (titleInput.value.trim() && !(await persistEditedTask())) return;
+  clearTimeout(taskAutoSaveTimer);
   taskDialog.close();
 }
 
@@ -1457,9 +1451,32 @@ async function persistEditedTask() {
     return false;
   }
 
-  const taskId = taskIdInput.value;
-  const task = tasks.find((item) => item.id === taskId);
-  if (!task) return false;
+  let taskId = taskIdInput.value;
+  let task = tasks.find((item) => item.id === taskId);
+  if (!task) {
+    const active = getActiveTasks();
+    const completed = tasks.filter((item) => item.completed);
+    task = {
+      id: crypto.randomUUID(),
+      caseNumber: generateCaseNumber(tasks),
+      title,
+      content: "",
+      dueDate: "",
+      parentCaseId: "",
+      tagIds: [],
+      links: [],
+      completed: false,
+      order: active.length,
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    };
+    active.splice(Math.min(1, active.length), 0, task);
+    tasks = [...active, ...completed];
+    taskId = task.id;
+    taskIdInput.value = taskId;
+    dialogTitle.textContent = "タスクを編集";
+    dialogCaseNumber.textContent = `案件番号 ${task.caseNumber}`;
+  }
   collectTaskFormValues(task);
   const snapshot = tasks.map((item) => ({
     ...item,
@@ -1487,8 +1504,12 @@ async function persistEditedTask() {
 }
 
 function scheduleTaskAutoSave() {
-  if (!taskIdInput.value) return;
   clearTimeout(taskAutoSaveTimer);
+  if (!titleInput.value.trim()) {
+    taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
+    taskAutoSaveStatus.dataset.state = "saved";
+    return;
+  }
   taskAutoSaveStatus.textContent = "保存中…";
   taskAutoSaveStatus.dataset.state = "saving";
   taskAutoSaveTimer = setTimeout(persistEditedTask, 250);
@@ -1496,45 +1517,7 @@ function scheduleTaskAutoSave() {
 
 async function handleSubmit(event) {
   event.preventDefault();
-  const title = titleInput.value.trim();
-
-  if (!title) {
-    titleError.textContent = "タイトルを入力してください";
-    titleInput.classList.add("is-invalid");
-    titleInput.focus();
-    return;
-  }
-
-  const taskId = taskIdInput.value;
-  if (taskId) {
-    await closeTaskDialog();
-    return;
-  } else {
-    const active = getActiveTasks();
-    const completed = tasks.filter((task) => task.completed);
-    const newTask = {
-      id: crypto.randomUUID(),
-      caseNumber: generateCaseNumber(tasks),
-      title,
-      content: contentInput.value,
-      dueDate: dueDateInput.value,
-      parentCaseId: parentCaseSelect.value,
-      tagIds: [...taskTagOptions.querySelectorAll("input:checked")]
-        .map((input) => input.value),
-      links: collectLinkInputValues(),
-      completed: false,
-      order: active.length,
-      createdAt: new Date().toISOString(),
-      completedAt: null
-    };
-    active.splice(Math.min(1, active.length), 0, newTask);
-    tasks = [...active, ...completed];
-  }
-
-  tasks = await saveTasks(tasks);
-  closeTaskDialog();
-  render();
-  showToast(taskId ? "変更を保存しました" : "タスクを追加しました");
+  await persistEditedTask();
 }
 
 async function addTag(event) {
@@ -1719,9 +1702,19 @@ taskDialog.addEventListener("click", (event) => {
 });
 
 taskDialog.addEventListener("cancel", (event) => {
-  if (!taskIdInput.value) return;
+  if (!titleInput.value.trim()) return;
   event.preventDefault();
   closeTaskDialog();
+});
+
+window.addEventListener("pagehide", () => {
+  if (taskDialog.open && titleInput.value.trim()) persistEditedTask();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && taskDialog.open && titleInput.value.trim()) {
+    persistEditedTask();
+  }
 });
 
 restoreDialog.addEventListener("click", (event) => {
