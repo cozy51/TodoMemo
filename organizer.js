@@ -52,6 +52,7 @@ const parentCaseGroupModeButton = document.querySelector("#parentCaseGroupModeBu
 const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
+const backupButton = document.querySelector("#backupButton");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
 const restoreFileInput = document.querySelector("#restoreFileInput");
 const restoreDialog = document.querySelector("#restoreDialog");
@@ -106,6 +107,58 @@ function formatCompletedAt(value) {
     hourCycle: "h23"
   }).format(date);
   return `完了日時：${formatted}`;
+}
+
+function createBackupTimestamp(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    + `_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+async function downloadBackup() {
+  backupButton.disabled = true;
+  try {
+    const [storedTasks, storedTags, storedParentCases] = await Promise.all([
+      loadTasks(),
+      loadTags(),
+      loadParentCases()
+    ]);
+    const now = new Date();
+    const timestamp = createBackupTimestamp(now);
+    const backup = {
+      format: "TodoMemo Backup",
+      schemaVersion: 2,
+      extensionVersion: chrome.runtime.getManifest?.().version || "unknown",
+      exportedAt: now.toISOString(),
+      localTimestamp: timestamp,
+      counts: {
+        tasks: storedTasks.length,
+        active: storedTasks.filter((task) => !task.completed).length,
+        completed: storedTasks.filter((task) => task.completed).length,
+        tags: storedTags.length,
+        parentCases: storedParentCases.length
+      },
+      tasks: storedTasks,
+      tags: storedTags,
+      parentCases: storedParentCases
+    };
+    const url = URL.createObjectURL(new Blob(
+      [JSON.stringify(backup, null, 2)],
+      { type: "application/json;charset=utf-8" }
+    ));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `backup-ext_TodoMemo_${timestamp}.json`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`${storedTasks.length}件をバックアップしました`);
+  } catch (_error) {
+    showToast("バックアップを作成できませんでした", "error");
+  } finally {
+    backupButton.disabled = false;
+  }
 }
 
 function getActiveTaskAnchorId(task) {
@@ -1708,6 +1761,7 @@ tagForm.addEventListener("submit", addTag);
 parentCaseForm.addEventListener("submit", addParentCase);
 parentCaseManageModeButton.addEventListener("click", () => setParentCaseViewMode("manage"));
 parentCaseGroupModeButton.addEventListener("click", showParentCaseGroups);
+backupButton.addEventListener("click", downloadBackup);
 restoreBackupButton.addEventListener("click", () => restoreFileInput.click());
 restoreFileInput.addEventListener("change", handleRestoreFile);
 document.querySelector("#closeRestoreDialogButton").addEventListener("click", closeRestoreDialog);

@@ -110,6 +110,7 @@ button {
   font-weight: 700;
 }
 
+.backup-button,
 .restore-backup-button {
   display: inline-flex;
   gap: 8px;
@@ -124,11 +125,13 @@ button {
   font-weight: 700;
 }
 
+.backup-button:hover,
 .restore-backup-button:hover {
   border-color: #8caeec;
   background: var(--accent-soft);
 }
 
+.backup-button svg,
 .restore-backup-button svg {
   width: 18px;
   fill: none;
@@ -2526,6 +2529,7 @@ button:focus-visible {
     width: 100%;
   }
 
+  .backup-button,
   .restore-backup-button,
   .app-header-actions .primary-button {
     flex: 1;
