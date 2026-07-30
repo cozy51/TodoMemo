@@ -8,6 +8,7 @@ vm.runInContext(fs.readFileSync("markdown.js", "utf8"), context);
 const cases = [
   ["Z908751501   SERVO", 0, 13, 10],
   ["Z908751501\tSERVO", 0, 11, 10],
+  ["前 Z908751501\tSERVO 後", 2, 13, 12],
   ["Z908751501　SERVO", 0, 11, 10],
   ["Z908751501\nSERVO", 0, 11, 11],
   ["Z908751501", 0, 10, 10]

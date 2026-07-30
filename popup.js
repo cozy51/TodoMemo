@@ -604,8 +604,10 @@ editContentInput.addEventListener("select", renderEditContentSelectionHighlights
 editContentInput.addEventListener("keyup", renderEditContentSelectionHighlights);
 editContentInput.addEventListener("pointerup", renderEditContentSelectionHighlights);
 editContentInput.addEventListener("dblclick", () => {
-  trimTrailingSpacingFromSelection(editContentInput);
-  renderEditContentSelectionHighlights();
+  requestAnimationFrame(() => {
+    trimTrailingSpacingFromSelection(editContentInput);
+    renderEditContentSelectionHighlights();
+  });
 });
 editContentInput.addEventListener("scroll", syncEditContentHighlightScroll);
 editDueDateInput.addEventListener("input", () => {

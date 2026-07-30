@@ -1844,8 +1844,10 @@ contentInput.addEventListener("select", renderContentSelectionHighlights);
 contentInput.addEventListener("keyup", renderContentSelectionHighlights);
 contentInput.addEventListener("pointerup", renderContentSelectionHighlights);
 contentInput.addEventListener("dblclick", () => {
-  trimTrailingSpacingFromSelection(contentInput);
-  renderContentSelectionHighlights();
+  requestAnimationFrame(() => {
+    trimTrailingSpacingFromSelection(contentInput);
+    renderContentSelectionHighlights();
+  });
 });
 contentInput.addEventListener("scroll", syncContentHighlightScroll);
 dueDateInput.addEventListener("input", scheduleTaskAutoSave);
