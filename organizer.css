@@ -2217,6 +2217,26 @@ button {
   border-top: 1px solid var(--line);
 }
 
+.view-end-marker {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 30px 0 2px;
+  color: #98a3b7;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+
+.view-end-marker::before,
+.view-end-marker::after {
+  height: 1px;
+  flex: 1;
+  content: "";
+  background: var(--line);
+}
+
 .task-card:not(.is-dragging) {
   cursor: pointer;
 }
