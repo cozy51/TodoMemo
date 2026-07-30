@@ -19,6 +19,12 @@
           <p>一番上が「今すること」です。新しいタスクは、そのすぐ下に追加されます。</p>
         </div>
         <div class="app-header-actions">
+          <button id="backupButton" class="backup-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/>
+            </svg>
+            全データをバックアップ
+          </button>
           <button id="restoreBackupButton" class="restore-backup-button" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/>
@@ -253,6 +259,12 @@
             <option value="">親案件なし</option>
           </select>
           <small class="field-hint">登録済みの親案件から選択できます。</small>
+        </label>
+
+        <label class="field">
+          <span>優先順位</span>
+          <select id="prioritySelect" name="priority"></select>
+          <small class="field-hint">未完了タスク内での表示順を変更できます。</small>
         </label>
 
         <div class="field due-field">

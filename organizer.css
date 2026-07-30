@@ -110,6 +110,7 @@ button {
   font-weight: 700;
 }
 
+.backup-button,
 .restore-backup-button {
   display: inline-flex;
   gap: 8px;
@@ -124,11 +125,13 @@ button {
   font-weight: 700;
 }
 
+.backup-button:hover,
 .restore-backup-button:hover {
   border-color: #8caeec;
   background: var(--accent-soft);
 }
 
+.backup-button svg,
 .restore-backup-button svg {
   width: 18px;
   fill: none;
@@ -1661,6 +1664,13 @@ button {
   border-top: 1px solid #e8e1f3;
 }
 
+.parent-task-group-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  background: rgba(255, 255, 255, .72);
+}
+
 .parent-task-item {
   display: grid;
   grid-template-columns: 30px 120px minmax(0, 1fr);
@@ -1668,13 +1678,40 @@ button {
   align-items: center;
   padding: 11px 16px;
   color: var(--ink);
-  background: rgba(255, 255, 255, .72);
+  background: transparent;
   text-decoration: none;
 }
 
 .parent-task-item:hover {
   background: white;
   box-shadow: inset 4px 0 0 #8a61d1;
+}
+
+.parent-task-item-edit {
+  align-self: center;
+  min-width: 54px;
+  min-height: 32px;
+  margin: 7px 12px 7px 4px;
+  padding: 6px 11px;
+  color: #6842b8;
+  border: 1px solid #cdbde9;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parent-task-item-edit:hover {
+  color: #523099;
+  border-color: #9f83d0;
+  background: #eee7fb;
+}
+
+.parent-task-item-edit:focus-visible {
+  outline: 3px solid rgba(104, 66, 184, .22);
+  outline-offset: 2px;
 }
 
 .parent-task-item-priority {
@@ -2087,28 +2124,60 @@ button {
 .dialog-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.save-status {
+.dialog-header-actions .save-status {
+  display: inline-flex;
+  min-height: 34px;
+  padding: 7px 12px;
+  align-items: center;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
+  border: 1px solid #cbd8ef;
+  border-radius: 999px;
+  background: #f5f8ff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.save-status[data-state="saved"]::before {
-  margin-right: 4px;
+.dialog-header-actions .save-status[data-state="saved"]::before {
+  margin-right: 6px;
   color: var(--accent);
   content: "✓";
+  font-size: 14px;
+  font-weight: 900;
 }
 
-.save-status[data-state="error"] {
+.dialog-header-actions .save-status[data-state="error"] {
   color: var(--danger);
+  border-color: #e8aaa4;
+  background: #fff4f2;
 }
 
-.icon-button {
-  font-size: 25px;
-  font-weight: 300;
+.dialog-header-actions .icon-button {
+  width: 42px;
+  height: 42px;
+  color: #33425e;
+  border: 1px solid #aebbd0;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(30, 49, 82, .1);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.dialog-header-actions .icon-button:hover {
+  color: var(--accent-dark);
+  border-color: #7ea2e5;
+  background: var(--accent-soft);
+  box-shadow: 0 3px 9px rgba(47, 111, 237, .16);
+}
+
+.dialog-header-actions .icon-button:focus-visible {
+  outline: 3px solid rgba(47, 111, 237, .28);
+  outline-offset: 2px;
 }
 
 .field {
@@ -2460,6 +2529,7 @@ button:focus-visible {
     width: 100%;
   }
 
+  .backup-button,
   .restore-backup-button,
   .app-header-actions .primary-button {
     flex: 1;
