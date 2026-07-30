@@ -1661,6 +1661,13 @@ button {
   border-top: 1px solid #e8e1f3;
 }
 
+.parent-task-group-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  background: rgba(255, 255, 255, .72);
+}
+
 .parent-task-item {
   display: grid;
   grid-template-columns: 30px 120px minmax(0, 1fr);
@@ -1668,13 +1675,40 @@ button {
   align-items: center;
   padding: 11px 16px;
   color: var(--ink);
-  background: rgba(255, 255, 255, .72);
+  background: transparent;
   text-decoration: none;
 }
 
 .parent-task-item:hover {
   background: white;
   box-shadow: inset 4px 0 0 #8a61d1;
+}
+
+.parent-task-item-edit {
+  align-self: center;
+  min-width: 54px;
+  min-height: 32px;
+  margin: 7px 12px 7px 4px;
+  padding: 6px 11px;
+  color: #6842b8;
+  border: 1px solid #cdbde9;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parent-task-item-edit:hover {
+  color: #523099;
+  border-color: #9f83d0;
+  background: #eee7fb;
+}
+
+.parent-task-item-edit:focus-visible {
+  outline: 3px solid rgba(104, 66, 184, .22);
+  outline-offset: 2px;
 }
 
 .parent-task-item-priority {

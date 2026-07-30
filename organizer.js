@@ -1232,6 +1232,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   list.className = "parent-task-group-list";
   groupedTasks.forEach((task) => {
     const item = document.createElement("li");
+    item.className = "parent-task-group-list-item";
     const link = document.createElement("a");
     link.className = "parent-task-item";
     link.href = getTaskAnchorHref(task);
@@ -1252,7 +1253,16 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     title.textContent = ensureEmojiPresentation(task.title);
 
     link.append(priority, caseNumber, title);
-    item.append(link);
+
+    const editButton = document.createElement("button");
+    editButton.className = "parent-task-item-edit";
+    editButton.type = "button";
+    editButton.textContent = "編集";
+    editButton.title = `${task.caseNumber} ${task.title}を編集`;
+    editButton.setAttribute("aria-label", `${task.caseNumber} ${task.title}を編集`);
+    editButton.addEventListener("click", () => openTaskDialog(task));
+
+    item.append(link, editButton);
     list.append(item);
   });
   group.append(list);
