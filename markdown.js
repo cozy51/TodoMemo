@@ -94,7 +94,7 @@ function appendMarkdownInline(parent, source) {
 }
 
 function isMarkdownBlockStart(line) {
-  return /^(?:#{1,3}\s+|>\s?|```|(?:[-*+]\s+)|(?:\d+\.\s+)|(?:-{3,}\s*$))/.test(line);
+  return /^(?:#{1,3}\s+|>\s?|```|(?:[-*+•]\s+)|(?:\d+\.\s+)|(?:-{3,}\s*$))/.test(line);
 }
 
 function renderMarkdown(target, source) {
@@ -162,11 +162,11 @@ function renderMarkdown(target, source) {
       continue;
     }
 
-    const unordered = /^\s*[-*+]\s+/.test(line);
+    const unordered = /^\s*[-*+•]\s+/.test(line);
     const ordered = /^\s*\d+\.\s+/.test(line);
     if (unordered || ordered) {
       const list = document.createElement(ordered ? "ol" : "ul");
-      const itemPattern = ordered ? /^\s*\d+\.\s+(.+)$/ : /^\s*[-*+]\s+(.+)$/;
+      const itemPattern = ordered ? /^\s*\d+\.\s+(.+)$/ : /^\s*[-*+•]\s+(.+)$/;
 
       while (index < lines.length) {
         const itemMatch = itemPattern.exec(lines[index]);
@@ -214,6 +214,22 @@ function getLineIndentAt(value, position) {
     : value.lastIndexOf("\n", position - 1) + 1;
   const indent = /^[\t ]*/.exec(value.slice(lineStart, position));
   return indent ? indent[0] : "";
+}
+
+function getVisualListSpaceEdit(value, start, end) {
+  if (start !== end) return null;
+  const lineStart = start === 0 ? 0 : value.lastIndexOf("\n", start - 1) + 1;
+  if (!/^[\t ]*-$/.test(value.slice(lineStart, start))) return null;
+  return { start: start - 1, end: start, text: "• " };
+}
+
+function getVisualListEnterEdit(value, start, end) {
+  const lineStart = start === 0 ? 0 : value.lastIndexOf("\n", start - 1) + 1;
+  const item = /^([\t ]*)•\s(.*)$/.exec(value.slice(lineStart, start));
+  if (!item) return null;
+  return item[2]
+    ? { start, end, text: `\n${item[1]}• ` }
+    : { start: lineStart, end, text: "" };
 }
 
 function enableMarkdownMulticursor(textarea) {
@@ -620,11 +636,37 @@ function enableMarkdownTabInput(textarea) {
   const multicursor = enableMarkdownMulticursor(textarea);
 
   textarea.addEventListener("keydown", (event) => {
+    if (event.key !== " " || multicursor.hasExtraCursors()) return;
+    const edit = getVisualListSpaceEdit(
+      textarea.value,
+      textarea.selectionStart,
+      textarea.selectionEnd
+    );
+    if (!edit) return;
+
+    event.preventDefault();
+    textarea.setRangeText(edit.text, edit.start, edit.end, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  textarea.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || multicursor.hasExtraCursors()) return;
     event.preventDefault();
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    const visualListEdit = getVisualListEnterEdit(textarea.value, start, end);
+    if (visualListEdit) {
+      textarea.setRangeText(
+        visualListEdit.text,
+        visualListEdit.start,
+        visualListEdit.end,
+        "end"
+      );
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+
     const indent = getLineIndentAt(textarea.value, start);
     textarea.setRangeText(`\n${indent}`, start, end, "end");
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
