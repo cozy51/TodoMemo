@@ -16,6 +16,7 @@ const editTaskForm = document.querySelector("#editTaskForm");
 const editTitleInput = document.querySelector("#editTitleInput");
 const editParentCaseSelect = document.querySelector("#editParentCaseSelect");
 const editContentInput = document.querySelector("#editContentInput");
+const editContentHighlightBackdrop = document.querySelector("#editContentHighlightBackdrop");
 const editDueDateInput = document.querySelector("#editDueDateInput");
 const clearEditDueDateButton = document.querySelector("#clearEditDueDate");
 const editTagsField = document.querySelector("#editTagsField");
@@ -40,6 +41,39 @@ let popupToastTimer = null;
 
 enableMarkdownTabInput(editContentInput);
 const resizeEditContent = enableAutoResizeTextarea(editContentInput);
+
+function renderEditContentSelectionHighlights() {
+  const selectedText = editContentInput.value.slice(
+    editContentInput.selectionStart,
+    editContentInput.selectionEnd
+  );
+  editContentHighlightBackdrop.replaceChildren();
+  if (!selectedText || selectedText.includes("\n")) {
+    editContentHighlightBackdrop.textContent = editContentInput.value;
+    return;
+  }
+
+  let start = 0;
+  let matchIndex = editContentInput.value.indexOf(selectedText);
+  while (matchIndex >= 0) {
+    editContentHighlightBackdrop.append(document.createTextNode(
+      editContentInput.value.slice(start, matchIndex)
+    ));
+    const mark = document.createElement("mark");
+    mark.textContent = selectedText;
+    editContentHighlightBackdrop.append(mark);
+    start = matchIndex + selectedText.length;
+    matchIndex = editContentInput.value.indexOf(selectedText, start);
+  }
+  editContentHighlightBackdrop.append(
+    document.createTextNode(editContentInput.value.slice(start))
+  );
+}
+
+function syncEditContentHighlightScroll() {
+  editContentHighlightBackdrop.scrollTop = editContentInput.scrollTop;
+  editContentHighlightBackdrop.scrollLeft = editContentInput.scrollLeft;
+}
 
 function openOrganizer() {
   chrome.runtime.openOptionsPage();
@@ -459,6 +493,7 @@ function openEditor() {
   editTitleInput.value = currentTask.title;
   renderParentCaseOptions(currentTask.parentCaseId);
   editContentInput.value = currentTask.content;
+  renderEditContentSelectionHighlights();
   editDueDateInput.value = currentTask.dueDate;
   updateDueDateClearButton();
   editTitleError.textContent = "";
@@ -561,7 +596,20 @@ editTitleInput.addEventListener("input", () => {
   persistEditorChanges();
 });
 editParentCaseSelect.addEventListener("change", () => persistEditorChanges());
-editContentInput.addEventListener("input", () => persistEditorChanges());
+editContentInput.addEventListener("input", () => {
+  renderEditContentSelectionHighlights();
+  persistEditorChanges();
+});
+editContentInput.addEventListener("select", renderEditContentSelectionHighlights);
+editContentInput.addEventListener("keyup", renderEditContentSelectionHighlights);
+editContentInput.addEventListener("pointerup", renderEditContentSelectionHighlights);
+editContentInput.addEventListener("dblclick", () => {
+  requestAnimationFrame(() => {
+    trimTrailingSpacingFromSelection(editContentInput);
+    renderEditContentSelectionHighlights();
+  });
+});
+editContentInput.addEventListener("scroll", syncEditContentHighlightScroll);
 editDueDateInput.addEventListener("input", () => {
   updateDueDateClearButton();
   persistEditorChanges();
