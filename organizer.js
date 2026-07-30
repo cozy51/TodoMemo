@@ -20,6 +20,7 @@ const taskIdInput = document.querySelector("#taskId");
 const titleInput = document.querySelector("#titleInput");
 const dialogCaseNumber = document.querySelector("#dialogCaseNumber");
 const parentCaseSelect = document.querySelector("#parentCaseSelect");
+const prioritySelect = document.querySelector("#prioritySelect");
 const contentInput = document.querySelector("#contentInput");
 const dueDateInput = document.querySelector("#dueDateInput");
 const clearDueDateButton = document.querySelector("#clearDueDateButton");
@@ -1231,6 +1232,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   list.className = "parent-task-group-list";
   groupedTasks.forEach((task) => {
     const item = document.createElement("li");
+    item.className = "parent-task-group-list-item";
     const link = document.createElement("a");
     link.className = "parent-task-item";
     link.href = getTaskAnchorHref(task);
@@ -1251,7 +1253,16 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     title.textContent = ensureEmojiPresentation(task.title);
 
     link.append(priority, caseNumber, title);
-    item.append(link);
+
+    const editButton = document.createElement("button");
+    editButton.className = "parent-task-item-edit";
+    editButton.type = "button";
+    editButton.textContent = "編集";
+    editButton.title = `${task.caseNumber} ${task.title}を編集`;
+    editButton.setAttribute("aria-label", `${task.caseNumber} ${task.title}を編集`);
+    editButton.addEventListener("click", () => openTaskDialog(task));
+
+    item.append(link, editButton);
     list.append(item);
   });
   group.append(list);
@@ -1385,7 +1396,7 @@ function renderParentCaseOptions(selectedId = "") {
   emptyOption.textContent = "親案件なし";
   parentCaseSelect.replaceChildren(
     emptyOption,
-    ...parentCases.map((parentCase) => {
+    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
       const option = document.createElement("option");
       option.value = parentCase.id;
       option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
@@ -1395,6 +1406,22 @@ function renderParentCaseOptions(selectedId = "") {
   parentCaseSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
     ? selectedId
     : "";
+}
+
+function renderPriorityOptions(task = null) {
+  const active = getActiveTasks();
+  const currentIndex = task ? active.findIndex((item) => item.id === task.id) : -1;
+  const optionCount = active.length + (currentIndex < 0 ? 1 : 0);
+  prioritySelect.replaceChildren(
+    ...Array.from({ length: optionCount }, (_, index) => {
+      const option = document.createElement("option");
+      option.value = String(index + 1);
+      option.textContent = `${index + 1}番`;
+      return option;
+    })
+  );
+  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : Math.min(2, optionCount));
+  prioritySelect.disabled = Boolean(task?.completed);
 }
 
 function openTaskDialog(task = null, initialParentCaseId = "") {
@@ -1412,6 +1439,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     contentInput.value = task.content;
     dueDateInput.value = task.dueDate;
     renderParentCaseOptions(task.parentCaseId);
+    renderPriorityOptions(task);
     renderTaskTagOptions(task.tagIds);
     renderLinkInputs(task.links);
     taskAutoSaveStatus.textContent = "保存済み";
@@ -1424,6 +1452,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     dialogCaseNumber.hidden = false;
     taskIdInput.value = "";
     renderParentCaseOptions(initialParentCaseId);
+    renderPriorityOptions();
     renderTaskTagOptions();
     renderLinkInputs();
     taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
@@ -1505,6 +1534,9 @@ async function persistEditedTask() {
     dialogCaseNumber.textContent = `案件番号 ${task.caseNumber}`;
   }
   collectTaskFormValues(task);
+  if (!task.completed) {
+    tasks = moveActiveTaskToPriority(tasks, task.id, prioritySelect.value);
+  }
   const snapshot = tasks.map((item) => ({
     ...item,
     tagIds: [...item.tagIds],
@@ -1701,6 +1733,7 @@ contentInput.addEventListener("input", scheduleTaskAutoSave);
 dueDateInput.addEventListener("input", scheduleTaskAutoSave);
 taskTagOptions.addEventListener("change", scheduleTaskAutoSave);
 parentCaseSelect.addEventListener("change", scheduleTaskAutoSave);
+prioritySelect.addEventListener("change", scheduleTaskAutoSave);
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;

@@ -111,10 +111,16 @@ function assignParentCaseNumbers(parentCases) {
   return parentCases;
 }
 
+function sortParentCasesByNumberDescending(parentCases) {
+  return [...parentCases].sort((a, b) =>
+    String(b.caseNumber || "").localeCompare(String(a.caseNumber || ""), "en")
+  );
+}
+
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
   return [
-    ...parentCases.map((parentCase) => ({
+    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => ({
       parentCase,
       tasks: tasks.filter((task) => task.parentCaseId === parentCase.id)
     })),
@@ -125,6 +131,18 @@ function groupTasksByParentCase(parentCases, tasks) {
       )
     }
   ];
+}
+
+function moveActiveTaskToPriority(tasks, taskId, priority) {
+  const active = tasks.filter((task) => !task.completed);
+  const completed = tasks.filter((task) => task.completed);
+  const currentIndex = active.findIndex((task) => task.id === taskId);
+  if (currentIndex < 0) return [...active, ...completed];
+
+  const [task] = active.splice(currentIndex, 1);
+  const destination = Math.max(0, Math.min(active.length, Number(priority) - 1));
+  active.splice(destination, 0, task);
+  return [...active, ...completed];
 }
 
 function formatTaskForCopy(task) {
@@ -361,11 +379,11 @@ async function loadParentCases() {
   const storedParentCases = Array.isArray(result[TODO_MEMO_PARENT_CASES_STORAGE_KEY])
     ? result[TODO_MEMO_PARENT_CASES_STORAGE_KEY]
     : [];
-  const normalized = assignParentCaseNumbers(
+  const normalized = sortParentCasesByNumberDescending(assignParentCaseNumbers(
     storedParentCases
       .map(normalizeParentCase)
       .filter((parentCase) => parentCase.name)
-  );
+  ));
 
   const storedById = new Map(
     storedParentCases.map((parentCase) => [String(parentCase?.id || ""), parentCase])
@@ -383,11 +401,11 @@ async function loadParentCases() {
 }
 
 async function saveParentCases(parentCases) {
-  const normalized = assignParentCaseNumbers(
+  const normalized = sortParentCasesByNumberDescending(assignParentCaseNumbers(
     parentCases
       .map(normalizeParentCase)
       .filter((parentCase) => parentCase.name)
-  );
+  ));
   await chrome.storage.local.set({
     [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: normalized
   });
