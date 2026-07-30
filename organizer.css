@@ -1564,6 +1564,44 @@ button {
   align-items: baseline;
 }
 
+.parent-task-group-add-button {
+  width: fit-content;
+  max-width: 100%;
+  margin: -7px;
+  padding: 7px;
+  color: inherit;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.parent-task-group-add-button:hover {
+  background: #e9e0f8;
+}
+
+.parent-task-group-add-button:focus-visible {
+  outline: 2px solid #6842b8;
+  outline-offset: 2px;
+}
+
+.parent-task-group-add-label {
+  flex: 0 0 auto;
+  color: #6842b8;
+  font-size: 10px;
+  font-weight: 750;
+  opacity: .72;
+  white-space: nowrap;
+  transition: opacity .15s ease;
+}
+
+.parent-task-group-add-button:hover .parent-task-group-add-label,
+.parent-task-group-add-button:focus-visible .parent-task-group-add-label {
+  opacity: 1;
+}
+
 .parent-task-group-number {
   flex: 0 0 auto;
   color: #6842b8;
