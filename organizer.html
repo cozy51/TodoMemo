@@ -8,7 +8,18 @@
     <link rel="stylesheet" href="markdown.css">
   </head>
   <body>
-    <div class="app-shell">
+    <nav class="page-jump-nav" aria-label="ページ内ジャンプ">
+      <p>ページ内ジャンプ</p>
+      <a href="#pageTop">トップ</a>
+      <a href="#deadlineCalendarSection">期限カレンダー</a>
+      <a href="#compactTaskSection">案件一覧</a>
+      <a href="#activeTaskSection">すること</a>
+      <a href="#parentCaseSection">親案件</a>
+      <a href="#tagSettingsSection">分類タグ</a>
+      <a href="#completedSection">完了</a>
+    </nav>
+
+    <div id="pageTop" class="app-shell">
       <header class="app-header">
         <div>
           <div class="brand">
@@ -40,7 +51,7 @@
       </header>
 
       <main>
-        <section class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
+        <section id="deadlineCalendarSection" class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
           <div class="section-heading calendar-section-heading">
             <div>
               <p class="section-kicker">今月から3ヶ月</p>
@@ -51,7 +62,7 @@
           <div id="deadlineCalendar" class="calendar-months" aria-live="polite"></div>
         </section>
 
-        <section class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
+        <section id="compactTaskSection" class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
           <div class="section-heading compact-task-heading">
             <div>
               <p class="section-kicker">コンパクト表示</p>
@@ -116,7 +127,7 @@
           </div>
         </section>
 
-        <section class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
+        <section id="parentCaseSection" class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">案件をまとめる</p>
@@ -152,7 +163,7 @@
           </div>
         </section>
 
-        <section class="task-section tag-settings-section" aria-labelledby="tagHeading">
+        <section id="tagSettingsSection" class="task-section tag-settings-section" aria-labelledby="tagHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">分類</p>
@@ -175,7 +186,7 @@
           </div>
         </section>
 
-        <section class="task-section completed-section" aria-labelledby="completedHeading">
+        <section id="completedSection" class="task-section completed-section" aria-labelledby="completedHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">アーカイブ</p>
