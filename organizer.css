@@ -1196,6 +1196,11 @@ button {
   display: none;
 }
 
+.card-content.is-empty {
+  color: #8b96aa;
+  font-style: italic;
+}
+
 .card-parent-case {
   display: inline-flex;
   width: fit-content;
