@@ -2115,6 +2115,42 @@ button {
   padding: 30px;
 }
 
+.task-detail-body {
+  max-height: calc(100vh - 40px);
+  padding: 30px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.task-detail-dialog {
+  overflow: hidden;
+}
+
+.task-detail-dialog .dialog-header {
+  margin-bottom: 18px;
+}
+
+.detail-task-title {
+  margin: 10px 0 18px;
+  font-size: 27px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.detail-task-content {
+  display: block;
+  max-height: none;
+  min-height: 100px;
+  margin-top: 22px;
+  padding-top: 20px;
+  overflow: visible;
+  border-top: 1px solid var(--line);
+}
+
+.task-card:not(.is-dragging) {
+  cursor: pointer;
+}
+
 .restore-dialog-body {
   padding: 30px;
 }

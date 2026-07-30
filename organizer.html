@@ -306,6 +306,27 @@
       </form>
     </dialog>
 
+    <dialog id="taskDetailDialog" class="task-dialog task-detail-dialog" aria-labelledby="detailTaskTitle">
+      <div class="task-detail-body">
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">タスク詳細</p>
+            <p id="detailCaseNumber" class="card-case-number case-number"></p>
+          </div>
+          <div class="dialog-header-actions">
+            <button id="detailEditButton" class="secondary-button" type="button">編集</button>
+            <button id="closeDetailButton" class="icon-button" type="button" aria-label="詳細を閉じる">×</button>
+          </div>
+        </div>
+        <p id="detailParentCase" class="card-parent-case" hidden></p>
+        <h2 id="detailTaskTitle" class="task-title-text detail-task-title"></h2>
+        <div id="detailTags" class="card-tags" hidden></div>
+        <p id="detailDue" class="card-due" hidden></p>
+        <div id="detailLinks" class="card-links" aria-label="関連リンク" hidden></div>
+        <div id="detailContent" class="card-content detail-task-content markdown-body"></div>
+      </div>
+    </dialog>
+
     <template id="activeTaskTemplate">
       <article class="task-card" draggable="true">
         <button class="drag-handle" type="button" aria-label="ドラッグして並び替え" title="ドラッグして並び替え">
