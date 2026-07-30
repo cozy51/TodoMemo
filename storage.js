@@ -119,11 +119,27 @@ function sortParentCasesByNumberDescending(parentCases) {
 
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
+  const priorityByTaskId = new Map(tasks.map((task, index) => [task.id, index]));
+  const parentGroups = sortParentCasesByNumberDescending(parentCases).map((parentCase) => ({
+    parentCase,
+    tasks: tasks.filter((task) => task.parentCaseId === parentCase.id)
+  }));
+  const highestPriorityByParentId = new Map(parentGroups.map((group) => [
+    group.parentCase.id,
+    group.tasks.reduce(
+      (best, task) => Math.min(best, priorityByTaskId.get(task.id) ?? Number.POSITIVE_INFINITY),
+      Number.POSITIVE_INFINITY
+    )
+  ]));
+  parentGroups.sort((a, b) => {
+    const priorityOrder = highestPriorityByParentId.get(a.parentCase.id)
+      - highestPriorityByParentId.get(b.parentCase.id);
+    if (priorityOrder !== 0 && !Number.isNaN(priorityOrder)) return priorityOrder;
+    return String(b.parentCase.caseNumber || "")
+      .localeCompare(String(a.parentCase.caseNumber || ""), "en");
+  });
   return [
-    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => ({
-      parentCase,
-      tasks: tasks.filter((task) => task.parentCaseId === parentCase.id)
-    })),
+    ...parentGroups,
     {
       parentCase: null,
       tasks: tasks.filter(

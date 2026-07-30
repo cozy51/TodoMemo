@@ -171,4 +171,34 @@ if (JSON.stringify(reprioritizedTaskIds) !== JSON.stringify(["task-3", "task-1",
   throw new Error(`Unexpected task priority order: ${JSON.stringify(reprioritizedTaskIds)}`);
 }
 
+const prioritySortedParentIds = run(`
+  groupTasksByParentCase(
+    [
+      { id: "parent-1", caseNumber: "TD26-07P1" },
+      { id: "parent-2", caseNumber: "TD26-07P2" },
+      { id: "parent-3", caseNumber: "TD26-07P3" }
+    ],
+    [
+      { id: "task-1", parentCaseId: "parent-1" },
+      { id: "task-2", parentCaseId: "parent-3" },
+      { id: "task-3", parentCaseId: "parent-2" }
+    ]
+  ).map((group) => group.parentCase?.id || "unassigned")
+`);
+if (JSON.stringify(prioritySortedParentIds) !== JSON.stringify([
+  "parent-1", "parent-3", "parent-2", "unassigned"
+])) {
+  throw new Error(`Unexpected priority-based parent order: ${JSON.stringify(prioritySortedParentIds)}`);
+}
+
+const emptyParentIds = run(`
+  groupTasksByParentCase([
+    { id: "parent-1", caseNumber: "TD26-07P1" },
+    { id: "parent-2", caseNumber: "TD26-07P2" }
+  ], []).map((group) => group.parentCase?.id || "unassigned")
+`);
+if (JSON.stringify(emptyParentIds) !== JSON.stringify(["parent-2", "parent-1", "unassigned"])) {
+  throw new Error(`Unexpected empty parent fallback order: ${JSON.stringify(emptyParentIds)}`);
+}
+
 console.log("Parent-case tests: OK");
