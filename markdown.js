@@ -692,3 +692,22 @@ function enableAutoResizeTextarea(textarea) {
   resize();
   return resize;
 }
+
+function getSelectionEndWithoutTrailingSpacing(value, start, end) {
+  let trimmedEnd = end;
+  while (trimmedEnd > start && /[\t \u3000]/.test(value[trimmedEnd - 1])) {
+    trimmedEnd -= 1;
+  }
+  return trimmedEnd;
+}
+
+function trimTrailingSpacingFromSelection(textarea) {
+  const trimmedEnd = getSelectionEndWithoutTrailingSpacing(
+    textarea.value,
+    textarea.selectionStart,
+    textarea.selectionEnd
+  );
+  if (trimmedEnd !== textarea.selectionEnd) {
+    textarea.setSelectionRange(textarea.selectionStart, trimmedEnd);
+  }
+}
