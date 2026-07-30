@@ -111,13 +111,35 @@ function assignParentCaseNumbers(parentCases) {
   return parentCases;
 }
 
+function sortParentCasesByNumberDescending(parentCases) {
+  return [...parentCases].sort((a, b) =>
+    String(b.caseNumber || "").localeCompare(String(a.caseNumber || ""), "en")
+  );
+}
+
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
+  const priorityByTaskId = new Map(tasks.map((task, index) => [task.id, index]));
+  const parentGroups = sortParentCasesByNumberDescending(parentCases).map((parentCase) => ({
+    parentCase,
+    tasks: tasks.filter((task) => task.parentCaseId === parentCase.id)
+  }));
+  const highestPriorityByParentId = new Map(parentGroups.map((group) => [
+    group.parentCase.id,
+    group.tasks.reduce(
+      (best, task) => Math.min(best, priorityByTaskId.get(task.id) ?? Number.POSITIVE_INFINITY),
+      Number.POSITIVE_INFINITY
+    )
+  ]));
+  parentGroups.sort((a, b) => {
+    const priorityOrder = highestPriorityByParentId.get(a.parentCase.id)
+      - highestPriorityByParentId.get(b.parentCase.id);
+    if (priorityOrder !== 0 && !Number.isNaN(priorityOrder)) return priorityOrder;
+    return String(b.parentCase.caseNumber || "")
+      .localeCompare(String(a.parentCase.caseNumber || ""), "en");
+  });
   return [
-    ...parentCases.map((parentCase) => ({
-      parentCase,
-      tasks: tasks.filter((task) => task.parentCaseId === parentCase.id)
-    })),
+    ...parentGroups,
     {
       parentCase: null,
       tasks: tasks.filter(
@@ -125,6 +147,18 @@ function groupTasksByParentCase(parentCases, tasks) {
       )
     }
   ];
+}
+
+function moveActiveTaskToPriority(tasks, taskId, priority) {
+  const active = tasks.filter((task) => !task.completed);
+  const completed = tasks.filter((task) => task.completed);
+  const currentIndex = active.findIndex((task) => task.id === taskId);
+  if (currentIndex < 0) return [...active, ...completed];
+
+  const [task] = active.splice(currentIndex, 1);
+  const destination = Math.max(0, Math.min(active.length, Number(priority) - 1));
+  active.splice(destination, 0, task);
+  return [...active, ...completed];
 }
 
 function formatTaskForCopy(task) {
@@ -361,11 +395,11 @@ async function loadParentCases() {
   const storedParentCases = Array.isArray(result[TODO_MEMO_PARENT_CASES_STORAGE_KEY])
     ? result[TODO_MEMO_PARENT_CASES_STORAGE_KEY]
     : [];
-  const normalized = assignParentCaseNumbers(
+  const normalized = sortParentCasesByNumberDescending(assignParentCaseNumbers(
     storedParentCases
       .map(normalizeParentCase)
       .filter((parentCase) => parentCase.name)
-  );
+  ));
 
   const storedById = new Map(
     storedParentCases.map((parentCase) => [String(parentCase?.id || ""), parentCase])
@@ -383,11 +417,11 @@ async function loadParentCases() {
 }
 
 async function saveParentCases(parentCases) {
-  const normalized = assignParentCaseNumbers(
+  const normalized = sortParentCasesByNumberDescending(assignParentCaseNumbers(
     parentCases
       .map(normalizeParentCase)
       .filter((parentCase) => parentCase.name)
-  );
+  ));
   await chrome.storage.local.set({
     [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: normalized
   });
