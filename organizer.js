@@ -820,13 +820,20 @@ function fillParentCaseElement(element, task) {
   element.hidden = false;
 }
 
-function fillTaskCopy(card, task) {
+function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   card.querySelector(".card-case-number").textContent = `案件番号 ${task.caseNumber}`;
   fillParentCaseElement(card.querySelector(".card-parent-case"), task);
   card.querySelector("h3").textContent = ensureEmojiPresentation(task.title);
   const cardContent = card.querySelector(".card-content");
-  renderMarkdown(cardContent, task.content);
-  cardContent.hidden = !task.content;
+  const hasContent = Boolean(task.content.trim());
+  cardContent.classList.toggle("is-empty", showEmptyContent && !hasContent);
+  if (hasContent) {
+    renderMarkdown(cardContent, task.content);
+  } else {
+    cardContent.replaceChildren();
+    if (showEmptyContent) cardContent.textContent = "内容未記入";
+  }
+  cardContent.hidden = !hasContent && !showEmptyContent;
 
   const cardTags = card.querySelector(".card-tags");
   const selectedTags = tags.filter((tag) => task.tagIds.includes(tag.id));
@@ -1101,7 +1108,7 @@ function createActiveCard(task, index, total) {
     card.querySelector(".task-copy").prepend(currentBadge);
     card.setAttribute("aria-label", `今すること: ${task.title}`);
   }
-  fillTaskCopy(card, task);
+  fillTaskCopy(card, task, { showEmptyContent: true });
   attachMenu(card, task);
   attachDoubleClickEdit(card, task);
   attachTaskCopy(card, task);
