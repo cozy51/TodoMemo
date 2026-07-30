@@ -199,6 +199,12 @@ button {
   font-weight: 500;
 }
 
+.active-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .priority-tools {
   display: flex;
   align-items: center;
@@ -207,15 +213,29 @@ button {
 }
 
 .collapse-active-button {
-  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px 5px 6px;
   color: #52637f;
   cursor: pointer;
   border: 1px solid #c8d5e9;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, .8);
+  border-radius: 999px;
+  background: #f8faff;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.collapse-active-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform .18s ease;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .collapse-active-button:hover {
@@ -230,15 +250,19 @@ button {
 }
 
 .collapse-active-button[data-state="collapsed"] {
-  color: white;
-  border-color: #6842b8;
-  background: #6842b8;
-  box-shadow: 0 3px 10px rgba(104, 66, 184, .2);
+  color: #6842b8;
+  border-color: #cbb8e7;
+  background: #f7f2fe;
 }
 
 .collapse-active-button[data-state="collapsed"]:hover {
-  color: white;
-  background: #5935a5;
+  color: #5935a5;
+  border-color: #a98ad7;
+  background: #f1e9fc;
+}
+
+.collapse-active-button[data-state="collapsed"] .collapse-active-icon {
+  transform: rotate(180deg);
 }
 
 .active-collapsed-notice {
@@ -266,6 +290,19 @@ button {
 
 .active-collapsed-notice > span:not(.active-collapsed-action) {
   font-size: 12px;
+}
+
+.active-collapsed-notice .active-collapsed-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9dcf9;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .active-collapsed-action {

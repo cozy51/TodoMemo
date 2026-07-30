@@ -79,17 +79,24 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">優先順位</p>
-              <h2 id="activeHeading">すること <span id="activeCount" class="count"></span></h2>
+              <div class="active-heading-row">
+                <h2 id="activeHeading">すること <span id="activeCount" class="count"></span></h2>
+                <button id="toggleActiveListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="activeList">
+                  <svg class="collapse-active-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m3.5 10 4.5-4.5 4.5 4.5"/>
+                  </svg>
+                  <span class="collapse-active-label">折りたたむ</span>
+                </button>
+              </div>
             </div>
             <div class="priority-tools">
-              <button id="toggleActiveListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="activeList">一覧を折りたたむ</button>
               <button id="copyActiveTasksButton" class="bulk-copy-button" type="button">すること案件COPY</button>
               <span class="current-legend">1番目が「今すること」</span>
               <span class="reorder-hint">つかんで並び替え</span>
             </div>
           </div>
           <button id="activeCollapsedNotice" class="active-collapsed-notice" type="button" aria-controls="activeList" hidden>
-            <span aria-hidden="true">▸</span>
+            <span class="active-collapsed-icon" aria-hidden="true">⌄</span>
             <strong>すること一覧を折りたたんでいます</strong>
             <span id="activeCollapsedCount"></span>
             <span class="active-collapsed-action">クリックして表示</span>
