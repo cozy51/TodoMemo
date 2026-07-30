@@ -146,4 +146,29 @@ if (JSON.stringify(groupedCounts) !== JSON.stringify([1, 0, 2])) {
   throw new Error(`Unexpected parent grouping result: ${JSON.stringify(groupedCounts)}`);
 }
 
+const sortedParentNumbers = run(`
+  sortParentCasesByNumberDescending([
+    { caseNumber: "TD26-06PZ" },
+    { caseNumber: "TD26-07P2" },
+    { caseNumber: "TD26-07PA" },
+    { caseNumber: "TD26-07P1" }
+  ]).map((parentCase) => parentCase.caseNumber)
+`);
+const expectedParentOrder = ["TD26-07PA", "TD26-07P2", "TD26-07P1", "TD26-06PZ"];
+if (JSON.stringify(sortedParentNumbers) !== JSON.stringify(expectedParentOrder)) {
+  throw new Error(`Unexpected parent-case sort order: ${JSON.stringify(sortedParentNumbers)}`);
+}
+
+const reprioritizedTaskIds = run(`
+  moveActiveTaskToPriority([
+    { id: "task-1", completed: false },
+    { id: "task-2", completed: false },
+    { id: "task-3", completed: false },
+    { id: "done-1", completed: true }
+  ], "task-3", 1).map((task) => task.id)
+`);
+if (JSON.stringify(reprioritizedTaskIds) !== JSON.stringify(["task-3", "task-1", "task-2", "done-1"])) {
+  throw new Error(`Unexpected task priority order: ${JSON.stringify(reprioritizedTaskIds)}`);
+}
+
 console.log("Parent-case tests: OK");

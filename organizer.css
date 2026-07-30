@@ -2087,28 +2087,60 @@ button {
 .dialog-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.save-status {
+.dialog-header-actions .save-status {
+  display: inline-flex;
+  min-height: 34px;
+  padding: 7px 12px;
+  align-items: center;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
+  border: 1px solid #cbd8ef;
+  border-radius: 999px;
+  background: #f5f8ff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.save-status[data-state="saved"]::before {
-  margin-right: 4px;
+.dialog-header-actions .save-status[data-state="saved"]::before {
+  margin-right: 6px;
   color: var(--accent);
   content: "✓";
+  font-size: 14px;
+  font-weight: 900;
 }
 
-.save-status[data-state="error"] {
+.dialog-header-actions .save-status[data-state="error"] {
   color: var(--danger);
+  border-color: #e8aaa4;
+  background: #fff4f2;
 }
 
-.icon-button {
-  font-size: 25px;
-  font-weight: 300;
+.dialog-header-actions .icon-button {
+  width: 42px;
+  height: 42px;
+  color: #33425e;
+  border: 1px solid #aebbd0;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(30, 49, 82, .1);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.dialog-header-actions .icon-button:hover {
+  color: var(--accent-dark);
+  border-color: #7ea2e5;
+  background: var(--accent-soft);
+  box-shadow: 0 3px 9px rgba(47, 111, 237, .16);
+}
+
+.dialog-header-actions .icon-button:focus-visible {
+  outline: 3px solid rgba(47, 111, 237, .28);
+  outline-offset: 2px;
 }
 
 .field {
