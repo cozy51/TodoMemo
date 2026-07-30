@@ -2116,7 +2116,14 @@ button {
 }
 
 .task-detail-body {
+  max-height: calc(100vh - 40px);
   padding: 30px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.task-detail-dialog {
+  overflow: hidden;
 }
 
 .task-detail-dialog .dialog-header {
@@ -2131,9 +2138,12 @@ button {
 }
 
 .detail-task-content {
+  display: block;
+  max-height: none;
   min-height: 100px;
   margin-top: 22px;
   padding-top: 20px;
+  overflow: visible;
   border-top: 1px solid var(--line);
 }
 
