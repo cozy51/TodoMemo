@@ -15,10 +15,16 @@
             <span class="brand-mark" aria-hidden="true"></span>
             <span>TodoMemo</span>
           </div>
-          <h1>することを整理する</h1>
+          <h1>やることを整理</h1>
           <p>一番上が「今すること」です。新しいタスクは、そのすぐ下に追加されます。</p>
         </div>
         <div class="app-header-actions">
+          <button id="backupButton" class="backup-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/>
+            </svg>
+            全データをバックアップ
+          </button>
           <button id="restoreBackupButton" class="restore-backup-button" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/>
@@ -56,6 +62,7 @@
           <div class="compact-task-table-shell">
             <table class="compact-task-table">
               <colgroup>
+                <col class="compact-priority-column">
                 <col class="compact-case-column">
                 <col class="compact-title-column">
                 <col class="compact-links-column">
@@ -63,6 +70,7 @@
               </colgroup>
               <thead>
                 <tr>
+                  <th scope="col">優先順位</th>
                   <th scope="col">案件番号</th>
                   <th scope="col">タイトル</th>
                   <th scope="col">関連リンク</th>
@@ -255,6 +263,12 @@
           <small class="field-hint">登録済みの親案件から選択できます。</small>
         </label>
 
+        <label class="field">
+          <span>優先順位</span>
+          <select id="prioritySelect" name="priority"></select>
+          <small class="field-hint">未完了タスク内での表示順を変更できます。</small>
+        </label>
+
         <div class="field due-field">
           <label for="dueDateInput">期限 <em>任意</em></label>
           <div class="date-input-row">
@@ -279,8 +293,11 @@
 
         <label class="field content-field">
           <span>内容</span>
-          <textarea id="contentInput" name="content" rows="10" maxlength="5000" placeholder="Markdown記法が使えます。例：**重要**、- リスト、[リンク](https://example.com)"></textarea>
-          <small class="field-hint">Markdownに対応。Alt+クリックで編集位置を追加し、矢印キーで同時移動できます。</small>
+          <div class="content-highlight-wrap">
+            <div id="contentHighlightBackdrop" class="content-highlight-backdrop" aria-hidden="true"></div>
+            <textarea id="contentInput" name="content" rows="10" maxlength="5000" placeholder="Markdown記法が使えます。例：**重要**、- リスト、[リンク](https://example.com)"></textarea>
+          </div>
+          <small class="field-hint">Markdownに対応。文字列を選択すると、同じ文字列をハイライトします。Alt+クリックで編集位置を追加し、矢印キーで同時移動できます。</small>
         </label>
 
         <div class="dialog-actions">

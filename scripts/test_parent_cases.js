@@ -146,4 +146,59 @@ if (JSON.stringify(groupedCounts) !== JSON.stringify([1, 0, 2])) {
   throw new Error(`Unexpected parent grouping result: ${JSON.stringify(groupedCounts)}`);
 }
 
+const sortedParentNumbers = run(`
+  sortParentCasesByNumberDescending([
+    { caseNumber: "TD26-06PZ" },
+    { caseNumber: "TD26-07P2" },
+    { caseNumber: "TD26-07PA" },
+    { caseNumber: "TD26-07P1" }
+  ]).map((parentCase) => parentCase.caseNumber)
+`);
+const expectedParentOrder = ["TD26-07PA", "TD26-07P2", "TD26-07P1", "TD26-06PZ"];
+if (JSON.stringify(sortedParentNumbers) !== JSON.stringify(expectedParentOrder)) {
+  throw new Error(`Unexpected parent-case sort order: ${JSON.stringify(sortedParentNumbers)}`);
+}
+
+const reprioritizedTaskIds = run(`
+  moveActiveTaskToPriority([
+    { id: "task-1", completed: false },
+    { id: "task-2", completed: false },
+    { id: "task-3", completed: false },
+    { id: "done-1", completed: true }
+  ], "task-3", 1).map((task) => task.id)
+`);
+if (JSON.stringify(reprioritizedTaskIds) !== JSON.stringify(["task-3", "task-1", "task-2", "done-1"])) {
+  throw new Error(`Unexpected task priority order: ${JSON.stringify(reprioritizedTaskIds)}`);
+}
+
+const prioritySortedParentIds = run(`
+  groupTasksByParentCase(
+    [
+      { id: "parent-1", caseNumber: "TD26-07P1" },
+      { id: "parent-2", caseNumber: "TD26-07P2" },
+      { id: "parent-3", caseNumber: "TD26-07P3" }
+    ],
+    [
+      { id: "task-1", parentCaseId: "parent-1" },
+      { id: "task-2", parentCaseId: "parent-3" },
+      { id: "task-3", parentCaseId: "parent-2" }
+    ]
+  ).map((group) => group.parentCase?.id || "unassigned")
+`);
+if (JSON.stringify(prioritySortedParentIds) !== JSON.stringify([
+  "parent-1", "parent-3", "parent-2", "unassigned"
+])) {
+  throw new Error(`Unexpected priority-based parent order: ${JSON.stringify(prioritySortedParentIds)}`);
+}
+
+const emptyParentIds = run(`
+  groupTasksByParentCase([
+    { id: "parent-1", caseNumber: "TD26-07P1" },
+    { id: "parent-2", caseNumber: "TD26-07P2" }
+  ], []).map((group) => group.parentCase?.id || "unassigned")
+`);
+if (JSON.stringify(emptyParentIds) !== JSON.stringify(["parent-2", "parent-1", "unassigned"])) {
+  throw new Error(`Unexpected empty parent fallback order: ${JSON.stringify(emptyParentIds)}`);
+}
+
 console.log("Parent-case tests: OK");

@@ -20,7 +20,9 @@ const taskIdInput = document.querySelector("#taskId");
 const titleInput = document.querySelector("#titleInput");
 const dialogCaseNumber = document.querySelector("#dialogCaseNumber");
 const parentCaseSelect = document.querySelector("#parentCaseSelect");
+const prioritySelect = document.querySelector("#prioritySelect");
 const contentInput = document.querySelector("#contentInput");
+const contentHighlightBackdrop = document.querySelector("#contentHighlightBackdrop");
 const dueDateInput = document.querySelector("#dueDateInput");
 const clearDueDateButton = document.querySelector("#clearDueDateButton");
 const taskTagsField = document.querySelector("#taskTagsField");
@@ -51,6 +53,7 @@ const parentCaseGroupModeButton = document.querySelector("#parentCaseGroupModeBu
 const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
+const backupButton = document.querySelector("#backupButton");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
 const restoreFileInput = document.querySelector("#restoreFileInput");
 const restoreDialog = document.querySelector("#restoreDialog");
@@ -74,6 +77,37 @@ let taskAutoSavePromise = Promise.resolve();
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
+
+function renderContentSelectionHighlights() {
+  const selectedText = contentInput.value.slice(
+    contentInput.selectionStart,
+    contentInput.selectionEnd
+  );
+  contentHighlightBackdrop.replaceChildren();
+  if (!selectedText || selectedText.includes("\n")) {
+    contentHighlightBackdrop.textContent = contentInput.value;
+    return;
+  }
+
+  let start = 0;
+  let matchIndex = contentInput.value.indexOf(selectedText);
+  while (matchIndex >= 0) {
+    contentHighlightBackdrop.append(document.createTextNode(
+      contentInput.value.slice(start, matchIndex)
+    ));
+    const mark = document.createElement("mark");
+    mark.textContent = selectedText;
+    contentHighlightBackdrop.append(mark);
+    start = matchIndex + selectedText.length;
+    matchIndex = contentInput.value.indexOf(selectedText, start);
+  }
+  contentHighlightBackdrop.append(document.createTextNode(contentInput.value.slice(start)));
+}
+
+function syncContentHighlightScroll() {
+  contentHighlightBackdrop.scrollTop = contentInput.scrollTop;
+  contentHighlightBackdrop.scrollLeft = contentInput.scrollLeft;
+}
 
 function getActiveTasks() {
   return tasks.filter((task) => !task.completed);
@@ -105,6 +139,58 @@ function formatCompletedAt(value) {
     hourCycle: "h23"
   }).format(date);
   return `完了日時：${formatted}`;
+}
+
+function createBackupTimestamp(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    + `_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+async function downloadBackup() {
+  backupButton.disabled = true;
+  try {
+    const [storedTasks, storedTags, storedParentCases] = await Promise.all([
+      loadTasks(),
+      loadTags(),
+      loadParentCases()
+    ]);
+    const now = new Date();
+    const timestamp = createBackupTimestamp(now);
+    const backup = {
+      format: "TodoMemo Backup",
+      schemaVersion: 2,
+      extensionVersion: chrome.runtime.getManifest?.().version || "unknown",
+      exportedAt: now.toISOString(),
+      localTimestamp: timestamp,
+      counts: {
+        tasks: storedTasks.length,
+        active: storedTasks.filter((task) => !task.completed).length,
+        completed: storedTasks.filter((task) => task.completed).length,
+        tags: storedTags.length,
+        parentCases: storedParentCases.length
+      },
+      tasks: storedTasks,
+      tags: storedTags,
+      parentCases: storedParentCases
+    };
+    const url = URL.createObjectURL(new Blob(
+      [JSON.stringify(backup, null, 2)],
+      { type: "application/json;charset=utf-8" }
+    ));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `backup-ext_TodoMemo_${timestamp}.json`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`${storedTasks.length}件をバックアップしました`);
+  } catch (_error) {
+    showToast("バックアップを作成できませんでした", "error");
+  } finally {
+    backupButton.disabled = false;
+  }
 }
 
 function getActiveTaskAnchorId(task) {
@@ -324,18 +410,27 @@ function createCompactTaskRow(task, index) {
     navigateToTask();
   });
 
-  const caseCell = document.createElement("td");
-  caseCell.className = "compact-case-cell";
+  const priorityCell = document.createElement("td");
+  priorityCell.className = "compact-priority-cell";
   const dragHandle = document.createElement("button");
   dragHandle.className = "compact-drag-handle";
   dragHandle.type = "button";
   dragHandle.textContent = "⠿";
   dragHandle.title = "つかんで優先順位を並べ替え";
   dragHandle.setAttribute("aria-label", `${task.caseNumber}をつかんで並べ替え`);
+  const priority = document.createElement("span");
+  priority.className = "compact-task-priority";
+  priority.textContent = String(index + 1);
+  priority.title = `優先順位 ${index + 1}`;
+  priority.setAttribute("aria-label", `優先順位 ${index + 1}`);
+  priorityCell.append(dragHandle, priority);
+
+  const caseCell = document.createElement("td");
+  caseCell.className = "compact-case-cell";
   const caseNumber = document.createElement("span");
   caseNumber.className = "compact-task-case";
   caseNumber.textContent = task.caseNumber;
-  caseCell.append(dragHandle, caseNumber);
+  caseCell.append(caseNumber);
 
   let dragArmed = false;
   row.draggable = true;
@@ -423,7 +518,7 @@ function createCompactTaskRow(task, index) {
   }
   dueCell.append(due);
 
-  row.append(caseCell, titleCell, linksCell, dueCell);
+  row.append(priorityCell, caseCell, titleCell, linksCell, dueCell);
   return row;
 }
 
@@ -1231,6 +1326,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   list.className = "parent-task-group-list";
   groupedTasks.forEach((task) => {
     const item = document.createElement("li");
+    item.className = "parent-task-group-list-item";
     const link = document.createElement("a");
     link.className = "parent-task-item";
     link.href = getTaskAnchorHref(task);
@@ -1250,8 +1346,28 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     title.className = "parent-task-item-title";
     title.textContent = ensureEmojiPresentation(task.title);
 
-    link.append(priority, caseNumber, title);
-    item.append(link);
+    const due = document.createElement("time");
+    due.className = "parent-task-item-due";
+    if (task.dueDate) {
+      due.dateTime = task.dueDate;
+      due.dataset.state = getDueState(task.dueDate);
+      due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+      due.title = `期限 ${due.textContent}`;
+    } else {
+      due.hidden = true;
+    }
+
+    link.append(priority, caseNumber, title, due);
+
+    const editButton = document.createElement("button");
+    editButton.className = "parent-task-item-edit";
+    editButton.type = "button";
+    editButton.textContent = "編集";
+    editButton.title = `${task.caseNumber} ${task.title}を編集`;
+    editButton.setAttribute("aria-label", `${task.caseNumber} ${task.title}を編集`);
+    editButton.addEventListener("click", () => openTaskDialog(task));
+
+    item.append(link, editButton);
     list.append(item);
   });
   group.append(list);
@@ -1385,7 +1501,7 @@ function renderParentCaseOptions(selectedId = "") {
   emptyOption.textContent = "親案件なし";
   parentCaseSelect.replaceChildren(
     emptyOption,
-    ...parentCases.map((parentCase) => {
+    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
       const option = document.createElement("option");
       option.value = parentCase.id;
       option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
@@ -1395,6 +1511,22 @@ function renderParentCaseOptions(selectedId = "") {
   parentCaseSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
     ? selectedId
     : "";
+}
+
+function renderPriorityOptions(task = null) {
+  const active = getActiveTasks();
+  const currentIndex = task ? active.findIndex((item) => item.id === task.id) : -1;
+  const optionCount = active.length + (currentIndex < 0 ? 1 : 0);
+  prioritySelect.replaceChildren(
+    ...Array.from({ length: optionCount }, (_, index) => {
+      const option = document.createElement("option");
+      option.value = String(index + 1);
+      option.textContent = `${index + 1}番`;
+      return option;
+    })
+  );
+  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : Math.min(2, optionCount));
+  prioritySelect.disabled = Boolean(task?.completed);
 }
 
 function openTaskDialog(task = null, initialParentCaseId = "") {
@@ -1412,6 +1544,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     contentInput.value = task.content;
     dueDateInput.value = task.dueDate;
     renderParentCaseOptions(task.parentCaseId);
+    renderPriorityOptions(task);
     renderTaskTagOptions(task.tagIds);
     renderLinkInputs(task.links);
     taskAutoSaveStatus.textContent = "保存済み";
@@ -1424,6 +1557,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     dialogCaseNumber.hidden = false;
     taskIdInput.value = "";
     renderParentCaseOptions(initialParentCaseId);
+    renderPriorityOptions();
     renderTaskTagOptions();
     renderLinkInputs();
     taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
@@ -1432,6 +1566,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     cancelButton.textContent = "閉じる";
   }
 
+  renderContentSelectionHighlights();
   updateDueDateClearButton();
   setLinkMessage("URLまたはメールアドレスを登録できます。");
   taskDialog.showModal();
@@ -1505,6 +1640,9 @@ async function persistEditedTask() {
     dialogCaseNumber.textContent = `案件番号 ${task.caseNumber}`;
   }
   collectTaskFormValues(task);
+  if (!task.completed) {
+    tasks = moveActiveTaskToPriority(tasks, task.id, prioritySelect.value);
+  }
   const snapshot = tasks.map((item) => ({
     ...item,
     tagIds: [...item.tagIds],
@@ -1676,6 +1814,7 @@ tagForm.addEventListener("submit", addTag);
 parentCaseForm.addEventListener("submit", addParentCase);
 parentCaseManageModeButton.addEventListener("click", () => setParentCaseViewMode("manage"));
 parentCaseGroupModeButton.addEventListener("click", showParentCaseGroups);
+backupButton.addEventListener("click", downloadBackup);
 restoreBackupButton.addEventListener("click", () => restoreFileInput.click());
 restoreFileInput.addEventListener("change", handleRestoreFile);
 document.querySelector("#closeRestoreDialogButton").addEventListener("click", closeRestoreDialog);
@@ -1697,10 +1836,18 @@ titleInput.addEventListener("input", () => {
   scheduleTaskAutoSave();
 });
 
-contentInput.addEventListener("input", scheduleTaskAutoSave);
+contentInput.addEventListener("input", () => {
+  renderContentSelectionHighlights();
+  scheduleTaskAutoSave();
+});
+contentInput.addEventListener("select", renderContentSelectionHighlights);
+contentInput.addEventListener("keyup", renderContentSelectionHighlights);
+contentInput.addEventListener("pointerup", renderContentSelectionHighlights);
+contentInput.addEventListener("scroll", syncContentHighlightScroll);
 dueDateInput.addEventListener("input", scheduleTaskAutoSave);
 taskTagOptions.addEventListener("change", scheduleTaskAutoSave);
 parentCaseSelect.addEventListener("change", scheduleTaskAutoSave);
+prioritySelect.addEventListener("change", scheduleTaskAutoSave);
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;

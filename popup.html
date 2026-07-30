@@ -98,8 +98,11 @@
           </div>
           <label class="field content-field">
             <span>内容</span>
-            <textarea id="editContentInput" rows="8" maxlength="5000" placeholder="Markdown記法が使えます"></textarea>
-            <small class="field-hint">Alt+クリックで編集位置を追加。矢印キーで全カーソルを同時移動できます。</small>
+            <div class="content-highlight-wrap">
+              <div id="editContentHighlightBackdrop" class="content-highlight-backdrop" aria-hidden="true"></div>
+              <textarea id="editContentInput" rows="8" maxlength="5000" placeholder="Markdown記法が使えます"></textarea>
+            </div>
+            <small class="field-hint">文字列を選択すると、同じ文字列をハイライトします。Alt+クリックで編集位置を追加し、矢印キーで全カーソルを同時移動できます。</small>
           </label>
         </form>
       </section>
