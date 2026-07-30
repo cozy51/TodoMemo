@@ -1280,9 +1280,10 @@ function setActiveListCollapsed(collapsed) {
   activeCollapsedCount.textContent = `${activeTaskCount}件`;
   toggleActiveListButton.disabled = activeTaskCount === 0;
   toggleActiveListButton.dataset.state = activeListCollapsed ? "collapsed" : "expanded";
-  toggleActiveListButton.textContent = activeListCollapsed
-    ? "一覧を表示"
-    : "一覧を折りたたむ";
+  const toggleLabel = activeListCollapsed ? "表示する" : "折りたたむ";
+  toggleActiveListButton.querySelector(".collapse-active-label").textContent = toggleLabel;
+  toggleActiveListButton.setAttribute("aria-label", `すること一覧を${toggleLabel}`);
+  toggleActiveListButton.title = `すること一覧を${toggleLabel}`;
   toggleActiveListButton.setAttribute("aria-expanded", String(!activeListCollapsed));
 }
 
