@@ -22,6 +22,7 @@ const dialogCaseNumber = document.querySelector("#dialogCaseNumber");
 const parentCaseSelect = document.querySelector("#parentCaseSelect");
 const prioritySelect = document.querySelector("#prioritySelect");
 const contentInput = document.querySelector("#contentInput");
+const contentHighlightBackdrop = document.querySelector("#contentHighlightBackdrop");
 const dueDateInput = document.querySelector("#dueDateInput");
 const clearDueDateButton = document.querySelector("#clearDueDateButton");
 const taskTagsField = document.querySelector("#taskTagsField");
@@ -76,6 +77,37 @@ let taskAutoSavePromise = Promise.resolve();
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
+
+function renderContentSelectionHighlights() {
+  const selectedText = contentInput.value.slice(
+    contentInput.selectionStart,
+    contentInput.selectionEnd
+  );
+  contentHighlightBackdrop.replaceChildren();
+  if (!selectedText || selectedText.includes("\n")) {
+    contentHighlightBackdrop.textContent = contentInput.value;
+    return;
+  }
+
+  let start = 0;
+  let matchIndex = contentInput.value.indexOf(selectedText);
+  while (matchIndex >= 0) {
+    contentHighlightBackdrop.append(document.createTextNode(
+      contentInput.value.slice(start, matchIndex)
+    ));
+    const mark = document.createElement("mark");
+    mark.textContent = selectedText;
+    contentHighlightBackdrop.append(mark);
+    start = matchIndex + selectedText.length;
+    matchIndex = contentInput.value.indexOf(selectedText, start);
+  }
+  contentHighlightBackdrop.append(document.createTextNode(contentInput.value.slice(start)));
+}
+
+function syncContentHighlightScroll() {
+  contentHighlightBackdrop.scrollTop = contentInput.scrollTop;
+  contentHighlightBackdrop.scrollLeft = contentInput.scrollLeft;
+}
 
 function getActiveTasks() {
   return tasks.filter((task) => !task.completed);
@@ -1534,6 +1566,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     cancelButton.textContent = "閉じる";
   }
 
+  renderContentSelectionHighlights();
   updateDueDateClearButton();
   setLinkMessage("URLまたはメールアドレスを登録できます。");
   taskDialog.showModal();
@@ -1803,7 +1836,14 @@ titleInput.addEventListener("input", () => {
   scheduleTaskAutoSave();
 });
 
-contentInput.addEventListener("input", scheduleTaskAutoSave);
+contentInput.addEventListener("input", () => {
+  renderContentSelectionHighlights();
+  scheduleTaskAutoSave();
+});
+contentInput.addEventListener("select", renderContentSelectionHighlights);
+contentInput.addEventListener("keyup", renderContentSelectionHighlights);
+contentInput.addEventListener("pointerup", renderContentSelectionHighlights);
+contentInput.addEventListener("scroll", syncContentHighlightScroll);
 dueDateInput.addEventListener("input", scheduleTaskAutoSave);
 taskTagOptions.addEventListener("change", scheduleTaskAutoSave);
 parentCaseSelect.addEventListener("change", scheduleTaskAutoSave);

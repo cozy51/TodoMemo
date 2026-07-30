@@ -2267,6 +2267,44 @@ button {
   line-height: 1.55;
 }
 
+.content-highlight-wrap {
+  position: relative;
+}
+
+.content-highlight-wrap textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+  background: transparent;
+}
+
+.content-highlight-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  padding: 12px 13px;
+  overflow: hidden;
+  color: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: white;
+  font-family: "Segoe UI Emoji", "Segoe UI", "Yu Gothic UI", sans-serif;
+  font-size: 14px;
+  font-variant-emoji: emoji;
+  font-weight: 400;
+  line-height: 1.55;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.content-highlight-backdrop mark {
+  color: transparent;
+  border-radius: 2px;
+  background: #a9f5b3;
+  box-shadow: 0 0 0 1px rgba(29, 157, 61, .15);
+}
+
 .content-field {
   margin-top: 24px;
 }

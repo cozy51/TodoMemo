@@ -293,8 +293,11 @@
 
         <label class="field content-field">
           <span>内容</span>
-          <textarea id="contentInput" name="content" rows="10" maxlength="5000" placeholder="Markdown記法が使えます。例：**重要**、- リスト、[リンク](https://example.com)"></textarea>
-          <small class="field-hint">Markdownに対応。Alt+クリックで編集位置を追加し、矢印キーで同時移動できます。</small>
+          <div class="content-highlight-wrap">
+            <div id="contentHighlightBackdrop" class="content-highlight-backdrop" aria-hidden="true"></div>
+            <textarea id="contentInput" name="content" rows="10" maxlength="5000" placeholder="Markdown記法が使えます。例：**重要**、- リスト、[リンク](https://example.com)"></textarea>
+          </div>
+          <small class="field-hint">Markdownに対応。文字列を選択すると、同じ文字列をハイライトします。Alt+クリックで編集位置を追加し、矢印キーで同時移動できます。</small>
         </label>
 
         <div class="dialog-actions">
