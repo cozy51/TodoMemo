@@ -378,18 +378,27 @@ function createCompactTaskRow(task, index) {
     navigateToTask();
   });
 
-  const caseCell = document.createElement("td");
-  caseCell.className = "compact-case-cell";
+  const priorityCell = document.createElement("td");
+  priorityCell.className = "compact-priority-cell";
   const dragHandle = document.createElement("button");
   dragHandle.className = "compact-drag-handle";
   dragHandle.type = "button";
   dragHandle.textContent = "⠿";
   dragHandle.title = "つかんで優先順位を並べ替え";
   dragHandle.setAttribute("aria-label", `${task.caseNumber}をつかんで並べ替え`);
+  const priority = document.createElement("span");
+  priority.className = "compact-task-priority";
+  priority.textContent = String(index + 1);
+  priority.title = `優先順位 ${index + 1}`;
+  priority.setAttribute("aria-label", `優先順位 ${index + 1}`);
+  priorityCell.append(dragHandle, priority);
+
+  const caseCell = document.createElement("td");
+  caseCell.className = "compact-case-cell";
   const caseNumber = document.createElement("span");
   caseNumber.className = "compact-task-case";
   caseNumber.textContent = task.caseNumber;
-  caseCell.append(dragHandle, caseNumber);
+  caseCell.append(caseNumber);
 
   let dragArmed = false;
   row.draggable = true;
@@ -477,7 +486,7 @@ function createCompactTaskRow(task, index) {
   }
   dueCell.append(due);
 
-  row.append(caseCell, titleCell, linksCell, dueCell);
+  row.append(priorityCell, caseCell, titleCell, linksCell, dueCell);
   return row;
 }
 

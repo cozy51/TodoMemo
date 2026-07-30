@@ -690,12 +690,16 @@ button {
 
 .compact-task-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 840px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
   color: #3f4d64;
   font-size: 13px;
+}
+
+.compact-priority-column {
+  width: 92px;
 }
 
 .compact-case-column {
@@ -812,7 +816,26 @@ button {
 
 .compact-case-cell .compact-task-case {
   display: inline-block;
-  max-width: calc(100% - 27px);
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.compact-priority-cell {
+  white-space: nowrap;
+}
+
+.compact-task-priority {
+  display: inline-grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  color: #98520b;
+  border: 1px solid #efc38e;
+  border-radius: 50%;
+  background: #fff4e5;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
   vertical-align: middle;
 }
 
@@ -820,7 +843,7 @@ button {
   display: inline-grid;
   width: 21px;
   height: 27px;
-  margin: 0 6px 0 -5px;
+  margin: 0 5px 0 -5px;
   padding: 0;
   place-items: center;
   color: #9aa7bc;
