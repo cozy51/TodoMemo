@@ -2115,6 +2115,32 @@ button {
   padding: 30px;
 }
 
+.task-detail-body {
+  padding: 30px;
+}
+
+.task-detail-dialog .dialog-header {
+  margin-bottom: 18px;
+}
+
+.detail-task-title {
+  margin: 10px 0 18px;
+  font-size: 27px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.detail-task-content {
+  min-height: 100px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.task-card:not(.is-dragging) {
+  cursor: pointer;
+}
+
 .restore-dialog-body {
   padding: 30px;
 }
