@@ -1314,7 +1314,18 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     title.className = "parent-task-item-title";
     title.textContent = ensureEmojiPresentation(task.title);
 
-    link.append(priority, caseNumber, title);
+    const due = document.createElement("time");
+    due.className = "parent-task-item-due";
+    if (task.dueDate) {
+      due.dateTime = task.dueDate;
+      due.dataset.state = getDueState(task.dueDate);
+      due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+      due.title = `期限 ${due.textContent}`;
+    } else {
+      due.hidden = true;
+    }
+
+    link.append(priority, caseNumber, title, due);
 
     const editButton = document.createElement("button");
     editButton.className = "parent-task-item-edit";
