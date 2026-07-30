@@ -1174,8 +1174,18 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const header = document.createElement("div");
   header.className = "parent-task-group-header";
 
-  const identity = document.createElement("div");
+  const identity = document.createElement(parentCase ? "button" : "div");
   identity.className = "parent-task-group-identity";
+  if (parentCase) {
+    identity.type = "button";
+    identity.classList.add("parent-task-group-add-button");
+    identity.title = `${parentCase.caseNumber}を親案件にして新しいタスクを追加`;
+    identity.setAttribute(
+      "aria-label",
+      `${parentCase.caseNumber} ${parentCase.name}を親案件にして新しいタスクを追加`
+    );
+    identity.addEventListener("click", () => openTaskDialog(null, parentCase.id));
+  }
 
   const number = document.createElement("span");
   number.className = "parent-task-group-number";
@@ -1184,6 +1194,13 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const name = document.createElement("h3");
   name.textContent = ensureEmojiPresentation(parentCase?.name || "親案件なし");
   identity.append(number, name);
+  if (parentCase) {
+    const addLabel = document.createElement("span");
+    addLabel.className = "parent-task-group-add-label";
+    addLabel.setAttribute("aria-hidden", "true");
+    addLabel.textContent = "＋ タスク追加";
+    identity.append(addLabel);
+  }
 
   const summary = document.createElement("span");
   summary.className = "parent-task-group-summary";
@@ -1380,7 +1397,7 @@ function renderParentCaseOptions(selectedId = "") {
     : "";
 }
 
-function openTaskDialog(task = null) {
+function openTaskDialog(task = null, initialParentCaseId = "") {
   closeAllMenus();
   taskForm.reset();
   titleError.textContent = "";
@@ -1406,7 +1423,7 @@ function openTaskDialog(task = null) {
     dialogCaseNumber.textContent = "案件番号は保存時に自動採番します";
     dialogCaseNumber.hidden = false;
     taskIdInput.value = "";
-    renderParentCaseOptions();
+    renderParentCaseOptions(initialParentCaseId);
     renderTaskTagOptions();
     renderLinkInputs();
     taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
