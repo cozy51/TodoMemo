@@ -85,13 +85,15 @@ button {
 }
 
 .page-jump-count {
-  min-width: 30px;
-  padding: 2px 5px;
-  color: var(--accent);
+  min-width: 38px;
+  padding: 4px 7px;
+  color: #174ea6;
+  border: 1px solid #c7d9fb;
   border-radius: 999px;
-  background: var(--accent-soft);
-  font-size: 9px;
-  font-weight: 800;
+  background: #f1f6ff;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
   letter-spacing: 0;
   text-align: center;
   white-space: nowrap;
@@ -112,7 +114,7 @@ button {
 @media (max-width: 1250px) {
   .page-jump-nav {
     left: 10px;
-    width: 112px;
+    width: 132px;
   }
 
   .page-jump-nav p {
@@ -121,18 +123,18 @@ button {
 
   .page-jump-nav a {
     padding: 7px 6px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .page-jump-count {
-    min-width: 25px;
-    padding-right: 3px;
-    padding-left: 3px;
-    font-size: 8px;
+    min-width: 36px;
+    padding-right: 5px;
+    padding-left: 5px;
+    font-size: 12px;
   }
 
   .app-shell {
-    width: min(960px, calc(100% - 150px));
+    width: min(960px, calc(100% - 170px));
     margin-right: 24px;
   }
 }
