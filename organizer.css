@@ -575,8 +575,14 @@ button {
   align-items: flex-start;
   justify-content: flex-start;
   padding: 4px;
-  border-color: #b7cdf2;
-  background: #edf4ff;
+  border-color: #9d86d8;
+  background: #f0ebff;
+  box-shadow: inset 0 0 0 1px rgba(105, 73, 177, .08);
+}
+
+.calendar-day.has-deadline:not(.is-overdue):not(.is-today) .calendar-day-number {
+  color: #513690;
+  background: #e3d9ff;
 }
 
 .calendar-day.has-deadline.is-overdue {
@@ -622,9 +628,9 @@ button {
   right: 3px;
   bottom: 3px;
   padding: 2px 3px;
-  color: #24569a;
+  color: #513690;
   border-radius: 4px;
-  background: white;
+  background: #fff;
   font-size: 9px;
   font-weight: 800;
   line-height: 1;

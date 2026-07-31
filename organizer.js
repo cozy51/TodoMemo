@@ -263,8 +263,9 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
   const days = document.createElement("div");
   days.className = "calendar-days";
   const leadingDays = new Date(year, month, 1).getDay();
+  const calendarCellCount = Math.ceil((leadingDays + daysInMonth) / 7) * 7;
 
-  for (let cellIndex = 0; cellIndex < 42; cellIndex += 1) {
+  for (let cellIndex = 0; cellIndex < calendarCellCount; cellIndex += 1) {
     const dayNumber = cellIndex - leadingDays + 1;
     const day = document.createElement("div");
     day.className = "calendar-day";
