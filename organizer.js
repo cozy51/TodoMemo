@@ -13,8 +13,15 @@ const deadlineCalendar = document.querySelector("#deadlineCalendar");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
+const navCompactTaskCount = document.querySelector("#navCompactTaskCount");
+const navActiveCount = document.querySelector("#navActiveCount");
+const navParentCaseCount = document.querySelector("#navParentCaseCount");
+const navTagCount = document.querySelector("#navTagCount");
+const navCompletedCount = document.querySelector("#navCompletedCount");
 const clearCompletedButton = document.querySelector("#clearCompletedButton");
 const taskDialog = document.querySelector("#taskDialog");
+const taskDetailDialog = document.querySelector("#taskDetailDialog");
+const detailEditButton = document.querySelector("#detailEditButton");
 const taskForm = document.querySelector("#taskForm");
 const taskIdInput = document.querySelector("#taskId");
 const titleInput = document.querySelector("#titleInput");
@@ -74,6 +81,7 @@ let toastTimer = null;
 let pendingRestore = null;
 let taskAutoSaveTimer = null;
 let taskAutoSavePromise = Promise.resolve();
+let detailTaskId = null;
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
@@ -823,7 +831,7 @@ function fillParentCaseElement(element, task) {
 function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   card.querySelector(".card-case-number").textContent = `案件番号 ${task.caseNumber}`;
   fillParentCaseElement(card.querySelector(".card-parent-case"), task);
-  card.querySelector("h3").textContent = ensureEmojiPresentation(task.title);
+  card.querySelector(".task-title-text, h3").textContent = ensureEmojiPresentation(task.title);
   const cardContent = card.querySelector(".card-content");
   const hasContent = Boolean(task.content.trim());
   cardContent.classList.toggle("is-empty", showEmptyContent && !hasContent);
@@ -1072,13 +1080,23 @@ function attachMenu(card, task) {
   });
 }
 
-function attachDoubleClickEdit(card, task) {
-  card.addEventListener("dblclick", (event) => {
-    if (event.target.closest("a, button, input, textarea, select, label, [contenteditable]")) {
-      return;
-    }
-    openTaskDialog(task);
+function attachCardOpenActions(card, task) {
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("a, button, input, textarea, select, label, [contenteditable]")) return;
+    openTaskDetail(task);
   });
+}
+
+function openTaskDetail(task) {
+  detailTaskId = task.id;
+  const detailCopy = taskDetailDialog.querySelector(".task-detail-body");
+  fillTaskCopy(detailCopy, task, { showEmptyContent: true });
+  taskDetailDialog.showModal();
+}
+
+function closeTaskDetail() {
+  detailTaskId = null;
+  taskDetailDialog.close();
 }
 
 function attachTaskCopy(card, task) {
@@ -1110,7 +1128,7 @@ function createActiveCard(task, index, total) {
   }
   fillTaskCopy(card, task, { showEmptyContent: true });
   attachMenu(card, task);
-  attachDoubleClickEdit(card, task);
+  attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
 
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, true));
@@ -1439,6 +1457,11 @@ function render() {
 
   activeCount.textContent = `${active.length}件`;
   completedCount.textContent = `${completed.length}件`;
+  navCompactTaskCount.textContent = `${active.length}件`;
+  navActiveCount.textContent = `${active.length}件`;
+  navParentCaseCount.textContent = `${parentCases.length}件`;
+  navTagCount.textContent = `${tags.length}件`;
+  navCompletedCount.textContent = `${completed.length}件`;
   copyActiveTasksButton.disabled = active.length === 0;
   activeEmpty.hidden = active.length > 0;
   completedEmpty.hidden = completed.length > 0;
@@ -1805,6 +1828,15 @@ async function clearCompleted() {
 }
 
 document.querySelector("#addTaskButton").addEventListener("click", () => openTaskDialog());
+document.querySelector("#closeDetailButton").addEventListener("click", closeTaskDetail);
+detailEditButton.addEventListener("click", () => {
+  const task = tasks.find((item) => item.id === detailTaskId);
+  closeTaskDetail();
+  if (task) openTaskDialog(task);
+});
+taskDetailDialog.addEventListener("click", (event) => {
+  if (event.target === taskDetailDialog) closeTaskDetail();
+});
 document.querySelector("#addFirstTaskButton").addEventListener("click", () => openTaskDialog());
 document.querySelector("#closeDialogButton").addEventListener("click", closeTaskDialog);
 cancelButton.addEventListener("click", closeTaskDialog);
