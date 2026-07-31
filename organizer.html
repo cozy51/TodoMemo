@@ -8,7 +8,18 @@
     <link rel="stylesheet" href="markdown.css">
   </head>
   <body>
-    <div class="app-shell">
+    <nav class="page-jump-nav" aria-label="ページ内ジャンプ">
+      <p>ページ内ジャンプ</p>
+      <a href="#pageTop">トップ</a>
+      <a href="#deadlineCalendarSection">期限カレンダー</a>
+      <a href="#compactTaskSection"><span>案件一覧</span><span id="navCompactTaskCount" class="page-jump-count">0件</span></a>
+      <a href="#activeTaskSection"><span>すること</span><span id="navActiveCount" class="page-jump-count">0件</span></a>
+      <a href="#parentCaseSection"><span>親案件</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
+      <a href="#tagSettingsSection"><span>分類タグ</span><span id="navTagCount" class="page-jump-count">0件</span></a>
+      <a href="#completedSection"><span>完了</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
+    </nav>
+
+    <div id="pageTop" class="app-shell">
       <header class="app-header">
         <div>
           <div class="brand">
@@ -40,7 +51,7 @@
       </header>
 
       <main>
-        <section class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
+        <section id="deadlineCalendarSection" class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
           <div class="section-heading calendar-section-heading">
             <div>
               <p class="section-kicker">今月から3ヶ月</p>
@@ -51,7 +62,7 @@
           <div id="deadlineCalendar" class="calendar-months" aria-live="polite"></div>
         </section>
 
-        <section class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
+        <section id="compactTaskSection" class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
           <div class="section-heading compact-task-heading">
             <div>
               <p class="section-kicker">コンパクト表示</p>
@@ -116,7 +127,7 @@
           </div>
         </section>
 
-        <section class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
+        <section id="parentCaseSection" class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">案件をまとめる</p>
@@ -152,7 +163,7 @@
           </div>
         </section>
 
-        <section class="task-section tag-settings-section" aria-labelledby="tagHeading">
+        <section id="tagSettingsSection" class="task-section tag-settings-section" aria-labelledby="tagHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">分類</p>
@@ -175,7 +186,7 @@
           </div>
         </section>
 
-        <section class="task-section completed-section" aria-labelledby="completedHeading">
+        <section id="completedSection" class="task-section completed-section" aria-labelledby="completedHeading">
           <div class="section-heading">
             <div>
               <p class="section-kicker">アーカイブ</p>
@@ -304,6 +315,28 @@
           <button id="cancelButton" class="secondary-button" type="button">閉じる</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="taskDetailDialog" class="task-dialog task-detail-dialog" aria-labelledby="detailTaskTitle">
+      <div class="task-detail-body">
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">タスク詳細</p>
+            <p id="detailCaseNumber" class="card-case-number case-number"></p>
+          </div>
+          <div class="dialog-header-actions">
+            <button id="detailEditButton" class="secondary-button" type="button">編集</button>
+            <button id="closeDetailButton" class="icon-button" type="button" aria-label="詳細を閉じる">×</button>
+          </div>
+        </div>
+        <p id="detailParentCase" class="card-parent-case" hidden></p>
+        <h2 id="detailTaskTitle" class="task-title-text detail-task-title"></h2>
+        <div id="detailTags" class="card-tags" hidden></div>
+        <p id="detailDue" class="card-due" hidden></p>
+        <div id="detailLinks" class="card-links" aria-label="関連リンク" hidden></div>
+        <div id="detailContent" class="card-content detail-task-content markdown-body"></div>
+        <p class="view-end-marker" aria-label="内容はここまでです"><span>END</span></p>
+      </div>
     </dialog>
 
     <template id="activeTaskTemplate">
