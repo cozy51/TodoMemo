@@ -537,11 +537,38 @@ button {
   border: 1px solid transparent;
   border-radius: 7px;
   color: #59667d;
-  font-size: 12px;
+  font-size: 14px;
+}
+
+.calendar-day-number {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.calendar-day.is-sunday:not(.is-outside) .calendar-day-number {
+  color: #a93636;
+  background: #fdeaea;
+}
+
+.calendar-day.is-saturday:not(.is-outside) .calendar-day-number {
+  color: #245ca8;
+  background: #e8f1ff;
 }
 
 .calendar-day.is-outside {
-  visibility: hidden;
+  color: #919bae;
+  border-color: #edf0f5;
+  background: #f3f5f8;
+}
+
+.calendar-day.is-outside .calendar-day-number {
+  color: #919bae;
+  background: transparent;
+  font-size: 12px;
 }
 
 .calendar-day.has-deadline {
@@ -570,6 +597,7 @@ button {
 
 .calendar-day.is-today .calendar-day-number {
   color: #543000;
+  background: transparent;
 }
 
 .calendar-day.is-today::after {

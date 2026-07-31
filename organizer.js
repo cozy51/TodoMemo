@@ -273,7 +273,16 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
 
     if (dayNumber < 1 || dayNumber > daysInMonth) {
       day.classList.add("is-outside");
-      day.setAttribute("aria-hidden", "true");
+      const outsideDate = new Date(year, month, dayNumber);
+      const outsideDayNumber = document.createElement("span");
+      outsideDayNumber.className = "calendar-day-number";
+      outsideDayNumber.textContent = outsideDate.getDate();
+      day.title = `${outsideDate.getMonth() + 1}月${outsideDate.getDate()}日`;
+      day.setAttribute(
+        "aria-label",
+        `${outsideDate.getFullYear()}年${outsideDate.getMonth() + 1}月${outsideDate.getDate()}日（隣の月）`
+      );
+      day.append(outsideDayNumber);
       days.append(day);
       continue;
     }
