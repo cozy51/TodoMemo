@@ -5,6 +5,7 @@ const taskTitle = document.querySelector("#taskTitle");
 const taskCaseNumber = document.querySelector("#taskCaseNumber");
 const taskParentCase = document.querySelector("#taskParentCase");
 const editCaseNumber = document.querySelector("#editCaseNumber");
+const editEyebrow = document.querySelector("#editEyebrow");
 const copyTaskButton = document.querySelector("#copyTaskButton");
 const taskContent = document.querySelector("#taskContent");
 const taskDue = document.querySelector("#taskDue");
@@ -38,6 +39,7 @@ let saveRevision = 0;
 let saveRetryTimer = null;
 let latestSavePromise = Promise.resolve();
 let popupToastTimer = null;
+let isCreatingTask = false;
 
 enableMarkdownTabInput(editContentInput);
 const resizeEditContent = enableAutoResizeTextarea(editContentInput);
@@ -416,7 +418,10 @@ async function render() {
   tags = storedTags;
   parentCases = storedParentCases;
   const activeTasks = tasks.filter((task) => !task.completed);
-  currentTask = activeTasks[0] || null;
+  const editingTask = !editView.hidden
+    ? activeTasks.find((task) => task.id === currentTaskId)
+    : null;
+  currentTask = editingTask || activeTasks[0] || null;
 
   if (!currentTask) {
     currentTaskId = null;
@@ -489,6 +494,8 @@ async function copyCurrentTask() {
 function openEditor() {
   if (!currentTask) return;
 
+  isCreatingTask = false;
+  editEyebrow.textContent = "今することを編集";
   editCaseNumber.textContent = `案件番号 ${currentTask.caseNumber}`;
   editTitleInput.value = currentTask.title;
   renderParentCaseOptions(currentTask.parentCaseId);
@@ -512,6 +519,30 @@ function openEditor() {
   });
 }
 
+function openNewTaskEditor() {
+  isCreatingTask = true;
+  currentTaskId = null;
+  editEyebrow.textContent = "新しいタスク";
+  editCaseNumber.textContent = "案件番号は保存時に自動採番します";
+  editTitleInput.value = "";
+  renderParentCaseOptions();
+  editContentInput.value = "";
+  renderEditContentSelectionHighlights();
+  editDueDateInput.value = "";
+  updateDueDateClearButton();
+  editTitleError.textContent = "";
+  autoSaveStatus.textContent = "タイトル入力後に自動保存します";
+  autoSaveStatus.dataset.state = "saved";
+  renderTagOptions([]);
+  renderLinkInputs([]);
+  setLinkMessage("URLまたはメールアドレスを登録できます。");
+  taskView.hidden = true;
+  emptyView.hidden = true;
+  editView.hidden = false;
+  editTaskButton.hidden = true;
+  requestAnimationFrame(() => editTitleInput.focus());
+}
+
 function handleTaskViewDoubleClick(event) {
   if (event.target.closest("a, button, input, textarea, select, label, [contenteditable]")) {
     return;
@@ -520,7 +551,17 @@ function handleTaskViewDoubleClick(event) {
 }
 
 function closeEditor() {
+  if (isCreatingTask && !editTitleInput.value.trim()) {
+    isCreatingTask = false;
+    editView.hidden = true;
+    taskView.hidden = !currentTask;
+    emptyView.hidden = Boolean(currentTask);
+    editTaskButton.hidden = !currentTask;
+    return;
+  }
   if (!persistEditorChanges({ quiet: true })) return;
+  currentTask = allTasks.find((task) => !task.completed) || currentTask;
+  currentTaskId = currentTask?.id || null;
   renderCurrentTaskDetails();
   editView.hidden = true;
   taskView.hidden = false;
@@ -539,7 +580,31 @@ function persistEditorChanges({ quiet = false } = {}) {
   }
 
   editTitleError.textContent = "";
-  const target = allTasks.find((task) => task.id === currentTaskId);
+  let target = allTasks.find((task) => task.id === currentTaskId);
+  if (!target && isCreatingTask) {
+    let caseNumber;
+    try {
+      caseNumber = generateCaseNumber(allTasks);
+    } catch (_error) {
+      autoSaveStatus.textContent = "今月の案件番号はすべて使用されています";
+      autoSaveStatus.dataset.state = "error";
+      return false;
+    }
+    target = {
+      id: crypto.randomUUID(), caseNumber, title: "", content: "", dueDate: "",
+      parentCaseId: "", tagIds: [], links: [], completed: false,
+      order: 1, createdAt: new Date().toISOString(), completedAt: null
+    };
+    const active = allTasks.filter((task) => !task.completed);
+    const completed = allTasks.filter((task) => task.completed);
+    active.splice(Math.min(1, active.length), 0, target);
+    allTasks = [...active, ...completed];
+    currentTaskId = target.id;
+    currentTask = target;
+    isCreatingTask = false;
+    editEyebrow.textContent = "タスクを編集";
+    editCaseNumber.textContent = `案件番号 ${caseNumber}`;
+  }
   if (!target) return false;
 
   target.title = title;
@@ -584,6 +649,7 @@ function persistEditorChanges({ quiet = false } = {}) {
 }
 
 document.querySelector("#openOrganizer").addEventListener("click", openOrganizer);
+document.querySelector("#newTaskButton").addEventListener("click", openNewTaskEditor);
 document.querySelector("#openOrganizerEmpty").addEventListener("click", openOrganizer);
 backupButton.addEventListener("click", downloadBackup);
 document.querySelector("#cancelEditTop").addEventListener("click", closeEditor);
