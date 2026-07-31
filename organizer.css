@@ -72,12 +72,29 @@ button {
 }
 
 .page-jump-nav a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
   padding: 8px;
   color: #46546d;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.page-jump-count {
+  min-width: 30px;
+  padding: 2px 5px;
+  color: var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .page-jump-nav a:hover,
@@ -105,6 +122,13 @@ button {
   .page-jump-nav a {
     padding: 7px 6px;
     font-size: 11px;
+  }
+
+  .page-jump-count {
+    min-width: 25px;
+    padding-right: 3px;
+    padding-left: 3px;
+    font-size: 8px;
   }
 
   .app-shell {

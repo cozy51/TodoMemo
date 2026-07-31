@@ -13,6 +13,11 @@ const deadlineCalendar = document.querySelector("#deadlineCalendar");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
+const navCompactTaskCount = document.querySelector("#navCompactTaskCount");
+const navActiveCount = document.querySelector("#navActiveCount");
+const navParentCaseCount = document.querySelector("#navParentCaseCount");
+const navTagCount = document.querySelector("#navTagCount");
+const navCompletedCount = document.querySelector("#navCompletedCount");
 const clearCompletedButton = document.querySelector("#clearCompletedButton");
 const taskDialog = document.querySelector("#taskDialog");
 const taskDetailDialog = document.querySelector("#taskDetailDialog");
@@ -1452,6 +1457,11 @@ function render() {
 
   activeCount.textContent = `${active.length}件`;
   completedCount.textContent = `${completed.length}件`;
+  navCompactTaskCount.textContent = `${active.length}件`;
+  navActiveCount.textContent = `${active.length}件`;
+  navParentCaseCount.textContent = `${parentCases.length}件`;
+  navTagCount.textContent = `${tags.length}件`;
+  navCompletedCount.textContent = `${completed.length}件`;
   copyActiveTasksButton.disabled = active.length === 0;
   activeEmpty.hidden = active.length > 0;
   completedEmpty.hidden = completed.length > 0;
