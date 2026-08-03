@@ -40,6 +40,7 @@ let saveRevision = 0;
 let latestSavePromise = Promise.resolve();
 let popupToastTimer = null;
 let isCreatingTask = false;
+const EDITOR_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(editContentInput);
 const resizeEditContent = enableAutoResizeTextarea(editContentInput);
@@ -585,6 +586,7 @@ async function closeEditor() {
 }
 
 function persistEditorChanges({ quiet = false } = {}) {
+  clearTimeout(editorSaveTimer);
   const title = editTitleInput.value.trim();
 
   if (!title) {
