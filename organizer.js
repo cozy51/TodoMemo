@@ -61,6 +61,7 @@ const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
 const backupButton = document.querySelector("#backupButton");
+const backupChangeCount = document.querySelector("#backupChangeCount");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
 const restoreFileInput = document.querySelector("#restoreFileInput");
 const restoreDialog = document.querySelector("#restoreDialog");
@@ -193,12 +194,24 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await saveBackupSnapshot(storedTasks, storedTags, storedParentCases);
+    updateBackupChangeCount(storedTasks, storedTags, storedParentCases, createBackupSnapshot(
+      storedTasks, storedTags, storedParentCases
+    ));
     showToast(`${storedTasks.length}件をバックアップしました`);
   } catch (_error) {
     showToast("バックアップを作成できませんでした", "error");
   } finally {
     backupButton.disabled = false;
   }
+}
+
+function updateBackupChangeCount(currentTasks, currentTags, currentParentCases, snapshot) {
+  const count = countChangesSinceBackup(
+    currentTasks, currentTags, currentParentCases, snapshot
+  );
+  backupChangeCount.textContent = count === null ? "未作成" : `変更 ${count}件`;
+  backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
 }
 
 function getActiveTaskAnchorId(task) {
@@ -1565,7 +1578,7 @@ function renderPriorityOptions(task = null) {
       return option;
     })
   );
-  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : Math.min(2, optionCount));
+  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : optionCount);
   prioritySelect.disabled = Boolean(task?.completed);
 }
 
@@ -1672,7 +1685,7 @@ async function persistEditedTask() {
       createdAt: new Date().toISOString(),
       completedAt: null
     };
-    active.splice(Math.min(1, active.length), 0, task);
+    active.push(task);
     tasks = [...active, ...completed];
     taskId = task.id;
     taskIdInput.value = taskId;
@@ -1965,19 +1978,23 @@ tagNameInput.addEventListener("input", () => {
 });
 
 chrome.storage.onChanged.addListener(async () => {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 });
 
 (async function initialize() {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 })();

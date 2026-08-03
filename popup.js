@@ -28,6 +28,7 @@ const editLinkMessage = document.querySelector("#editLinkMessage");
 const editTitleError = document.querySelector("#editTitleError");
 const autoSaveStatus = document.querySelector("#autoSaveStatus");
 const backupButton = document.querySelector("#backupButton");
+const backupChangeCount = document.querySelector("#backupChangeCount");
 const popupToast = document.querySelector("#popupToast");
 
 let currentTaskId = null;
@@ -159,12 +160,27 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await saveBackupSnapshot(tasks, storedTags, storedParentCases);
+    updateBackupChangeCount(tasks, storedTags, storedParentCases, createBackupSnapshot(
+      tasks, storedTags, storedParentCases
+    ));
     showPopupToast(`${tasks.length}件をバックアップしました`);
   } catch (_error) {
     showPopupToast("バックアップを作成できませんでした", "error");
   } finally {
     backupButton.disabled = false;
   }
+}
+
+function updateBackupChangeCount(tasks, storedTags, storedParentCases, snapshot) {
+  const count = countChangesSinceBackup(tasks, storedTags, storedParentCases, snapshot);
+  backupChangeCount.textContent = count === null ? "–" : String(count);
+  backupChangeCount.hidden = count === null;
+  backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
+  backupButton.title = count === null
+    ? "全データをバックアップ（前回バックアップなし）"
+    : `全データをバックアップ（前回から変更 ${count}件）`;
+  backupButton.setAttribute("aria-label", backupButton.title);
 }
 
 function renderDue(dueDate) {
@@ -409,14 +425,16 @@ function renderParentCaseOptions(selectedId = "") {
 }
 
 async function render() {
-  const [tasks, storedTags, storedParentCases] = await Promise.all([
+  const [tasks, storedTags, storedParentCases, backupSnapshot] = await Promise.all([
     loadTasks(),
     loadTags(),
-    loadParentCases()
+    loadParentCases(),
+    loadBackupSnapshot()
   ]);
   allTasks = tasks;
   tags = storedTags;
   parentCases = storedParentCases;
+  updateBackupChangeCount(tasks, storedTags, storedParentCases, backupSnapshot);
   const activeTasks = tasks.filter((task) => !task.completed);
   const editingTask = !editView.hidden
     ? activeTasks.find((task) => task.id === currentTaskId)
@@ -597,7 +615,7 @@ function persistEditorChanges({ quiet = false } = {}) {
     };
     const active = allTasks.filter((task) => !task.completed);
     const completed = allTasks.filter((task) => task.completed);
-    active.splice(Math.min(1, active.length), 0, target);
+    active.push(target);
     allTasks = [...active, ...completed];
     currentTaskId = target.id;
     currentTask = target;
