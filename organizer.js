@@ -82,6 +82,7 @@ let toastTimer = null;
 let pendingRestore = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
+const TASK_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
