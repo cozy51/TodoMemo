@@ -22,6 +22,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/>
             </svg>
+            <span id="backupChangeCount" class="backup-change-count" aria-hidden="true">–</span>
           </button>
           <button id="editTaskButton" class="icon-button" type="button" aria-label="今のタスクを編集" title="編集" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -53,6 +54,7 @@
           </div>
           <div id="taskLinks" class="task-links" aria-label="関連リンク" hidden></div>
         </div>
+        <p id="taskContentLineCount" class="content-line-count"></p>
         <div id="taskContent" class="task-content markdown-body"></div>
         <p class="view-end-marker" aria-label="内容はここまでです"><span>END</span></p>
       </section>
@@ -64,7 +66,7 @@
             <p id="editCaseNumber" class="case-number"></p>
           </div>
           <div class="edit-status">
-            <span id="autoSaveStatus" class="save-status" role="status" aria-live="polite">保存済み</span>
+            <span id="autoSaveStatus" class="save-status" role="status" aria-live="polite" hidden></span>
             <button id="cancelEditTop" class="text-button" type="button">閉じる</button>
           </div>
         </div>
