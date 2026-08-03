@@ -169,6 +169,12 @@ function formatTaskForCopy(task) {
   return `(${caseNumber}) ${title} [\n${content}\n]\n`;
 }
 
+function formatParentCaseForCopy(parentCase) {
+  const caseNumber = String(parentCase.caseNumber || "").trim();
+  const name = String(parentCase.name || "").trim();
+  return [caseNumber, name].filter(Boolean).join(" ");
+}
+
 function formatTasksForCopy(tasks) {
   if (!Array.isArray(tasks) || tasks.length === 0) return "";
 

@@ -492,6 +492,32 @@ function renderCurrentTaskDetails() {
     } else {
       appendParentCaseLabel(taskParentCase);
     }
+
+    const linkStatus = document.createElement(parentCase.url ? "a" : "span");
+    linkStatus.className = "parent-case-link-status";
+    linkStatus.dataset.state = parentCase.url ? "linked" : "none";
+    linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
+    if (parentCase.url) {
+      linkStatus.href = parentCase.url;
+      linkStatus.target = "_blank";
+      linkStatus.rel = "noopener noreferrer";
+      linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+    }
+
+    const copyButton = document.createElement("button");
+    copyButton.className = "parent-case-copy-button";
+    copyButton.type = "button";
+    copyButton.textContent = "親案件COPY";
+    copyButton.title = `${parentCase.caseNumber}と親案件名をコピー`;
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
+        showPopupToast("親案件をコピーしました");
+      } catch (_error) {
+        showPopupToast("親案件をコピーできませんでした", "error");
+      }
+    });
+    taskParentCase.append(linkStatus, copyButton);
   }
   renderMarkdown(taskContent, currentTask.content);
   renderDue(currentTask.dueDate);

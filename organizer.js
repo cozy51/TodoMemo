@@ -829,6 +829,35 @@ function appendParentCaseLabel(container, parentCase) {
   container.append(kind, number, title);
 }
 
+function appendParentCaseActions(container, parentCase) {
+  const linkStatus = document.createElement(parentCase.url ? "a" : "span");
+  linkStatus.className = "parent-case-link-status";
+  linkStatus.dataset.state = parentCase.url ? "linked" : "none";
+  linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
+  if (parentCase.url) {
+    linkStatus.href = parentCase.url;
+    linkStatus.target = "_blank";
+    linkStatus.rel = "noopener noreferrer";
+    linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+  }
+  container.append(linkStatus);
+
+  const copyButton = document.createElement("button");
+  copyButton.className = "parent-case-copy-button";
+  copyButton.type = "button";
+  copyButton.textContent = "親案件COPY";
+  copyButton.title = `${parentCase.caseNumber}と親案件名をコピー`;
+  copyButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
+      showToast("親案件をコピーしました");
+    } catch (_error) {
+      showToast("親案件をコピーできませんでした");
+    }
+  });
+  container.append(copyButton);
+}
+
 function fillParentCaseElement(element, task) {
   const parentCase = getParentCaseForTask(task);
   element.replaceChildren();
@@ -848,6 +877,7 @@ function fillParentCaseElement(element, task) {
   } else {
     appendParentCaseLabel(element, parentCase);
   }
+  appendParentCaseActions(element, parentCase);
   element.hidden = false;
 }
 
