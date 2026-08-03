@@ -20,6 +20,10 @@ function getCaseNumberPrefix(date = new Date()) {
   return `TD${year}-${month}`;
 }
 
+function isCaseNumberForMonth(caseNumber, date = new Date()) {
+  return String(caseNumber || "").trim().toUpperCase().startsWith(getCaseNumberPrefix(date));
+}
+
 function generateCaseNumber(tasks, date = new Date()) {
   const prefix = getCaseNumberPrefix(date);
   const usedSuffixes = new Set(

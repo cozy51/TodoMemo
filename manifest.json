@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TodoMemo",
-  "version": "1.9.10",
+  "version": "1.9.11",
   "description": "今することを、ひとつだけ。シンプルなTodoメモ。",
   "permissions": [
     "storage",

@@ -128,6 +128,12 @@ function getCompletedTasks() {
     .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
 }
 
+function getDeletableCompletedTasks(date = new Date()) {
+  return getCompletedTasks().filter(
+    (task) => !isCaseNumberForMonth(task.caseNumber, date)
+  );
+}
+
 function formatLocalDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1518,7 +1524,7 @@ function render() {
   copyActiveTasksButton.disabled = active.length === 0;
   activeEmpty.hidden = active.length > 0;
   completedEmpty.hidden = completed.length > 0;
-  clearCompletedButton.hidden = completed.length === 0;
+  clearCompletedButton.hidden = getDeletableCompletedTasks().length === 0;
   renderParentCaseSettings();
   setParentCaseViewMode(parentCaseViewMode);
   setActiveListCollapsed(activeListCollapsed);
@@ -1859,13 +1865,17 @@ async function removeTag(tag) {
 }
 
 async function clearCompleted() {
-  const completed = getCompletedTasks();
+  const completed = getDeletableCompletedTasks();
   if (completed.length === 0) return;
-  if (!confirm(`完了した${completed.length}件をすべて削除しますか？`)) return;
+  if (!confirm(
+    `先月以前に採番された完了タスク${completed.length}件をすべて削除しますか？`
+    + "\n今月採番された完了タスクは削除されません。"
+  )) return;
 
-  tasks = await saveTasks(tasks.filter((task) => !task.completed));
+  const deletingIds = new Set(completed.map((task) => task.id));
+  tasks = await saveTasks(tasks.filter((task) => !deletingIds.has(task.id)));
   render();
-  showToast("完了したタスクを削除しました");
+  showToast(`先月以前の完了タスク${completed.length}件を削除しました`);
 }
 
 document.querySelector("#addTaskButton").addEventListener("click", () => openTaskDialog());
