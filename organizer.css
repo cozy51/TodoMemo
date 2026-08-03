@@ -1306,7 +1306,7 @@ button {
 
 .task-copy h3 {
   margin: 0;
-  font-size: 27px;
+  font-size: 20px;
   line-height: 1.35;
   letter-spacing: -.02em;
   overflow-wrap: anywhere;
@@ -2263,7 +2263,7 @@ button {
 
 .detail-task-title {
   margin: 10px 0 18px;
-  font-size: 27px;
+  font-size: 20px;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
