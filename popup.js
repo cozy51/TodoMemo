@@ -37,10 +37,11 @@ let allTasks = [];
 let tags = [];
 let parentCases = [];
 let saveRevision = 0;
-let saveRetryTimer = null;
+let editorSaveTimer = null;
 let latestSavePromise = Promise.resolve();
 let popupToastTimer = null;
 let isCreatingTask = false;
+const EDITOR_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(editContentInput);
 const resizeEditContent = enableAutoResizeTextarea(editContentInput);
@@ -587,6 +588,7 @@ function closeEditor() {
 }
 
 function persistEditorChanges({ quiet = false } = {}) {
+  clearTimeout(editorSaveTimer);
   const title = editTitleInput.value.trim();
 
   if (!title) {
@@ -651,19 +653,29 @@ function persistEditorChanges({ quiet = false } = {}) {
       if (revision !== saveRevision) return;
       allTasks = savedTasks;
       currentTask = allTasks.find((task) => task.id === currentTaskId) || currentTask;
-      clearTimeout(saveRetryTimer);
+      clearTimeout(editorSaveTimer);
       autoSaveStatus.textContent = "保存済み";
       autoSaveStatus.dataset.state = "saved";
     })
     .catch(() => {
       if (revision !== saveRevision) return;
-      autoSaveStatus.textContent = "再保存しています…";
+      autoSaveStatus.textContent = "未保存の変更があります";
       autoSaveStatus.dataset.state = "error";
-      clearTimeout(saveRetryTimer);
-      saveRetryTimer = setTimeout(() => persistEditorChanges(), 800);
     });
 
   return true;
+}
+
+function scheduleEditorSave() {
+  clearTimeout(editorSaveTimer);
+  if (!editTitleInput.value.trim()) {
+    autoSaveStatus.textContent = "タイトルが必要です";
+    autoSaveStatus.dataset.state = "error";
+    return;
+  }
+  autoSaveStatus.textContent = "未保存の変更があります";
+  autoSaveStatus.dataset.state = "saving";
+  editorSaveTimer = setTimeout(persistEditorChanges, EDITOR_AUTO_SAVE_DELAY_MS);
 }
 
 document.querySelector("#openOrganizer").addEventListener("click", openOrganizer);
@@ -677,12 +689,12 @@ taskView.addEventListener("dblclick", handleTaskViewDoubleClick);
 editTaskForm.addEventListener("submit", (event) => event.preventDefault());
 editTitleInput.addEventListener("input", () => {
   if (editTitleInput.value.trim()) editTitleError.textContent = "";
-  persistEditorChanges();
+  scheduleEditorSave();
 });
-editParentCaseSelect.addEventListener("change", () => persistEditorChanges());
+editParentCaseSelect.addEventListener("change", scheduleEditorSave);
 editContentInput.addEventListener("input", () => {
   renderEditContentSelectionHighlights();
-  persistEditorChanges();
+  scheduleEditorSave();
 });
 editContentInput.addEventListener("select", renderEditContentSelectionHighlights);
 editContentInput.addEventListener("keyup", renderEditContentSelectionHighlights);
@@ -696,15 +708,15 @@ editContentInput.addEventListener("dblclick", () => {
 editContentInput.addEventListener("scroll", syncEditContentHighlightScroll);
 editDueDateInput.addEventListener("input", () => {
   updateDueDateClearButton();
-  persistEditorChanges();
+  scheduleEditorSave();
 });
 clearEditDueDateButton.addEventListener("click", () => {
   editDueDateInput.value = "";
   updateDueDateClearButton();
-  persistEditorChanges();
+  scheduleEditorSave();
   editDueDateInput.focus();
 });
-editTagOptions.addEventListener("change", () => persistEditorChanges());
+editTagOptions.addEventListener("change", scheduleEditorSave);
 editLinkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
@@ -715,7 +727,7 @@ editLinkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
-  persistEditorChanges();
+  scheduleEditorSave();
 });
 editLinkInputs.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-link-button");
@@ -724,7 +736,7 @@ editLinkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
-  persistEditorChanges();
+  scheduleEditorSave();
 });
 editPasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 taskPasteLinkButton.addEventListener("click", pasteLinksToCurrentTask);

@@ -83,6 +83,7 @@ let pendingRestore = null;
 let taskAutoSaveTimer = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
+const TASK_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
@@ -1715,7 +1716,7 @@ async function persistEditedTask() {
     render();
     return true;
   } catch (_error) {
-    taskAutoSaveStatus.textContent = "保存できませんでした";
+    taskAutoSaveStatus.textContent = "未保存の変更があります";
     taskAutoSaveStatus.dataset.state = "error";
     return false;
   }
@@ -1728,9 +1729,9 @@ function scheduleTaskAutoSave() {
     taskAutoSaveStatus.dataset.state = "saved";
     return;
   }
-  taskAutoSaveStatus.textContent = "保存中…";
+  taskAutoSaveStatus.textContent = "未保存の変更があります";
   taskAutoSaveStatus.dataset.state = "saving";
-  taskAutoSaveTimer = setTimeout(persistEditedTask, 250);
+  taskAutoSaveTimer = setTimeout(persistEditedTask, TASK_AUTO_SAVE_DELAY_MS);
 }
 
 async function handleSubmit(event) {
