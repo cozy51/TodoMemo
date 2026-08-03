@@ -892,6 +892,12 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   fillParentCaseElement(card.querySelector(".card-parent-case"), task);
   card.querySelector(".task-title-text, h3").textContent = ensureEmojiPresentation(task.title);
   const cardContent = card.querySelector(".card-content");
+  const lineCount = cardContent.previousElementSibling?.classList.contains("content-line-count")
+    ? cardContent.previousElementSibling
+    : document.createElement("span");
+  lineCount.className = "content-line-count";
+  lineCount.textContent = `内容 ${countContentLines(task.content)}行`;
+  if (!lineCount.isConnected) cardContent.before(lineCount);
   const hasContent = Boolean(task.content.trim());
   cardContent.classList.toggle("is-empty", showEmptyContent && !hasContent);
   if (hasContent) {

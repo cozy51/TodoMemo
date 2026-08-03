@@ -1347,6 +1347,19 @@ button {
   display: none;
 }
 
+.content-line-count {
+  display: block;
+  width: fit-content;
+  margin: 10px 0 4px;
+  padding: 2px 7px;
+  color: #5f6f89;
+  border-radius: 999px;
+  background: #edf2fa;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
 .card-content.is-empty {
   color: #8b96aa;
   font-style: italic;

@@ -78,4 +78,14 @@ if (copiedParentCase !== "DX推進_TD26-07P6") {
   throw new Error(`Unexpected parent-case copy format: ${JSON.stringify(copiedParentCase)}`);
 }
 
+const contentLineCounts = vm.runInContext(`[
+  countContentLines(""),
+  countContentLines("1行"),
+  countContentLines("1行\\n2行\\n3行"),
+  countContentLines("1行\\r\\n2行\\r\\n")
+]`, context);
+if (JSON.stringify([...contentLineCounts]) !== JSON.stringify([0, 1, 3, 2])) {
+  throw new Error(`Unexpected content line counts: ${JSON.stringify(contentLineCounts)}`);
+}
+
 console.log("Task-copy format test: OK");

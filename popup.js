@@ -8,6 +8,7 @@ const editCaseNumber = document.querySelector("#editCaseNumber");
 const editEyebrow = document.querySelector("#editEyebrow");
 const copyTaskButton = document.querySelector("#copyTaskButton");
 const taskContent = document.querySelector("#taskContent");
+const taskContentLineCount = document.querySelector("#taskContentLineCount");
 const taskDue = document.querySelector("#taskDue");
 const taskTags = document.querySelector("#taskTags");
 const taskLinks = document.querySelector("#taskLinks");
@@ -520,6 +521,7 @@ function renderCurrentTaskDetails() {
     taskParentCase.append(linkStatus, copyButton);
   }
   renderMarkdown(taskContent, currentTask.content);
+  taskContentLineCount.textContent = `内容 ${countContentLines(currentTask.content)}行`;
   renderDue(currentTask.dueDate);
   renderTags(currentTask.tagIds);
   renderLinks(taskLinks, currentTask.links);

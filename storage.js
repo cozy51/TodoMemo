@@ -179,6 +179,11 @@ function formatParentCaseForCopy(parentCase) {
   return [name, caseNumber].filter(Boolean).join("_");
 }
 
+function countContentLines(content) {
+  const normalized = String(content || "").replace(/\r\n?/g, "\n").trimEnd();
+  return normalized.trim() ? normalized.split("\n").length : 0;
+}
+
 function formatTasksForCopy(tasks) {
   if (!Array.isArray(tasks) || tasks.length === 0) return "";
 
