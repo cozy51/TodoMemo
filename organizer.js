@@ -1203,7 +1203,7 @@ function createCompletedCard(task) {
   fillTaskCopy(card, task);
   card.querySelector(".card-completed-at").textContent = formatCompletedAt(task.completedAt);
   attachMenu(card, task);
-  attachDoubleClickEdit(card, task);
+  attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, false));
   card.querySelector(".restore-button").addEventListener("click", () => setCompleted(task.id, false));
@@ -1473,9 +1473,9 @@ function render() {
   const completed = getCompletedTasks();
 
   activeList.replaceChildren(...active.map((task, index) => createActiveCard(task, index, active.length)));
-  completedList.replaceChildren(...completed.map(createCompletedCard));
   renderDeadlineCalendar(active);
   renderCompactTaskTable(active);
+  completedList.replaceChildren(...completed.map(createCompletedCard));
   renderParentCaseGroups();
 
   activeCount.textContent = `${active.length}件`;
