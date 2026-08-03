@@ -71,4 +71,11 @@ if (copiedEmptyTasks !== "") {
   throw new Error(`Unexpected empty task-list format: ${JSON.stringify(copiedEmptyTasks)}`);
 }
 
+const copiedParentCase = vm.runInContext(`
+  formatParentCaseForCopy({ caseNumber: "TD26-07P6", name: "DX推進" })
+`, context);
+if (copiedParentCase !== "DX推進_TD26-07P6") {
+  throw new Error(`Unexpected parent-case copy format: ${JSON.stringify(copiedParentCase)}`);
+}
+
 console.log("Task-copy format test: OK");

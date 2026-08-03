@@ -124,4 +124,14 @@ if (JSON.stringify(migrated) !== JSON.stringify(expectedMigration)) {
   throw new Error(`Unexpected migration result: ${JSON.stringify(migrated)}`);
 }
 
+const currentMonthMatch = run(
+  'isCaseNumberForMonth("TD26-0801", new Date(2026, 7, 3))'
+);
+const previousMonthMatch = run(
+  'isCaseNumberForMonth("TD26-0701", new Date(2026, 7, 3))'
+);
+if (!currentMonthMatch || previousMonthMatch) {
+  throw new Error("Case-number month detection did not preserve only the current month");
+}
+
 console.log("Case-number tests: OK");

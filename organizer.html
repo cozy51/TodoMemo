@@ -27,7 +27,7 @@
             <span>TodoMemo</span>
           </div>
           <h1>やることを整理</h1>
-          <p>一番上が「今すること」です。新しいタスクは、そのすぐ下に追加されます。</p>
+          <p>一番上が「今すること」です。新しいタスクは、一覧の最後に追加されます。</p>
         </div>
         <div class="app-header-actions">
           <button id="backupButton" class="backup-button" type="button">
@@ -35,6 +35,7 @@
               <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/>
             </svg>
             全データをバックアップ
+            <span id="backupChangeCount" class="backup-change-count">未作成</span>
           </button>
           <button id="restoreBackupButton" class="restore-backup-button" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -192,7 +193,7 @@
               <p class="section-kicker">アーカイブ</p>
               <h2 id="completedHeading">完了 <span id="completedCount" class="count"></span></h2>
             </div>
-            <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>完了をすべて削除</button>
+            <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>先月以前の完了をすべて削除</button>
           </div>
           <div id="completedList" class="task-list completed-list"></div>
           <p id="completedEmpty" class="completed-empty">完了したタスクはここに移動します。</p>
