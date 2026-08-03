@@ -37,7 +37,6 @@ let allTasks = [];
 let tags = [];
 let parentCases = [];
 let saveRevision = 0;
-let editorSaveTimer = null;
 let latestSavePromise = Promise.resolve();
 let popupToastTimer = null;
 let isCreatingTask = false;
@@ -523,8 +522,7 @@ function openEditor() {
   editDueDateInput.value = currentTask.dueDate;
   updateDueDateClearButton();
   editTitleError.textContent = "";
-  autoSaveStatus.textContent = "保存済み";
-  autoSaveStatus.dataset.state = "saved";
+  autoSaveStatus.hidden = true;
   renderTagOptions(currentTask.tagIds);
   renderLinkInputs(currentTask.links);
   setLinkMessage("URLまたはメールアドレスを登録できます。");
@@ -550,8 +548,7 @@ function openNewTaskEditor() {
   editDueDateInput.value = "";
   updateDueDateClearButton();
   editTitleError.textContent = "";
-  autoSaveStatus.textContent = "タイトル入力後に自動保存します";
-  autoSaveStatus.dataset.state = "saved";
+  autoSaveStatus.hidden = true;
   renderTagOptions([]);
   renderLinkInputs([]);
   setLinkMessage("URLまたはメールアドレスを登録できます。");
@@ -569,7 +566,7 @@ function handleTaskViewDoubleClick(event) {
   openEditor();
 }
 
-function closeEditor() {
+async function closeEditor() {
   if (isCreatingTask && !editTitleInput.value.trim()) {
     isCreatingTask = false;
     editView.hidden = true;
@@ -579,6 +576,7 @@ function closeEditor() {
     return;
   }
   if (!persistEditorChanges({ quiet: true })) return;
+  await latestSavePromise.catch(() => undefined);
   currentTask = allTasks.find((task) => !task.completed) || currentTask;
   currentTaskId = currentTask?.id || null;
   renderCurrentTaskDetails();
@@ -653,29 +651,18 @@ function persistEditorChanges({ quiet = false } = {}) {
       if (revision !== saveRevision) return;
       allTasks = savedTasks;
       currentTask = allTasks.find((task) => task.id === currentTaskId) || currentTask;
-      clearTimeout(editorSaveTimer);
       autoSaveStatus.textContent = "保存済み";
       autoSaveStatus.dataset.state = "saved";
     })
     .catch(() => {
       if (revision !== saveRevision) return;
-      autoSaveStatus.textContent = "未保存の変更があります";
-      autoSaveStatus.dataset.state = "error";
     });
 
   return true;
 }
 
-function scheduleEditorSave() {
-  clearTimeout(editorSaveTimer);
-  if (!editTitleInput.value.trim()) {
-    autoSaveStatus.textContent = "タイトルが必要です";
-    autoSaveStatus.dataset.state = "error";
-    return;
-  }
-  autoSaveStatus.textContent = "未保存の変更があります";
-  autoSaveStatus.dataset.state = "saving";
-  editorSaveTimer = setTimeout(persistEditorChanges, EDITOR_AUTO_SAVE_DELAY_MS);
+function markEditorDirty() {
+  autoSaveStatus.hidden = true;
 }
 
 document.querySelector("#openOrganizer").addEventListener("click", openOrganizer);
@@ -689,12 +676,12 @@ taskView.addEventListener("dblclick", handleTaskViewDoubleClick);
 editTaskForm.addEventListener("submit", (event) => event.preventDefault());
 editTitleInput.addEventListener("input", () => {
   if (editTitleInput.value.trim()) editTitleError.textContent = "";
-  scheduleEditorSave();
+  markEditorDirty();
 });
-editParentCaseSelect.addEventListener("change", scheduleEditorSave);
+editParentCaseSelect.addEventListener("change", markEditorDirty);
 editContentInput.addEventListener("input", () => {
   renderEditContentSelectionHighlights();
-  scheduleEditorSave();
+  markEditorDirty();
 });
 editContentInput.addEventListener("select", renderEditContentSelectionHighlights);
 editContentInput.addEventListener("keyup", renderEditContentSelectionHighlights);
@@ -708,15 +695,15 @@ editContentInput.addEventListener("dblclick", () => {
 editContentInput.addEventListener("scroll", syncEditContentHighlightScroll);
 editDueDateInput.addEventListener("input", () => {
   updateDueDateClearButton();
-  scheduleEditorSave();
+  markEditorDirty();
 });
 clearEditDueDateButton.addEventListener("click", () => {
   editDueDateInput.value = "";
   updateDueDateClearButton();
-  scheduleEditorSave();
+  markEditorDirty();
   editDueDateInput.focus();
 });
-editTagOptions.addEventListener("change", scheduleEditorSave);
+editTagOptions.addEventListener("change", markEditorDirty);
 editLinkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
@@ -727,7 +714,7 @@ editLinkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
-  scheduleEditorSave();
+  markEditorDirty();
 });
 editLinkInputs.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-link-button");
@@ -736,7 +723,7 @@ editLinkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
-  scheduleEditorSave();
+  markEditorDirty();
 });
 editPasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 taskPasteLinkButton.addEventListener("click", pasteLinksToCurrentTask);

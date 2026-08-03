@@ -80,7 +80,6 @@ let activeListCollapsed = false;
 let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
-let taskAutoSaveTimer = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
@@ -999,7 +998,7 @@ async function pasteLinksFromClipboard() {
     }
 
     setLinkMessage(`${added}件のリンクを追加しました。`, "success");
-    scheduleTaskAutoSave();
+    markTaskEditorDirty();
   } catch (_error) {
     setLinkMessage("クリップボードを読み取れませんでした。", "error");
   } finally {
@@ -1603,7 +1602,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     renderLinkInputs(task.links);
     taskAutoSaveStatus.textContent = "保存済み";
     taskAutoSaveStatus.dataset.state = "saved";
-    taskAutoSaveStatus.hidden = false;
+    taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
   } else {
     dialogTitle.textContent = "新しいタスク";
@@ -1616,7 +1615,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     renderLinkInputs();
     taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
     taskAutoSaveStatus.dataset.state = "saved";
-    taskAutoSaveStatus.hidden = false;
+    taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
   }
 
@@ -1632,7 +1631,6 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 
 async function closeTaskDialog() {
   if (titleInput.value.trim()) await persistEditedTask();
-  clearTimeout(taskAutoSaveTimer);
   taskDialog.close();
 }
 
@@ -1647,7 +1645,6 @@ function collectTaskFormValues(task) {
 }
 
 async function persistEditedTask() {
-  clearTimeout(taskAutoSaveTimer);
   const title = titleInput.value.trim();
   if (!title) {
     titleError.textContent = "タイトルを入力してください";
@@ -1716,22 +1713,12 @@ async function persistEditedTask() {
     render();
     return true;
   } catch (_error) {
-    taskAutoSaveStatus.textContent = "未保存の変更があります";
-    taskAutoSaveStatus.dataset.state = "error";
     return false;
   }
 }
 
-function scheduleTaskAutoSave() {
-  clearTimeout(taskAutoSaveTimer);
-  if (!titleInput.value.trim()) {
-    taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
-    taskAutoSaveStatus.dataset.state = "saved";
-    return;
-  }
-  taskAutoSaveStatus.textContent = "未保存の変更があります";
-  taskAutoSaveStatus.dataset.state = "saving";
-  taskAutoSaveTimer = setTimeout(persistEditedTask, TASK_AUTO_SAVE_DELAY_MS);
+function markTaskEditorDirty() {
+  taskAutoSaveStatus.hidden = true;
 }
 
 async function handleSubmit(event) {
@@ -1887,7 +1874,7 @@ dueDateInput.addEventListener("input", updateDueDateClearButton);
 clearDueDateButton.addEventListener("click", () => {
   dueDateInput.value = "";
   updateDueDateClearButton();
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
   dueDateInput.focus();
 });
 
@@ -1896,12 +1883,12 @@ titleInput.addEventListener("input", () => {
     titleError.textContent = "";
     titleInput.classList.remove("is-invalid");
   }
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 
 contentInput.addEventListener("input", () => {
   renderContentSelectionHighlights();
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 contentInput.addEventListener("select", renderContentSelectionHighlights);
 contentInput.addEventListener("keyup", renderContentSelectionHighlights);
@@ -1913,10 +1900,10 @@ contentInput.addEventListener("dblclick", () => {
   });
 });
 contentInput.addEventListener("scroll", syncContentHighlightScroll);
-dueDateInput.addEventListener("input", scheduleTaskAutoSave);
-taskTagOptions.addEventListener("change", scheduleTaskAutoSave);
-parentCaseSelect.addEventListener("change", scheduleTaskAutoSave);
-prioritySelect.addEventListener("change", scheduleTaskAutoSave);
+dueDateInput.addEventListener("input", markTaskEditorDirty);
+taskTagOptions.addEventListener("change", markTaskEditorDirty);
+parentCaseSelect.addEventListener("change", markTaskEditorDirty);
+prioritySelect.addEventListener("change", markTaskEditorDirty);
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
@@ -1927,7 +1914,7 @@ linkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 linkInputs.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-link-button");
@@ -1936,7 +1923,7 @@ linkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 
