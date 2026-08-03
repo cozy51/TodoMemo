@@ -237,6 +237,26 @@ button {
   stroke-linejoin: round;
 }
 
+.backup-change-count {
+  padding: 3px 7px;
+  color: #53627b;
+  border-radius: 999px;
+  background: #edf1f7;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.backup-change-count[data-state="changed"] {
+  color: #8a4b00;
+  background: #fff0cc;
+}
+
+.backup-change-count[data-state="saved"] {
+  color: #237044;
+  background: #e4f5ea;
+}
+
 .primary-button {
   color: white;
   border: 0;
