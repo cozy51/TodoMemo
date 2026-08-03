@@ -1,6 +1,7 @@
 const TODO_MEMO_STORAGE_KEY = "todoMemoTasks";
 const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
+const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_MAX_LINKS = 3;
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
 const TODO_MEMO_CASE_SEQUENCE = [
@@ -466,6 +467,52 @@ async function saveTasks(tasks) {
   });
 
   return normalized;
+}
+
+function createBackupSnapshot(tasks, tags, parentCases) {
+  return {
+    tasks: tasks.map((task) => ({ ...task })),
+    tags: tags.map((tag) => ({ ...tag })),
+    parentCases: parentCases.map((parentCase) => ({ ...parentCase }))
+  };
+}
+
+async function saveBackupSnapshot(tasks, tags, parentCases) {
+  const snapshot = createBackupSnapshot(tasks, tags, parentCases);
+  await chrome.storage.local.set({
+    [TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY]: snapshot
+  });
+  return snapshot;
+}
+
+async function loadBackupSnapshot() {
+  const result = await chrome.storage.local.get(TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY);
+  const snapshot = result[TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY];
+  if (!snapshot || !Array.isArray(snapshot.tasks)
+    || !Array.isArray(snapshot.tags) || !Array.isArray(snapshot.parentCases)) {
+    return null;
+  }
+  return snapshot;
+}
+
+function countCollectionChanges(currentItems, backupItems) {
+  const currentById = new Map(currentItems.map((item) => [String(item.id), item]));
+  const backupById = new Map(backupItems.map((item) => [String(item.id), item]));
+  const ids = new Set([...currentById.keys(), ...backupById.keys()]);
+  let changes = 0;
+  ids.forEach((id) => {
+    if (JSON.stringify(currentById.get(id)) !== JSON.stringify(backupById.get(id))) {
+      changes += 1;
+    }
+  });
+  return changes;
+}
+
+function countChangesSinceBackup(tasks, tags, parentCases, snapshot) {
+  if (!snapshot) return null;
+  return countCollectionChanges(tasks, snapshot.tasks)
+    + countCollectionChanges(tags, snapshot.tags)
+    + countCollectionChanges(parentCases, snapshot.parentCases);
 }
 
 function formatDueDate(dueDate) {
