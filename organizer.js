@@ -61,6 +61,7 @@ const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
 const backupButton = document.querySelector("#backupButton");
+const backupChangeCount = document.querySelector("#backupChangeCount");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
 const restoreFileInput = document.querySelector("#restoreFileInput");
 const restoreDialog = document.querySelector("#restoreDialog");
@@ -79,7 +80,6 @@ let activeListCollapsed = false;
 let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
-let taskAutoSaveTimer = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
 
@@ -125,6 +125,12 @@ function getCompletedTasks() {
   return tasks
     .filter((task) => task.completed)
     .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
+}
+
+function getDeletableCompletedTasks(date = new Date()) {
+  return getCompletedTasks().filter(
+    (task) => !isCaseNumberForMonth(task.caseNumber, date)
+  );
 }
 
 function formatLocalDateKey(date) {
@@ -193,12 +199,24 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await saveBackupSnapshot(storedTasks, storedTags, storedParentCases);
+    updateBackupChangeCount(storedTasks, storedTags, storedParentCases, createBackupSnapshot(
+      storedTasks, storedTags, storedParentCases
+    ));
     showToast(`${storedTasks.length}件をバックアップしました`);
   } catch (_error) {
     showToast("バックアップを作成できませんでした", "error");
   } finally {
     backupButton.disabled = false;
   }
+}
+
+function updateBackupChangeCount(currentTasks, currentTags, currentParentCases, snapshot) {
+  const count = countChangesSinceBackup(
+    currentTasks, currentTags, currentParentCases, snapshot
+  );
+  backupChangeCount.textContent = count === null ? "未作成" : `変更 ${count}件`;
+  backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
 }
 
 function getActiveTaskAnchorId(task) {
@@ -816,6 +834,35 @@ function appendParentCaseLabel(container, parentCase) {
   container.append(kind, number, title);
 }
 
+function appendParentCaseActions(container, parentCase) {
+  const linkStatus = document.createElement(parentCase.url ? "a" : "span");
+  linkStatus.className = "parent-case-link-status";
+  linkStatus.dataset.state = parentCase.url ? "linked" : "none";
+  linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
+  if (parentCase.url) {
+    linkStatus.href = parentCase.url;
+    linkStatus.target = "_blank";
+    linkStatus.rel = "noopener noreferrer";
+    linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+  }
+  container.append(linkStatus);
+
+  const copyButton = document.createElement("button");
+  copyButton.className = "parent-case-copy-button";
+  copyButton.type = "button";
+  copyButton.textContent = "親案件COPY";
+  copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
+  copyButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
+      showToast("親案件をコピーしました");
+    } catch (_error) {
+      showToast("親案件をコピーできませんでした");
+    }
+  });
+  container.append(copyButton);
+}
+
 function fillParentCaseElement(element, task) {
   const parentCase = getParentCaseForTask(task);
   element.replaceChildren();
@@ -835,6 +882,7 @@ function fillParentCaseElement(element, task) {
   } else {
     appendParentCaseLabel(element, parentCase);
   }
+  appendParentCaseActions(element, parentCase);
   element.hidden = false;
 }
 
@@ -843,6 +891,12 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   fillParentCaseElement(card.querySelector(".card-parent-case"), task);
   card.querySelector(".task-title-text, h3").textContent = ensureEmojiPresentation(task.title);
   const cardContent = card.querySelector(".card-content");
+  const lineCount = cardContent.previousElementSibling?.classList.contains("content-line-count")
+    ? cardContent.previousElementSibling
+    : document.createElement("span");
+  lineCount.className = "content-line-count";
+  lineCount.textContent = `内容 ${countContentLines(task.content)}行`;
+  if (!lineCount.isConnected) cardContent.before(lineCount);
   const hasContent = Boolean(task.content.trim());
   cardContent.classList.toggle("is-empty", showEmptyContent && !hasContent);
   if (hasContent) {
@@ -985,7 +1039,7 @@ async function pasteLinksFromClipboard() {
     }
 
     setLinkMessage(`${added}件のリンクを追加しました。`, "success");
-    scheduleTaskAutoSave();
+    markTaskEditorDirty();
   } catch (_error) {
     setLinkMessage("クリップボードを読み取れませんでした。", "error");
   } finally {
@@ -1190,7 +1244,7 @@ function createCompletedCard(task) {
   fillTaskCopy(card, task);
   card.querySelector(".card-completed-at").textContent = formatCompletedAt(task.completedAt);
   attachMenu(card, task);
-  attachDoubleClickEdit(card, task);
+  attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, false));
   card.querySelector(".restore-button").addEventListener("click", () => setCompleted(task.id, false));
@@ -1460,9 +1514,9 @@ function render() {
   const completed = getCompletedTasks();
 
   activeList.replaceChildren(...active.map((task, index) => createActiveCard(task, index, active.length)));
-  completedList.replaceChildren(...completed.map(createCompletedCard));
   renderDeadlineCalendar(active);
   renderCompactTaskTable(active);
+  completedList.replaceChildren(...completed.map(createCompletedCard));
   renderParentCaseGroups();
 
   activeCount.textContent = `${active.length}件`;
@@ -1475,7 +1529,7 @@ function render() {
   copyActiveTasksButton.disabled = active.length === 0;
   activeEmpty.hidden = active.length > 0;
   completedEmpty.hidden = completed.length > 0;
-  clearCompletedButton.hidden = completed.length === 0;
+  clearCompletedButton.hidden = getDeletableCompletedTasks().length === 0;
   renderParentCaseSettings();
   setParentCaseViewMode(parentCaseViewMode);
   setActiveListCollapsed(activeListCollapsed);
@@ -1565,7 +1619,7 @@ function renderPriorityOptions(task = null) {
       return option;
     })
   );
-  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : Math.min(2, optionCount));
+  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : optionCount);
   prioritySelect.disabled = Boolean(task?.completed);
 }
 
@@ -1589,7 +1643,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     renderLinkInputs(task.links);
     taskAutoSaveStatus.textContent = "保存済み";
     taskAutoSaveStatus.dataset.state = "saved";
-    taskAutoSaveStatus.hidden = false;
+    taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
   } else {
     dialogTitle.textContent = "新しいタスク";
@@ -1602,7 +1656,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     renderLinkInputs();
     taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
     taskAutoSaveStatus.dataset.state = "saved";
-    taskAutoSaveStatus.hidden = false;
+    taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
   }
 
@@ -1617,8 +1671,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 }
 
 async function closeTaskDialog() {
-  if (titleInput.value.trim() && !(await persistEditedTask())) return;
-  clearTimeout(taskAutoSaveTimer);
+  if (titleInput.value.trim()) await persistEditedTask();
   taskDialog.close();
 }
 
@@ -1633,7 +1686,6 @@ function collectTaskFormValues(task) {
 }
 
 async function persistEditedTask() {
-  clearTimeout(taskAutoSaveTimer);
   const title = titleInput.value.trim();
   if (!title) {
     titleError.textContent = "タイトルを入力してください";
@@ -1672,7 +1724,7 @@ async function persistEditedTask() {
       createdAt: new Date().toISOString(),
       completedAt: null
     };
-    active.splice(Math.min(1, active.length), 0, task);
+    active.push(task);
     tasks = [...active, ...completed];
     taskId = task.id;
     taskIdInput.value = taskId;
@@ -1702,22 +1754,12 @@ async function persistEditedTask() {
     render();
     return true;
   } catch (_error) {
-    taskAutoSaveStatus.textContent = "保存できませんでした";
-    taskAutoSaveStatus.dataset.state = "error";
     return false;
   }
 }
 
-function scheduleTaskAutoSave() {
-  clearTimeout(taskAutoSaveTimer);
-  if (!titleInput.value.trim()) {
-    taskAutoSaveStatus.textContent = "タイトル入力後に自動保存します";
-    taskAutoSaveStatus.dataset.state = "saved";
-    return;
-  }
-  taskAutoSaveStatus.textContent = "保存中…";
-  taskAutoSaveStatus.dataset.state = "saving";
-  taskAutoSaveTimer = setTimeout(persistEditedTask, 250);
+function markTaskEditorDirty() {
+  taskAutoSaveStatus.hidden = true;
 }
 
 async function handleSubmit(event) {
@@ -1828,13 +1870,17 @@ async function removeTag(tag) {
 }
 
 async function clearCompleted() {
-  const completed = getCompletedTasks();
+  const completed = getDeletableCompletedTasks();
   if (completed.length === 0) return;
-  if (!confirm(`完了した${completed.length}件をすべて削除しますか？`)) return;
+  if (!confirm(
+    `先月以前に採番された完了タスク${completed.length}件をすべて削除しますか？`
+    + "\n今月採番された完了タスクは削除されません。"
+  )) return;
 
-  tasks = await saveTasks(tasks.filter((task) => !task.completed));
+  const deletingIds = new Set(completed.map((task) => task.id));
+  tasks = await saveTasks(tasks.filter((task) => !deletingIds.has(task.id)));
   render();
-  showToast("完了したタスクを削除しました");
+  showToast(`先月以前の完了タスク${completed.length}件を削除しました`);
 }
 
 document.querySelector("#addTaskButton").addEventListener("click", () => openTaskDialog());
@@ -1873,7 +1919,7 @@ dueDateInput.addEventListener("input", updateDueDateClearButton);
 clearDueDateButton.addEventListener("click", () => {
   dueDateInput.value = "";
   updateDueDateClearButton();
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
   dueDateInput.focus();
 });
 
@@ -1882,12 +1928,12 @@ titleInput.addEventListener("input", () => {
     titleError.textContent = "";
     titleInput.classList.remove("is-invalid");
   }
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 
 contentInput.addEventListener("input", () => {
   renderContentSelectionHighlights();
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 contentInput.addEventListener("select", renderContentSelectionHighlights);
 contentInput.addEventListener("keyup", renderContentSelectionHighlights);
@@ -1899,10 +1945,10 @@ contentInput.addEventListener("dblclick", () => {
   });
 });
 contentInput.addEventListener("scroll", syncContentHighlightScroll);
-dueDateInput.addEventListener("input", scheduleTaskAutoSave);
-taskTagOptions.addEventListener("change", scheduleTaskAutoSave);
-parentCaseSelect.addEventListener("change", scheduleTaskAutoSave);
-prioritySelect.addEventListener("change", scheduleTaskAutoSave);
+dueDateInput.addEventListener("input", markTaskEditorDirty);
+taskTagOptions.addEventListener("change", markTaskEditorDirty);
+parentCaseSelect.addEventListener("change", markTaskEditorDirty);
+prioritySelect.addEventListener("change", markTaskEditorDirty);
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
@@ -1913,7 +1959,7 @@ linkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 linkInputs.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-link-button");
@@ -1922,7 +1968,7 @@ linkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
-  scheduleTaskAutoSave();
+  markTaskEditorDirty();
 });
 pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 
@@ -1965,19 +2011,23 @@ tagNameInput.addEventListener("input", () => {
 });
 
 chrome.storage.onChanged.addListener(async () => {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 });
 
 (async function initialize() {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 })();
