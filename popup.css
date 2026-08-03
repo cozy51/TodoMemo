@@ -330,13 +330,13 @@ textarea {
 .content-line-count {
   width: fit-content;
   margin: 14px 0 -8px;
-  padding: 2px 7px;
-  color: #5f6f89;
+  padding: 3px 8px;
+  color: #46546d;
   border-radius: 999px;
   background: #edf2fa;
-  font-size: 10px;
-  font-weight: 750;
-  line-height: 1.5;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
 }
 
 .task-content:empty {
