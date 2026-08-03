@@ -28,6 +28,7 @@ const editLinkMessage = document.querySelector("#editLinkMessage");
 const editTitleError = document.querySelector("#editTitleError");
 const autoSaveStatus = document.querySelector("#autoSaveStatus");
 const backupButton = document.querySelector("#backupButton");
+const backupChangeCount = document.querySelector("#backupChangeCount");
 const popupToast = document.querySelector("#popupToast");
 
 let currentTaskId = null;
@@ -36,7 +37,6 @@ let allTasks = [];
 let tags = [];
 let parentCases = [];
 let saveRevision = 0;
-let saveRetryTimer = null;
 let latestSavePromise = Promise.resolve();
 let popupToastTimer = null;
 let isCreatingTask = false;
@@ -159,12 +159,27 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await saveBackupSnapshot(tasks, storedTags, storedParentCases);
+    updateBackupChangeCount(tasks, storedTags, storedParentCases, createBackupSnapshot(
+      tasks, storedTags, storedParentCases
+    ));
     showPopupToast(`${tasks.length}件をバックアップしました`);
   } catch (_error) {
     showPopupToast("バックアップを作成できませんでした", "error");
   } finally {
     backupButton.disabled = false;
   }
+}
+
+function updateBackupChangeCount(tasks, storedTags, storedParentCases, snapshot) {
+  const count = countChangesSinceBackup(tasks, storedTags, storedParentCases, snapshot);
+  backupChangeCount.textContent = count === null ? "–" : String(count);
+  backupChangeCount.hidden = count === null;
+  backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
+  backupButton.title = count === null
+    ? "全データをバックアップ（前回バックアップなし）"
+    : `全データをバックアップ（前回から変更 ${count}件）`;
+  backupButton.setAttribute("aria-label", backupButton.title);
 }
 
 function renderDue(dueDate) {
@@ -409,14 +424,16 @@ function renderParentCaseOptions(selectedId = "") {
 }
 
 async function render() {
-  const [tasks, storedTags, storedParentCases] = await Promise.all([
+  const [tasks, storedTags, storedParentCases, backupSnapshot] = await Promise.all([
     loadTasks(),
     loadTags(),
-    loadParentCases()
+    loadParentCases(),
+    loadBackupSnapshot()
   ]);
   allTasks = tasks;
   tags = storedTags;
   parentCases = storedParentCases;
+  updateBackupChangeCount(tasks, storedTags, storedParentCases, backupSnapshot);
   const activeTasks = tasks.filter((task) => !task.completed);
   const editingTask = !editView.hidden
     ? activeTasks.find((task) => task.id === currentTaskId)
@@ -474,6 +491,32 @@ function renderCurrentTaskDetails() {
     } else {
       appendParentCaseLabel(taskParentCase);
     }
+
+    const linkStatus = document.createElement(parentCase.url ? "a" : "span");
+    linkStatus.className = "parent-case-link-status";
+    linkStatus.dataset.state = parentCase.url ? "linked" : "none";
+    linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
+    if (parentCase.url) {
+      linkStatus.href = parentCase.url;
+      linkStatus.target = "_blank";
+      linkStatus.rel = "noopener noreferrer";
+      linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+    }
+
+    const copyButton = document.createElement("button");
+    copyButton.className = "parent-case-copy-button";
+    copyButton.type = "button";
+    copyButton.textContent = "親案件COPY";
+    copyButton.title = `${parentCase.caseNumber}と親案件名をコピー`;
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
+        showPopupToast("親案件をコピーしました");
+      } catch (_error) {
+        showPopupToast("親案件をコピーできませんでした", "error");
+      }
+    });
+    taskParentCase.append(linkStatus, copyButton);
   }
   renderMarkdown(taskContent, currentTask.content);
   renderDue(currentTask.dueDate);
@@ -504,8 +547,7 @@ function openEditor() {
   editDueDateInput.value = currentTask.dueDate;
   updateDueDateClearButton();
   editTitleError.textContent = "";
-  autoSaveStatus.textContent = "保存済み";
-  autoSaveStatus.dataset.state = "saved";
+  autoSaveStatus.hidden = true;
   renderTagOptions(currentTask.tagIds);
   renderLinkInputs(currentTask.links);
   setLinkMessage("URLまたはメールアドレスを登録できます。");
@@ -531,8 +573,7 @@ function openNewTaskEditor() {
   editDueDateInput.value = "";
   updateDueDateClearButton();
   editTitleError.textContent = "";
-  autoSaveStatus.textContent = "タイトル入力後に自動保存します";
-  autoSaveStatus.dataset.state = "saved";
+  autoSaveStatus.hidden = true;
   renderTagOptions([]);
   renderLinkInputs([]);
   setLinkMessage("URLまたはメールアドレスを登録できます。");
@@ -550,7 +591,7 @@ function handleTaskViewDoubleClick(event) {
   openEditor();
 }
 
-function closeEditor() {
+async function closeEditor() {
   if (isCreatingTask && !editTitleInput.value.trim()) {
     isCreatingTask = false;
     editView.hidden = true;
@@ -560,6 +601,7 @@ function closeEditor() {
     return;
   }
   if (!persistEditorChanges({ quiet: true })) return;
+  await latestSavePromise.catch(() => undefined);
   currentTask = allTasks.find((task) => !task.completed) || currentTask;
   currentTaskId = currentTask?.id || null;
   renderCurrentTaskDetails();
@@ -597,7 +639,7 @@ function persistEditorChanges({ quiet = false } = {}) {
     };
     const active = allTasks.filter((task) => !task.completed);
     const completed = allTasks.filter((task) => task.completed);
-    active.splice(Math.min(1, active.length), 0, target);
+    active.push(target);
     allTasks = [...active, ...completed];
     currentTaskId = target.id;
     currentTask = target;
@@ -633,19 +675,18 @@ function persistEditorChanges({ quiet = false } = {}) {
       if (revision !== saveRevision) return;
       allTasks = savedTasks;
       currentTask = allTasks.find((task) => task.id === currentTaskId) || currentTask;
-      clearTimeout(saveRetryTimer);
       autoSaveStatus.textContent = "保存済み";
       autoSaveStatus.dataset.state = "saved";
     })
     .catch(() => {
       if (revision !== saveRevision) return;
-      autoSaveStatus.textContent = "再保存しています…";
-      autoSaveStatus.dataset.state = "error";
-      clearTimeout(saveRetryTimer);
-      saveRetryTimer = setTimeout(() => persistEditorChanges(), 800);
     });
 
   return true;
+}
+
+function markEditorDirty() {
+  autoSaveStatus.hidden = true;
 }
 
 document.querySelector("#openOrganizer").addEventListener("click", openOrganizer);
@@ -659,12 +700,12 @@ taskView.addEventListener("dblclick", handleTaskViewDoubleClick);
 editTaskForm.addEventListener("submit", (event) => event.preventDefault());
 editTitleInput.addEventListener("input", () => {
   if (editTitleInput.value.trim()) editTitleError.textContent = "";
-  persistEditorChanges();
+  markEditorDirty();
 });
-editParentCaseSelect.addEventListener("change", () => persistEditorChanges());
+editParentCaseSelect.addEventListener("change", markEditorDirty);
 editContentInput.addEventListener("input", () => {
   renderEditContentSelectionHighlights();
-  persistEditorChanges();
+  markEditorDirty();
 });
 editContentInput.addEventListener("select", renderEditContentSelectionHighlights);
 editContentInput.addEventListener("keyup", renderEditContentSelectionHighlights);
@@ -678,15 +719,15 @@ editContentInput.addEventListener("dblclick", () => {
 editContentInput.addEventListener("scroll", syncEditContentHighlightScroll);
 editDueDateInput.addEventListener("input", () => {
   updateDueDateClearButton();
-  persistEditorChanges();
+  markEditorDirty();
 });
 clearEditDueDateButton.addEventListener("click", () => {
   editDueDateInput.value = "";
   updateDueDateClearButton();
-  persistEditorChanges();
+  markEditorDirty();
   editDueDateInput.focus();
 });
-editTagOptions.addEventListener("change", () => persistEditorChanges());
+editTagOptions.addEventListener("change", markEditorDirty);
 editLinkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
@@ -697,7 +738,7 @@ editLinkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
-  persistEditorChanges();
+  markEditorDirty();
 });
 editLinkInputs.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-link-button");
@@ -706,7 +747,7 @@ editLinkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
-  persistEditorChanges();
+  markEditorDirty();
 });
 editPasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 taskPasteLinkButton.addEventListener("click", pasteLinksToCurrentTask);
