@@ -508,7 +508,7 @@ function renderCurrentTaskDetails() {
     copyButton.className = "parent-case-copy-button";
     copyButton.type = "button";
     copyButton.textContent = "親案件COPY";
-    copyButton.title = `${parentCase.caseNumber}と親案件名をコピー`;
+    copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
     copyButton.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));

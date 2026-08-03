@@ -74,7 +74,7 @@ if (copiedEmptyTasks !== "") {
 const copiedParentCase = vm.runInContext(`
   formatParentCaseForCopy({ caseNumber: "TD26-07P6", name: "DX推進" })
 `, context);
-if (copiedParentCase !== "TD26-07P6 DX推進") {
+if (copiedParentCase !== "DX推進_TD26-07P6") {
   throw new Error(`Unexpected parent-case copy format: ${JSON.stringify(copiedParentCase)}`);
 }
 
