@@ -30,4 +30,14 @@ if (missingBackupCount !== null) {
   throw new Error("A missing backup must not be displayed as zero changes");
 }
 
+const compactCount = vm.runInContext(`
+  (() => {
+    const tasks = [{ id: "task-1", title: "同じ内容" }];
+    return countChangesSinceBackup(tasks, [], [], createBackupSnapshot(tasks, [], []));
+  })()
+`, context);
+if (compactCount !== 0) {
+  throw new Error(`A compact snapshot should match its source; received ${compactCount}`);
+}
+
 console.log("Backup-change count tests: OK");

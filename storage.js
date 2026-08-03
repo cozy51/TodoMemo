@@ -469,11 +469,29 @@ async function saveTasks(tasks) {
   return normalized;
 }
 
+function createItemFingerprint(item) {
+  const source = JSON.stringify(item);
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function createCollectionSnapshot(items) {
+  return items.map((item) => ({
+    id: String(item.id),
+    fingerprint: createItemFingerprint(item)
+  }));
+}
+
 function createBackupSnapshot(tasks, tags, parentCases) {
   return {
-    tasks: tasks.map((task) => ({ ...task })),
-    tags: tags.map((tag) => ({ ...tag })),
-    parentCases: parentCases.map((parentCase) => ({ ...parentCase }))
+    version: 2,
+    tasks: createCollectionSnapshot(tasks),
+    tags: createCollectionSnapshot(tags),
+    parentCases: createCollectionSnapshot(parentCases)
   };
 }
 
@@ -492,16 +510,30 @@ async function loadBackupSnapshot() {
     || !Array.isArray(snapshot.tags) || !Array.isArray(snapshot.parentCases)) {
     return null;
   }
-  return snapshot;
+  if (snapshot.version === 2) return snapshot;
+
+  // Version 1 stored complete records and could consume most of chrome.storage.local.
+  // Compact it as soon as the extension is updated so ordinary task saves keep working.
+  const compactSnapshot = createBackupSnapshot(
+    snapshot.tasks, snapshot.tags, snapshot.parentCases
+  );
+  await chrome.storage.local.set({
+    [TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY]: compactSnapshot
+  });
+  return compactSnapshot;
 }
 
 function countCollectionChanges(currentItems, backupItems) {
-  const currentById = new Map(currentItems.map((item) => [String(item.id), item]));
-  const backupById = new Map(backupItems.map((item) => [String(item.id), item]));
+  const currentById = new Map(currentItems.map((item) => [
+    String(item.id), createItemFingerprint(item)
+  ]));
+  const backupById = new Map(backupItems.map((item) => [
+    String(item.id), item.fingerprint || createItemFingerprint(item)
+  ]));
   const ids = new Set([...currentById.keys(), ...backupById.keys()]);
   let changes = 0;
   ids.forEach((id) => {
-    if (JSON.stringify(currentById.get(id)) !== JSON.stringify(backupById.get(id))) {
+    if (currentById.get(id) !== backupById.get(id)) {
       changes += 1;
     }
   });

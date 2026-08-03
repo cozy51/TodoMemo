@@ -1630,7 +1630,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 }
 
 async function closeTaskDialog() {
-  if (titleInput.value.trim() && !(await persistEditedTask())) return;
+  if (titleInput.value.trim()) await persistEditedTask();
   clearTimeout(taskAutoSaveTimer);
   taskDialog.close();
 }
