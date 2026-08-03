@@ -61,6 +61,7 @@ const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
 const backupButton = document.querySelector("#backupButton");
+const backupChangeCount = document.querySelector("#backupChangeCount");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
 const restoreFileInput = document.querySelector("#restoreFileInput");
 const restoreDialog = document.querySelector("#restoreDialog");
@@ -82,6 +83,7 @@ let pendingRestore = null;
 let taskAutoSaveTimer = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
+const TASK_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
@@ -193,12 +195,24 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await saveBackupSnapshot(storedTasks, storedTags, storedParentCases);
+    updateBackupChangeCount(storedTasks, storedTags, storedParentCases, createBackupSnapshot(
+      storedTasks, storedTags, storedParentCases
+    ));
     showToast(`${storedTasks.length}件をバックアップしました`);
   } catch (_error) {
     showToast("バックアップを作成できませんでした", "error");
   } finally {
     backupButton.disabled = false;
   }
+}
+
+function updateBackupChangeCount(currentTasks, currentTags, currentParentCases, snapshot) {
+  const count = countChangesSinceBackup(
+    currentTasks, currentTags, currentParentCases, snapshot
+  );
+  backupChangeCount.textContent = count === null ? "未作成" : `変更 ${count}件`;
+  backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
 }
 
 function getActiveTaskAnchorId(task) {
@@ -1565,7 +1579,7 @@ function renderPriorityOptions(task = null) {
       return option;
     })
   );
-  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : Math.min(2, optionCount));
+  prioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : optionCount);
   prioritySelect.disabled = Boolean(task?.completed);
 }
 
@@ -1617,7 +1631,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 }
 
 async function closeTaskDialog() {
-  if (titleInput.value.trim() && !(await persistEditedTask())) return;
+  if (titleInput.value.trim()) await persistEditedTask();
   clearTimeout(taskAutoSaveTimer);
   taskDialog.close();
 }
@@ -1672,7 +1686,7 @@ async function persistEditedTask() {
       createdAt: new Date().toISOString(),
       completedAt: null
     };
-    active.splice(Math.min(1, active.length), 0, task);
+    active.push(task);
     tasks = [...active, ...completed];
     taskId = task.id;
     taskIdInput.value = taskId;
@@ -1702,7 +1716,7 @@ async function persistEditedTask() {
     render();
     return true;
   } catch (_error) {
-    taskAutoSaveStatus.textContent = "保存できませんでした";
+    taskAutoSaveStatus.textContent = "未保存の変更があります";
     taskAutoSaveStatus.dataset.state = "error";
     return false;
   }
@@ -1715,9 +1729,9 @@ function scheduleTaskAutoSave() {
     taskAutoSaveStatus.dataset.state = "saved";
     return;
   }
-  taskAutoSaveStatus.textContent = "保存中…";
+  taskAutoSaveStatus.textContent = "未保存の変更があります";
   taskAutoSaveStatus.dataset.state = "saving";
-  taskAutoSaveTimer = setTimeout(persistEditedTask, 250);
+  taskAutoSaveTimer = setTimeout(persistEditedTask, TASK_AUTO_SAVE_DELAY_MS);
 }
 
 async function handleSubmit(event) {
@@ -1965,19 +1979,23 @@ tagNameInput.addEventListener("input", () => {
 });
 
 chrome.storage.onChanged.addListener(async () => {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 });
 
 (async function initialize() {
+  const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases()
   ]);
+  updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
 })();
