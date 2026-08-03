@@ -170,7 +170,7 @@ function formatTaskForCopy(task) {
   const caseNumber = String(task.caseNumber || "").trim();
   const title = String(task.title || "").trim();
   const content = String(task.content || "").replace(/\r\n?/g, "\n");
-  return `(${caseNumber}) ${title} [\n${content}\n]\n`;
+  return `${caseNumber}_${title} [\n${content}\n]\n`;
 }
 
 function formatParentCaseForCopy(parentCase) {
