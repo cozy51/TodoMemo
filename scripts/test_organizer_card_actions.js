@@ -23,14 +23,23 @@ if (!parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" 
 if (!parentGroupFunction.includes('addTaskButton.textContent = "＋ タスク追加"')) {
   throw new Error("Parent-case task creation must use a dedicated button");
 }
-if (!parentGroupFunction.includes('ideaButton.textContent = `${parentCase.ideaMemos.length}件`')) {
-  throw new Error("Parent cases must render an idea-memo count button");
+if (!parentGroupFunction.includes(
+  'ideaButton.textContent = `💡 アイデアメモ ${parentCase.ideaMemos.length}件`'
+)) {
+  throw new Error("Parent cases must render a clearly labeled idea-memo count button");
 }
 if (parentGroupFunction.includes('ideas.className = "parent-idea-memos"')) {
   throw new Error("Idea memos must remain hidden until the count button opens the dialog");
 }
 if (!source.includes("function openParentIdeaDialog(parentCaseId)")) {
   throw new Error("The idea-memo count button must open a dialog");
+}
+if (
+  parentGroupFunction.includes('document.createElement("input")')
+  || parentGroupFunction.includes('document.createElement("form")')
+  || parentGroupFunction.includes('remove.textContent = "削除"')
+) {
+  throw new Error("The parent-case list must only expose the idea-memo popup button");
 }
 if (!html.includes('<dialog id="parentIdeaDialog"')) {
   throw new Error("The organizer must provide an idea-memo dialog");

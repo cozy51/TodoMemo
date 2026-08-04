@@ -1395,8 +1395,10 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     const ideaButton = document.createElement("button");
     ideaButton.className = "parent-task-group-idea-button";
     ideaButton.type = "button";
-    ideaButton.textContent = `${parentCase.ideaMemos.length}件`;
+    ideaButton.textContent = `💡 アイデアメモ ${parentCase.ideaMemos.length}件`;
     ideaButton.title = `${parentCase.name}のアイデアメモを表示`;
+    ideaButton.setAttribute("aria-haspopup", "dialog");
+    ideaButton.setAttribute("aria-controls", "parentIdeaDialog");
     ideaButton.setAttribute(
       "aria-label",
       `${parentCase.name}のアイデアメモ ${parentCase.ideaMemos.length}件を表示`
