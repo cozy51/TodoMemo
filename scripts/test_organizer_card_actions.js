@@ -76,17 +76,25 @@ if (!source.includes('input.addEventListener("blur", persistOpenParentIdeaEdits)
 if (!source.includes("function persistOpenParentIdeaEdits()")) {
   throw new Error("Edited idea memos must be persisted automatically");
 }
-if (!source.includes('remove.addEventListener("pointerdown", (event) => {')) {
-  throw new Error("Idea-memo deletion must not be swallowed by an edit-field blur");
+if (!source.includes('parentIdeaDialogList.addEventListener("click", deleteParentIdeaMemoFromEvent)')) {
+  throw new Error("Idea-memo deletion must use stable event delegation across dialog rerenders");
 }
-if (!source.includes("deleteMemo();")) {
-  throw new Error("Idea memos must begin deletion on the initial pointer press");
-}
-if (!source.includes("if (deleteStarted) return;")) {
-  throw new Error("Pointer and click events must not delete an idea memo twice");
+if (!source.includes(
+  'parentIdeaDialogList.addEventListener("pointerdown", deleteParentIdeaMemoFromEvent)'
+)) {
+  throw new Error("Idea-memo deletion must start before edit-field blur can replace the rows");
 }
 if (!source.includes('input.addEventListener("input", () => {')) {
-  throw new Error("Idea-memo edits must update in-memory state before blur or deletion");
+  throw new Error("Idea-memo inputs must track pending edits");
+}
+if (!source.includes("parentCases = removeParentIdeaMemo(")) {
+  throw new Error("Idea-memo deletion must update the current parent-case collection immutably");
+}
+if (!source.includes("remove.dataset.memoId\n  );")) {
+  throw new Error("Idea-memo deletion must use the stable memo id from the clicked row");
+}
+if (!source.includes("if (parentIdeaDialog.open) renderParentIdeaDialog();")) {
+  throw new Error("The idea-memo dialog must refresh after storage replaces parent-case objects");
 }
 if (!source.includes("function queueParentIdeaSave(message)")) {
   throw new Error("Idea-memo writes must be serialized to prevent stale saves restoring deletions");

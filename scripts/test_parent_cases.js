@@ -143,6 +143,18 @@ if (
   throw new Error(`Unexpected normalized idea memos: ${JSON.stringify(normalizedIdeaMemos)}`);
 }
 
+const remainingIdeaMemoIds = run(`
+  removeParentIdeaMemo([
+    {
+      id: "parent-1",
+      ideaMemos: [{ id: "idea-1" }, { id: "idea-2" }]
+    }
+  ], "parent-1", "idea-1")[0].ideaMemos.map((memo) => memo.id)
+`);
+if (JSON.stringify(remainingIdeaMemoIds) !== JSON.stringify(["idea-2"])) {
+  throw new Error(`Unexpected memos after deletion: ${JSON.stringify(remainingIdeaMemoIds)}`);
+}
+
 const parentCaseId = run(`normalizeTask({ parentCaseId: "parent-1" }, 0).parentCaseId`);
 if (parentCaseId !== "parent-1") {
   throw new Error(`Expected parentCaseId to be retained, received ${parentCaseId}`);

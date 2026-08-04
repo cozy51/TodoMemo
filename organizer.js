@@ -1603,7 +1603,6 @@ function renderParentIdeaDialog() {
     input.dataset.memoId = memo.id;
     input.setAttribute("aria-label", `アイデアメモ ${index + 1}を編集`);
     input.addEventListener("input", () => {
-      memo.text = input.value;
       input.dataset.dirty = "true";
     });
     input.addEventListener("blur", persistOpenParentIdeaEdits);
@@ -1614,24 +1613,11 @@ function renderParentIdeaDialog() {
       }
     });
     const remove = document.createElement("button");
+    remove.className = "parent-idea-dialog-delete";
     remove.type = "button";
     remove.textContent = "削除";
     remove.title = `アイデアメモ「${memo.text}」を削除`;
-    let deleteStarted = false;
-    const deleteMemo = () => {
-      if (deleteStarted) return;
-      deleteStarted = true;
-      applyOpenParentIdeaEdits();
-      parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
-      render();
-      renderParentIdeaDialog();
-      queueParentIdeaSave("アイデアメモを削除しました");
-    };
-    remove.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      deleteMemo();
-    });
-    remove.addEventListener("click", deleteMemo);
+    remove.dataset.memoId = memo.id;
     item.append(number, input, remove);
     return item;
   }));
@@ -2220,6 +2206,25 @@ parentIdeaDialogForm.addEventListener("submit", async (event) => {
   showToast("アイデアメモを追加しました");
 });
 
+function deleteParentIdeaMemoFromEvent(event) {
+  const remove = event.target.closest(".parent-idea-dialog-delete");
+  if (!remove || remove.dataset.deleting === "true") return;
+  remove.dataset.deleting = "true";
+  if (event.type === "pointerdown") event.preventDefault();
+  applyOpenParentIdeaEdits();
+  parentCases = removeParentIdeaMemo(
+    parentCases,
+    ideaMemoParentCaseId,
+    remove.dataset.memoId
+  );
+  render();
+  renderParentIdeaDialog();
+  queueParentIdeaSave("アイデアメモを削除しました");
+}
+
+parentIdeaDialogList.addEventListener("pointerdown", deleteParentIdeaMemoFromEvent);
+parentIdeaDialogList.addEventListener("click", deleteParentIdeaMemoFromEvent);
+
 document.querySelector("#closeParentIdeaDialogButton").addEventListener(
   "click",
   closeParentIdeaDialog
@@ -2279,6 +2284,7 @@ chrome.storage.onChanged.addListener(async () => {
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
+  if (parentIdeaDialog.open) renderParentIdeaDialog();
 });
 
 (async function initialize() {

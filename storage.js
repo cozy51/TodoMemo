@@ -234,6 +234,15 @@ function normalizeParentIdeaMemos(values) {
     .slice(0, TODO_MEMO_MAX_PARENT_IDEA_MEMOS);
 }
 
+function removeParentIdeaMemo(parentCases, parentCaseId, memoId) {
+  return parentCases.map((parentCase) => parentCase.id === parentCaseId
+    ? {
+        ...parentCase,
+        ideaMemos: parentCase.ideaMemos.filter((memo) => memo.id !== memoId)
+      }
+    : parentCase);
+}
+
 function normalizeTaskLinks(values) {
   const normalized = Array.isArray(values)
     ? values.map(normalizeTaskLink).filter(Boolean)
