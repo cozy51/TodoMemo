@@ -3,6 +3,7 @@ const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
 const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_MAX_LINKS = 3;
+const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
 const TODO_MEMO_CASE_SEQUENCE = [
   ...Array.from({ length: 99 }, (_, index) => String(index + 1).padStart(2, "0")),
@@ -170,7 +171,7 @@ function formatTaskForCopy(task) {
   const caseNumber = String(task.caseNumber || "").trim();
   const title = String(task.title || "").trim();
   const content = String(task.content || "").replace(/\r\n?/g, "\n");
-  return `(${caseNumber}) ${title} [\n${content}\n]\n`;
+  return `${caseNumber}_${title} [\n${content}\n]\n`;
 }
 
 function formatParentCaseForCopy(parentCase) {
@@ -219,6 +220,27 @@ function normalizeParentCaseUrl(value) {
   if (!normalized) return "";
   const url = new URL(normalized);
   return ["http:", "https:"].includes(url.protocol) ? normalized : "";
+}
+
+function normalizeParentIdeaMemos(values) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((memo) => ({
+      id: String(memo?.id || crypto.randomUUID()),
+      text: String(memo?.text || "").trim().slice(0, 500),
+      createdAt: memo?.createdAt || new Date().toISOString()
+    }))
+    .filter((memo) => memo.text)
+    .slice(0, TODO_MEMO_MAX_PARENT_IDEA_MEMOS);
+}
+
+function removeParentIdeaMemo(parentCases, parentCaseId, memoId) {
+  return parentCases.map((parentCase) => parentCase.id === parentCaseId
+    ? {
+        ...parentCase,
+        ideaMemos: parentCase.ideaMemos.filter((memo) => memo.id !== memoId)
+      }
+    : parentCase);
 }
 
 function normalizeTaskLinks(values) {
@@ -368,6 +390,7 @@ function normalizeParentCase(parentCase) {
     caseNumber: String(parentCase.caseNumber || "").trim().toUpperCase(),
     name: String(parentCase.name || "").trim(),
     url: normalizeParentCaseUrl(parentCase.url),
+    ideaMemos: normalizeParentIdeaMemos(parentCase.ideaMemos),
     createdAt: parentCase.createdAt || new Date().toISOString()
   };
 }

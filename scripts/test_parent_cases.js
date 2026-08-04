@@ -127,6 +127,34 @@ if (rejectedUrl !== "") {
   throw new Error(`Expected mailto URL to be rejected, received ${rejectedUrl}`);
 }
 
+const normalizedIdeaMemos = run(`
+  normalizeParentCase({
+    ideaMemos: [
+      { id: "idea-1", text: "  部品構成を再検討  ", createdAt: "2026-08-04T00:00:00Z" },
+      { id: "idea-2", text: "   " }
+    ]
+  }).ideaMemos
+`);
+if (
+  normalizedIdeaMemos.length !== 1
+  || normalizedIdeaMemos[0].id !== "idea-1"
+  || normalizedIdeaMemos[0].text !== "部品構成を再検討"
+) {
+  throw new Error(`Unexpected normalized idea memos: ${JSON.stringify(normalizedIdeaMemos)}`);
+}
+
+const remainingIdeaMemoIds = run(`
+  removeParentIdeaMemo([
+    {
+      id: "parent-1",
+      ideaMemos: [{ id: "idea-1" }, { id: "idea-2" }]
+    }
+  ], "parent-1", "idea-1")[0].ideaMemos.map((memo) => memo.id)
+`);
+if (JSON.stringify(remainingIdeaMemoIds) !== JSON.stringify(["idea-2"])) {
+  throw new Error(`Unexpected memos after deletion: ${JSON.stringify(remainingIdeaMemoIds)}`);
+}
+
 const parentCaseId = run(`normalizeTask({ parentCaseId: "parent-1" }, 0).parentCaseId`);
 if (parentCaseId !== "parent-1") {
   throw new Error(`Expected parentCaseId to be retained, received ${parentCaseId}`);

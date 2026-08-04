@@ -60,6 +60,14 @@ const parentCaseGroupModeButton = document.querySelector("#parentCaseGroupModeBu
 const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
+const parentIdeaDialog = document.querySelector("#parentIdeaDialog");
+const parentIdeaDialogCaseNumber = document.querySelector("#parentIdeaDialogCaseNumber");
+const parentIdeaDialogTitle = document.querySelector("#parentIdeaDialogTitle");
+const parentIdeaDialogCount = document.querySelector("#parentIdeaDialogCount");
+const parentIdeaDialogForm = document.querySelector("#parentIdeaDialogForm");
+const parentIdeaDialogInput = document.querySelector("#parentIdeaDialogInput");
+const parentIdeaDialogList = document.querySelector("#parentIdeaDialogList");
+const parentIdeaDialogEmpty = document.querySelector("#parentIdeaDialogEmpty");
 const backupButton = document.querySelector("#backupButton");
 const backupChangeCount = document.querySelector("#backupChangeCount");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
@@ -81,8 +89,24 @@ let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
 let taskAutoSavePromise = Promise.resolve();
+let parentIdeaSavePromise = Promise.resolve();
+let parentIdeaSaveRevision = 0;
 let detailTaskId = null;
+let ideaMemoParentCaseId = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
+
+function removeRetiredInlineIdeaMemoEditors(root = parentCaseGroups) {
+  if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
+  root.querySelectorAll?.(".parent-idea-memos").forEach((element) => element.remove());
+}
+
+new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node instanceof Element) removeRetiredInlineIdeaMemoEditors(node);
+    });
+  });
+}).observe(parentCaseGroups, { childList: true, subtree: true });
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
@@ -1359,17 +1383,14 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const header = document.createElement("div");
   header.className = "parent-task-group-header";
 
-  const identity = document.createElement(parentCase ? "button" : "div");
+  const identity = document.createElement(parentCase?.url ? "a" : "div");
   identity.className = "parent-task-group-identity";
-  if (parentCase) {
-    identity.type = "button";
-    identity.classList.add("parent-task-group-add-button");
-    identity.title = `${parentCase.caseNumber}を親案件にして新しいタスクを追加`;
-    identity.setAttribute(
-      "aria-label",
-      `${parentCase.caseNumber} ${parentCase.name}を親案件にして新しいタスクを追加`
-    );
-    identity.addEventListener("click", () => openTaskDialog(null, parentCase.id));
+  if (parentCase?.url) {
+    identity.classList.add("parent-task-group-identity-link");
+    identity.href = parentCase.url;
+    identity.target = "_blank";
+    identity.rel = "noopener noreferrer";
+    identity.title = `${parentCase.name}のリンクを開く: ${parentCase.url}`;
   }
 
   const number = document.createElement("span");
@@ -1379,28 +1400,37 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const name = document.createElement("h3");
   name.textContent = ensureEmojiPresentation(parentCase?.name || "親案件なし");
   identity.append(number, name);
-  if (parentCase) {
-    const addLabel = document.createElement("span");
-    addLabel.className = "parent-task-group-add-label";
-    addLabel.setAttribute("aria-hidden", "true");
-    addLabel.textContent = "＋ タスク追加";
-    identity.append(addLabel);
-  }
 
   const summary = document.createElement("span");
   summary.className = "parent-task-group-summary";
   summary.textContent = `${groupedTasks.length}件`;
 
-  header.append(identity, summary);
-  if (parentCase?.url) {
-    const parentLink = document.createElement("a");
-    parentLink.className = "parent-task-group-link";
-    parentLink.href = parentCase.url;
-    parentLink.target = "_blank";
-    parentLink.rel = "noopener noreferrer";
-    parentLink.textContent = "親案件リンク ↗";
-    parentLink.title = parentCase.url;
-    header.append(parentLink);
+  header.append(identity);
+  if (parentCase) {
+    const ideaButton = document.createElement("button");
+    ideaButton.className = "parent-task-group-idea-button";
+    ideaButton.type = "button";
+    ideaButton.dataset.state = parentCase.ideaMemos.length > 0 ? "has-memos" : "empty";
+    ideaButton.textContent = `💡 アイデアメモ ${parentCase.ideaMemos.length}件`;
+    ideaButton.title = `${parentCase.name}のアイデアメモを表示`;
+    ideaButton.setAttribute("aria-haspopup", "dialog");
+    ideaButton.setAttribute("aria-controls", "parentIdeaDialog");
+    ideaButton.setAttribute(
+      "aria-label",
+      `${parentCase.name}のアイデアメモ ${parentCase.ideaMemos.length}件を表示`
+    );
+    ideaButton.addEventListener("click", () => openParentIdeaDialog(parentCase.id));
+    header.append(ideaButton);
+  }
+  header.append(summary);
+  if (parentCase) {
+    const addTaskButton = document.createElement("button");
+    addTaskButton.className = "parent-task-group-add-task";
+    addTaskButton.type = "button";
+    addTaskButton.textContent = "＋ タスク追加";
+    addTaskButton.title = `${parentCase.caseNumber}を親案件にして新しいタスクを追加`;
+    addTaskButton.addEventListener("click", () => openTaskDialog(null, parentCase.id));
+    header.append(addTaskButton);
   }
   group.append(header);
 
@@ -1449,6 +1479,21 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 
     link.append(priority, caseNumber, title, due);
 
+    const taskLinks = document.createElement("div");
+    taskLinks.className = "parent-task-item-links";
+    taskLinks.setAttribute("aria-label", `${task.caseNumber}の関連リンク`);
+    if (task.links.length > 0) {
+      taskLinks.append(...task.links.map((taskLink) =>
+        createTaskLink(taskLink, "table-link parent-task-link")
+      ));
+    } else {
+      const emptyLinks = document.createElement("span");
+      emptyLinks.className = "parent-task-item-links-empty";
+      emptyLinks.textContent = "—";
+      emptyLinks.setAttribute("aria-label", "関連リンクなし");
+      taskLinks.append(emptyLinks);
+    }
+
     const editButton = document.createElement("button");
     editButton.className = "parent-task-item-edit";
     editButton.type = "button";
@@ -1457,11 +1502,107 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     editButton.setAttribute("aria-label", `${task.caseNumber} ${task.title}を編集`);
     editButton.addEventListener("click", () => openTaskDialog(task));
 
-    item.append(link, editButton);
+    item.append(link, taskLinks, editButton);
     list.append(item);
   });
   group.append(list);
   return group;
+}
+
+function renderParentIdeaDialog() {
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  if (!parentCase) {
+    if (parentIdeaDialog.open) parentIdeaDialog.close();
+    return;
+  }
+  parentIdeaDialogCaseNumber.textContent = parentCase.caseNumber;
+  parentIdeaDialogTitle.textContent = ensureEmojiPresentation(parentCase.name);
+  parentIdeaDialogCount.textContent = `${parentCase.ideaMemos.length}件`;
+  parentIdeaDialogEmpty.hidden = parentCase.ideaMemos.length > 0;
+  parentIdeaDialogInput.disabled = parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS;
+
+  parentIdeaDialogList.replaceChildren(...parentCase.ideaMemos.map((memo, index) => {
+    const item = document.createElement("li");
+    const number = document.createElement("span");
+    number.className = "parent-idea-dialog-item-number";
+    number.textContent = `💡 ${index + 1}`;
+    number.setAttribute("aria-hidden", "true");
+    const input = document.createElement("input");
+    input.className = "parent-idea-dialog-edit-input";
+    input.type = "text";
+    input.maxLength = 500;
+    input.value = memo.text;
+    input.dataset.memoId = memo.id;
+    input.setAttribute("aria-label", `アイデアメモ ${index + 1}を編集`);
+    input.addEventListener("input", () => {
+      input.dataset.dirty = "true";
+    });
+    input.addEventListener("blur", persistOpenParentIdeaEdits);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      }
+    });
+    const remove = document.createElement("button");
+    remove.className = "parent-idea-dialog-delete";
+    remove.type = "button";
+    remove.textContent = "削除";
+    remove.title = `アイデアメモ「${memo.text}」を削除`;
+    remove.dataset.memoId = memo.id;
+    item.append(number, input, remove);
+    return item;
+  }));
+}
+
+function applyOpenParentIdeaEdits() {
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  if (!parentCase) return false;
+  let changed = false;
+  parentIdeaDialogList.querySelectorAll(".parent-idea-dialog-edit-input").forEach((input) => {
+    const memo = parentCase.ideaMemos.find((item) => item.id === input.dataset.memoId);
+    const nextText = input.value.trim();
+    if (!memo || !nextText || input.dataset.dirty !== "true") return;
+    memo.text = nextText;
+    delete input.dataset.dirty;
+    changed = true;
+  });
+  return changed;
+}
+
+function queueParentIdeaSave(message) {
+  const revision = ++parentIdeaSaveRevision;
+  const snapshot = parentCases.map((parentCase) => ({
+    ...parentCase,
+    ideaMemos: parentCase.ideaMemos.map((memo) => ({ ...memo }))
+  }));
+  parentIdeaSavePromise = parentIdeaSavePromise
+    .catch(() => undefined)
+    .then(async () => {
+      const savedParentCases = await saveParentCases(snapshot);
+      if (revision === parentIdeaSaveRevision) parentCases = savedParentCases;
+      if (message) showToast(message);
+    });
+  return parentIdeaSavePromise;
+}
+
+function persistOpenParentIdeaEdits() {
+  if (!applyOpenParentIdeaEdits()) return;
+  queueParentIdeaSave("アイデアメモを自動保存しました");
+}
+
+function openParentIdeaDialog(parentCaseId) {
+  ideaMemoParentCaseId = parentCaseId;
+  parentIdeaDialogInput.value = "";
+  renderParentIdeaDialog();
+  parentIdeaDialog.showModal();
+  parentIdeaDialogInput.focus();
+}
+
+function closeParentIdeaDialog() {
+  persistOpenParentIdeaEdits();
+  ideaMemoParentCaseId = null;
+  parentIdeaDialog.close();
 }
 
 function renderParentCaseGroups() {
@@ -1474,6 +1615,7 @@ function renderParentCaseGroups() {
       createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId)
     )
   );
+  removeRetiredInlineIdeaMemoEditors();
 }
 
 function setParentCaseViewMode(mode) {
@@ -1845,6 +1987,7 @@ async function addParentCase(event) {
     caseNumber,
     name,
     url,
+    ideaMemos: [],
     createdAt: new Date().toISOString()
   };
   parentCases = await saveParentCases([...parentCases, parentCase]);
@@ -1973,6 +2116,59 @@ linkInputs.addEventListener("click", (event) => {
 });
 pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 
+parentIdeaDialogForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  const text = parentIdeaDialogInput.value.trim();
+  if (!parentCase || !text) return;
+  if (parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS) {
+    showToast(`アイデアメモは${TODO_MEMO_MAX_PARENT_IDEA_MEMOS}件まで登録できます`);
+    return;
+  }
+  parentCase.ideaMemos.push({
+    id: crypto.randomUUID(),
+    text,
+    createdAt: new Date().toISOString()
+  });
+  parentCases = await saveParentCases(parentCases);
+  parentIdeaDialogInput.value = "";
+  render();
+  renderParentIdeaDialog();
+  parentIdeaDialogInput.focus();
+  showToast("アイデアメモを追加しました");
+});
+
+function deleteParentIdeaMemoFromEvent(event) {
+  const remove = event.target.closest(".parent-idea-dialog-delete");
+  if (!remove || remove.dataset.deleting === "true") return;
+  remove.dataset.deleting = "true";
+  if (event.type === "pointerdown") event.preventDefault();
+  applyOpenParentIdeaEdits();
+  parentCases = removeParentIdeaMemo(
+    parentCases,
+    ideaMemoParentCaseId,
+    remove.dataset.memoId
+  );
+  render();
+  renderParentIdeaDialog();
+  queueParentIdeaSave("アイデアメモを削除しました");
+}
+
+parentIdeaDialogList.addEventListener("pointerdown", deleteParentIdeaMemoFromEvent);
+parentIdeaDialogList.addEventListener("click", deleteParentIdeaMemoFromEvent);
+
+document.querySelector("#closeParentIdeaDialogButton").addEventListener(
+  "click",
+  closeParentIdeaDialog
+);
+parentIdeaDialog.addEventListener("click", (event) => {
+  if (event.target === parentIdeaDialog) closeParentIdeaDialog();
+});
+parentIdeaDialog.addEventListener("close", () => {
+  persistOpenParentIdeaEdits();
+  ideaMemoParentCaseId = null;
+});
+
 taskDialog.addEventListener("click", (event) => {
   if (event.target === taskDialog) closeTaskDialog();
 });
@@ -2020,6 +2216,7 @@ chrome.storage.onChanged.addListener(async () => {
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
+  if (parentIdeaDialog.open) renderParentIdeaDialog();
 });
 
 (async function initialize() {
