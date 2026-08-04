@@ -2,6 +2,7 @@ const fs = require("fs");
 
 const source = fs.readFileSync("organizer.js", "utf8");
 const html = fs.readFileSync("organizer.html", "utf8");
+const css = fs.readFileSync("organizer.css", "utf8");
 
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");
@@ -28,8 +29,10 @@ if (!parentGroupFunction.includes(
 )) {
   throw new Error("Parent cases must render a clearly labeled idea-memo count button");
 }
-if (parentGroupFunction.includes('ideas.className = "parent-idea-memos"')) {
-  throw new Error("Idea memos must remain hidden until the count button opens the dialog");
+if (!parentGroupFunction.includes(
+  'ideaButton.dataset.state = parentCase.ideaMemos.length > 0 ? "has-memos" : "empty"'
+)) {
+  throw new Error("The idea-memo button must distinguish empty and non-empty states");
 }
 if (!source.includes("function openParentIdeaDialog(parentCaseId)")) {
   throw new Error("The idea-memo count button must open a dialog");
@@ -43,6 +46,12 @@ if (
 }
 if (!html.includes('<dialog id="parentIdeaDialog"')) {
   throw new Error("The organizer must provide an idea-memo dialog");
+}
+if (source.includes('ideas.className = "parent-idea-memos"') || css.includes(".parent-idea-memos")) {
+  throw new Error("The retired inline idea-memo editor must be removed, not merely hidden");
+}
+if (!css.includes('.parent-task-group-idea-button[data-state="empty"]')) {
+  throw new Error("Empty idea-memo buttons must have a distinct visual state");
 }
 
 const renderFunction = source.match(/function render\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
