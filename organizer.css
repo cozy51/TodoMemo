@@ -1976,6 +1976,90 @@ button {
   text-align: center;
 }
 
+.parent-task-group-idea-button:focus-visible,
+.parent-task-group-add-task:focus-visible {
+  outline: 3px solid rgba(104, 66, 184, .22);
+  outline-offset: 2px;
+}
+
+.parent-idea-dialog-body {
+  padding: 30px;
+}
+
+.parent-idea-dialog .dialog-header {
+  margin-bottom: 20px;
+}
+
+.parent-idea-dialog-count {
+  color: #6842b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.parent-idea-dialog .parent-idea-dialog-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0;
+}
+
+.parent-idea-dialog-form input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d8cbea;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.parent-idea-dialog-form input:focus {
+  border-color: #8a61d1;
+  outline: 3px solid rgba(104, 66, 184, .12);
+}
+
+.parent-idea-dialog-form button,
+.parent-idea-dialog-list button {
+  padding: 7px 10px;
+  color: #6842b8;
+  border: 1px solid #cdbde9;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.parent-idea-dialog-list {
+  display: grid;
+  gap: 5px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parent-idea-dialog-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px 6px 10px;
+  border-radius: 7px;
+  background: #fff;
+  color: #3d344b;
+  font-size: 12px;
+}
+
+.parent-idea-dialog-list span {
+  overflow-wrap: anywhere;
+}
+
+.parent-idea-dialog-empty {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
 .parent-task-group-list {
   margin: 0;
   padding: 0;
