@@ -3,6 +3,7 @@ const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
 const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_MAX_LINKS = 3;
+const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
 const TODO_MEMO_CASE_SEQUENCE = [
   ...Array.from({ length: 99 }, (_, index) => String(index + 1).padStart(2, "0")),
@@ -221,6 +222,18 @@ function normalizeParentCaseUrl(value) {
   return ["http:", "https:"].includes(url.protocol) ? normalized : "";
 }
 
+function normalizeParentIdeaMemos(values) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((memo) => ({
+      id: String(memo?.id || crypto.randomUUID()),
+      text: String(memo?.text || "").trim().slice(0, 500),
+      createdAt: memo?.createdAt || new Date().toISOString()
+    }))
+    .filter((memo) => memo.text)
+    .slice(0, TODO_MEMO_MAX_PARENT_IDEA_MEMOS);
+}
+
 function normalizeTaskLinks(values) {
   const normalized = Array.isArray(values)
     ? values.map(normalizeTaskLink).filter(Boolean)
@@ -368,6 +381,7 @@ function normalizeParentCase(parentCase) {
     caseNumber: String(parentCase.caseNumber || "").trim().toUpperCase(),
     name: String(parentCase.name || "").trim(),
     url: normalizeParentCaseUrl(parentCase.url),
+    ideaMemos: normalizeParentIdeaMemos(parentCase.ideaMemos),
     createdAt: parentCase.createdAt || new Date().toISOString()
   };
 }
