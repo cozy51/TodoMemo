@@ -85,6 +85,15 @@ if (!source.includes("deleteMemo();")) {
 if (!source.includes("if (deleteStarted) return;")) {
   throw new Error("Pointer and click events must not delete an idea memo twice");
 }
+if (!source.includes('input.addEventListener("input", () => {')) {
+  throw new Error("Idea-memo edits must update in-memory state before blur or deletion");
+}
+if (!source.includes("function queueParentIdeaSave(message)")) {
+  throw new Error("Idea-memo writes must be serialized to prevent stale saves restoring deletions");
+}
+if (!source.includes("const snapshot = parentCases.map")) {
+  throw new Error("Each queued idea-memo save must persist an immutable snapshot");
+}
 if (!source.includes("applyOpenParentIdeaEdits();")) {
   throw new Error("Idea-memo deletion must retain other pending edits before saving");
 }

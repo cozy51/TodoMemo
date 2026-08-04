@@ -89,6 +89,8 @@ let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
 let taskAutoSavePromise = Promise.resolve();
+let parentIdeaSavePromise = Promise.resolve();
+let parentIdeaSaveRevision = 0;
 let detailTaskId = null;
 let ideaMemoParentCaseId = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
@@ -1600,6 +1602,10 @@ function renderParentIdeaDialog() {
     input.value = memo.text;
     input.dataset.memoId = memo.id;
     input.setAttribute("aria-label", `アイデアメモ ${index + 1}を編集`);
+    input.addEventListener("input", () => {
+      memo.text = input.value;
+      input.dataset.dirty = "true";
+    });
     input.addEventListener("blur", persistOpenParentIdeaEdits);
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
@@ -1612,15 +1618,14 @@ function renderParentIdeaDialog() {
     remove.textContent = "削除";
     remove.title = `アイデアメモ「${memo.text}」を削除`;
     let deleteStarted = false;
-    const deleteMemo = async () => {
+    const deleteMemo = () => {
       if (deleteStarted) return;
       deleteStarted = true;
       applyOpenParentIdeaEdits();
       parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
-      parentCases = await saveParentCases(parentCases);
       render();
       renderParentIdeaDialog();
-      showToast("アイデアメモを削除しました");
+      queueParentIdeaSave("アイデアメモを削除しました");
     };
     remove.addEventListener("pointerdown", (event) => {
       event.preventDefault();
@@ -1639,19 +1644,33 @@ function applyOpenParentIdeaEdits() {
   parentIdeaDialogList.querySelectorAll(".parent-idea-dialog-edit-input").forEach((input) => {
     const memo = parentCase.ideaMemos.find((item) => item.id === input.dataset.memoId);
     const nextText = input.value.trim();
-    if (!memo || !nextText || memo.text === nextText) return;
+    if (!memo || !nextText || input.dataset.dirty !== "true") return;
     memo.text = nextText;
+    delete input.dataset.dirty;
     changed = true;
   });
   return changed;
 }
 
+function queueParentIdeaSave(message) {
+  const revision = ++parentIdeaSaveRevision;
+  const snapshot = parentCases.map((parentCase) => ({
+    ...parentCase,
+    ideaMemos: parentCase.ideaMemos.map((memo) => ({ ...memo }))
+  }));
+  parentIdeaSavePromise = parentIdeaSavePromise
+    .catch(() => undefined)
+    .then(async () => {
+      const savedParentCases = await saveParentCases(snapshot);
+      if (revision === parentIdeaSaveRevision) parentCases = savedParentCases;
+      if (message) showToast(message);
+    });
+  return parentIdeaSavePromise;
+}
+
 function persistOpenParentIdeaEdits() {
   if (!applyOpenParentIdeaEdits()) return;
-  saveParentCases(parentCases).then((savedParentCases) => {
-    parentCases = savedParentCases;
-    showToast("アイデアメモを自動保存しました");
-  });
+  queueParentIdeaSave("アイデアメモを自動保存しました");
 }
 
 function openParentIdeaDialog(parentCaseId) {
