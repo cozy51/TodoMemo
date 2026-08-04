@@ -1593,33 +1593,19 @@ function renderParentIdeaDialog() {
     number.className = "parent-idea-dialog-item-number";
     number.textContent = `💡 ${index + 1}`;
     number.setAttribute("aria-hidden", "true");
-    const text = document.createElement("span");
-    text.className = "parent-idea-dialog-item-text";
-    text.textContent = memo.text;
-    const edit = document.createElement("button");
-    edit.type = "button";
-    edit.textContent = "編集";
-    edit.title = `アイデアメモ「${memo.text}」を編集`;
-    edit.addEventListener("click", () => {
-      const input = document.createElement("input");
-      input.className = "parent-idea-dialog-edit-input";
-      input.type = "text";
-      input.maxLength = 500;
-      input.value = memo.text;
-      input.dataset.memoId = memo.id;
-      input.setAttribute("aria-label", "アイデアメモを編集");
-      input.addEventListener("blur", persistOpenParentIdeaEdits);
-      input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          input.blur();
-        }
-      });
-
-      text.replaceWith(input);
-      edit.remove();
-      input.focus();
-      input.select();
+    const input = document.createElement("input");
+    input.className = "parent-idea-dialog-edit-input";
+    input.type = "text";
+    input.maxLength = 500;
+    input.value = memo.text;
+    input.dataset.memoId = memo.id;
+    input.setAttribute("aria-label", `アイデアメモ ${index + 1}を編集`);
+    input.addEventListener("blur", persistOpenParentIdeaEdits);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      }
     });
     const remove = document.createElement("button");
     remove.type = "button";
@@ -1632,7 +1618,7 @@ function renderParentIdeaDialog() {
       renderParentIdeaDialog();
       showToast("アイデアメモを削除しました");
     });
-    item.append(number, text, edit, remove);
+    item.append(number, input, remove);
     return item;
   }));
 }

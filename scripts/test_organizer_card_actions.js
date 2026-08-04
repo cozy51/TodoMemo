@@ -61,8 +61,11 @@ if (!html.includes('<ol id="parentIdeaDialogList"')) {
 if (!source.includes('number.textContent = `💡 ${index + 1}`')) {
   throw new Error("Idea-memo rows must display a clear numbered marker");
 }
-if (!source.includes('edit.textContent = "編集"')) {
-  throw new Error("Idea-memo rows must provide an edit button");
+if (source.includes('edit.textContent = "編集"')) {
+  throw new Error("Idea-memo rows must not require an edit-mode button");
+}
+if (!source.includes('input.value = memo.text')) {
+  throw new Error("Every idea-memo row must always render as an editable input");
 }
 if (source.includes('save.textContent = "保存"') || source.includes('cancel.textContent = "キャンセル"')) {
   throw new Error("Idea-memo editing must not require save or cancel buttons");
