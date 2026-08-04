@@ -127,6 +127,22 @@ if (rejectedUrl !== "") {
   throw new Error(`Expected mailto URL to be rejected, received ${rejectedUrl}`);
 }
 
+const normalizedIdeaMemos = run(`
+  normalizeParentCase({
+    ideaMemos: [
+      { id: "idea-1", text: "  部品構成を再検討  ", createdAt: "2026-08-04T00:00:00Z" },
+      { id: "idea-2", text: "   " }
+    ]
+  }).ideaMemos
+`);
+if (
+  normalizedIdeaMemos.length !== 1
+  || normalizedIdeaMemos[0].id !== "idea-1"
+  || normalizedIdeaMemos[0].text !== "部品構成を再検討"
+) {
+  throw new Error(`Unexpected normalized idea memos: ${JSON.stringify(normalizedIdeaMemos)}`);
+}
+
 const parentCaseId = run(`normalizeTask({ parentCaseId: "parent-1" }, 0).parentCaseId`);
 if (parentCaseId !== "parent-1") {
   throw new Error(`Expected parentCaseId to be retained, received ${parentCaseId}`);

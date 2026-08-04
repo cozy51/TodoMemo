@@ -1777,7 +1777,7 @@ button {
 
 .parent-task-group-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 14px;
   align-items: center;
   padding: 14px 16px;
@@ -1790,42 +1790,48 @@ button {
   align-items: baseline;
 }
 
-.parent-task-group-add-button {
+.parent-task-group-identity-link {
   width: fit-content;
   max-width: 100%;
   margin: -7px;
   padding: 7px;
   color: inherit;
-  border: 0;
   border-radius: 8px;
   background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  text-decoration: none;
 }
 
-.parent-task-group-add-button:hover {
+.parent-task-group-identity-link:hover {
   background: #e9e0f8;
 }
 
-.parent-task-group-add-button:focus-visible {
+.parent-task-group-identity-link:focus-visible {
   outline: 2px solid #6842b8;
   outline-offset: 2px;
 }
 
-.parent-task-group-add-label {
+.parent-task-group-identity-link::after {
   flex: 0 0 auto;
   color: #6842b8;
-  font-size: 10px;
-  font-weight: 750;
-  opacity: .72;
-  white-space: nowrap;
-  transition: opacity .15s ease;
+  content: "↗";
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.parent-task-group-add-button:hover .parent-task-group-add-label,
-.parent-task-group-add-button:focus-visible .parent-task-group-add-label {
-  opacity: 1;
+.parent-task-group-add-task {
+  padding: 7px 10px;
+  color: #6842b8;
+  border: 1px solid #cdbde9;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parent-task-group-add-task:hover {
+  background: #eee7fb;
 }
 
 .parent-task-group-number {
@@ -1860,20 +1866,104 @@ button {
   white-space: nowrap;
 }
 
-.parent-task-group-link {
-  padding: 6px 9px;
+.parent-task-group-idea-button {
+  padding: 5px 9px;
   color: #6842b8;
   border: 1px solid #cdbde9;
-  border-radius: 7px;
-  background: white;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
   font-size: 10px;
-  font-weight: 750;
-  text-decoration: none;
+  font-weight: 800;
   white-space: nowrap;
 }
 
-.parent-task-group-link:hover {
+.parent-task-group-idea-button:hover {
   background: #eee7fb;
+}
+
+.parent-task-group-idea-button:focus-visible,
+.parent-task-group-add-task:focus-visible {
+  outline: 3px solid rgba(104, 66, 184, .22);
+  outline-offset: 2px;
+}
+
+.parent-idea-dialog-body {
+  padding: 30px;
+}
+
+.parent-idea-dialog .dialog-header {
+  margin-bottom: 20px;
+}
+
+.parent-idea-dialog-count {
+  color: #6842b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.parent-idea-dialog .parent-idea-dialog-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0;
+}
+
+.parent-idea-dialog-form input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d8cbea;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.parent-idea-dialog-form input:focus {
+  border-color: #8a61d1;
+  outline: 3px solid rgba(104, 66, 184, .12);
+}
+
+.parent-idea-dialog-form button,
+.parent-idea-dialog-list button {
+  padding: 7px 10px;
+  color: #6842b8;
+  border: 1px solid #cdbde9;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.parent-idea-dialog-list {
+  display: grid;
+  gap: 5px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parent-idea-dialog-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px 6px 10px;
+  border-radius: 7px;
+  background: #fff;
+  color: #3d344b;
+  font-size: 12px;
+}
+
+.parent-idea-dialog-list span {
+  overflow-wrap: anywhere;
+}
+
+.parent-idea-dialog-empty {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
 }
 
 .parent-task-group-list {
@@ -2894,7 +2984,7 @@ button:focus-visible {
   }
 
   .parent-task-group-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
   }
 
   .parent-task-group-identity {
@@ -2902,6 +2992,10 @@ button:focus-visible {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
+  }
+
+  .parent-task-group-add-task {
+    justify-self: end;
   }
 
   .parent-task-item {
