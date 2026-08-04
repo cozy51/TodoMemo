@@ -1611,17 +1611,22 @@ function renderParentIdeaDialog() {
     remove.type = "button";
     remove.textContent = "削除";
     remove.title = `アイデアメモ「${memo.text}」を削除`;
-    remove.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-    });
-    remove.addEventListener("click", async () => {
+    let deleteStarted = false;
+    const deleteMemo = async () => {
+      if (deleteStarted) return;
+      deleteStarted = true;
       applyOpenParentIdeaEdits();
       parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
       parentCases = await saveParentCases(parentCases);
       render();
       renderParentIdeaDialog();
       showToast("アイデアメモを削除しました");
+    };
+    remove.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      deleteMemo();
     });
+    remove.addEventListener("click", deleteMemo);
     item.append(number, input, remove);
     return item;
   }));

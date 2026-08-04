@@ -79,6 +79,12 @@ if (!source.includes("function persistOpenParentIdeaEdits()")) {
 if (!source.includes('remove.addEventListener("pointerdown", (event) => {')) {
   throw new Error("Idea-memo deletion must not be swallowed by an edit-field blur");
 }
+if (!source.includes("deleteMemo();")) {
+  throw new Error("Idea memos must begin deletion on the initial pointer press");
+}
+if (!source.includes("if (deleteStarted) return;")) {
+  throw new Error("Pointer and click events must not delete an idea memo twice");
+}
 if (!source.includes("applyOpenParentIdeaEdits();")) {
   throw new Error("Idea-memo deletion must retain other pending edits before saving");
 }
