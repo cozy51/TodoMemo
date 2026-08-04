@@ -1545,6 +1545,21 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 
     link.append(priority, caseNumber, title, due);
 
+    const taskLinks = document.createElement("div");
+    taskLinks.className = "parent-task-item-links";
+    taskLinks.setAttribute("aria-label", `${task.caseNumber}の関連リンク`);
+    if (task.links.length > 0) {
+      taskLinks.append(...task.links.map((taskLink) =>
+        createTaskLink(taskLink, "table-link parent-task-link")
+      ));
+    } else {
+      const emptyLinks = document.createElement("span");
+      emptyLinks.className = "parent-task-item-links-empty";
+      emptyLinks.textContent = "—";
+      emptyLinks.setAttribute("aria-label", "関連リンクなし");
+      taskLinks.append(emptyLinks);
+    }
+
     const editButton = document.createElement("button");
     editButton.className = "parent-task-item-edit";
     editButton.type = "button";
@@ -1553,7 +1568,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     editButton.setAttribute("aria-label", `${task.caseNumber} ${task.title}を編集`);
     editButton.addEventListener("click", () => openTaskDialog(task));
 
-    item.append(link, editButton);
+    item.append(link, taskLinks, editButton);
     list.append(item);
   });
   group.append(list);

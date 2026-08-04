@@ -1989,9 +1989,27 @@ button {
 
 .parent-task-group-list-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 180px) auto;
   align-items: stretch;
   background: rgba(255, 255, 255, .72);
+}
+
+.parent-task-item-links {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.parent-task-link {
+  max-width: 105px;
+}
+
+.parent-task-item-links-empty {
+  color: #91a0b6;
+  font-size: 12px;
 }
 
 .parent-task-item {
@@ -3028,6 +3046,15 @@ button:focus-visible {
   .parent-task-item-due {
     grid-column: 2;
     text-align: left;
+  }
+
+  .parent-task-group-list-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .parent-task-item-links {
+    grid-column: 1 / -1;
+    padding: 0 12px 9px 56px;
   }
 
   .parent-case-form {

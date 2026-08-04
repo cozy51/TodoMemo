@@ -24,6 +24,14 @@ if (!parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" 
 if (!parentGroupFunction.includes('addTaskButton.textContent = "＋ タスク追加"')) {
   throw new Error("Parent-case task creation must use a dedicated button");
 }
+if (!parentGroupFunction.includes('taskLinks.className = "parent-task-item-links"')) {
+  throw new Error("Parent-case task rows must render a related-links area");
+}
+if (!parentGroupFunction.includes(
+  'createTaskLink(taskLink, "table-link parent-task-link")'
+)) {
+  throw new Error("Parent-case task rows must render related links as link buttons");
+}
 if (!parentGroupFunction.includes(
   'ideaButton.textContent = `💡 アイデアメモ ${parentCase.ideaMemos.length}件`'
 )) {
