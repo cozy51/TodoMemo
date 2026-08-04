@@ -1989,6 +1989,7 @@ button {
 }
 
 .parent-idea-dialog-edit-input {
+  grid-column: 2 / 4;
   min-width: 0;
   padding: 7px 9px;
   border: 1px solid #8a61d1;

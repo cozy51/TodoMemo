@@ -1606,44 +1606,18 @@ function renderParentIdeaDialog() {
       input.type = "text";
       input.maxLength = 500;
       input.value = memo.text;
+      input.dataset.memoId = memo.id;
       input.setAttribute("aria-label", "アイデアメモを編集");
-
-      const save = document.createElement("button");
-      save.type = "button";
-      save.textContent = "保存";
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.textContent = "キャンセル";
-
-      const saveEdit = async () => {
-        const nextText = input.value.trim();
-        if (!nextText) {
-          showToast("アイデアメモを入力してください");
-          input.focus();
-          return;
-        }
-        memo.text = nextText;
-        parentCases = await saveParentCases(parentCases);
-        renderParentIdeaDialog();
-        showToast("アイデアメモを更新しました");
-      };
-      save.addEventListener("click", saveEdit);
+      input.addEventListener("blur", persistOpenParentIdeaEdits);
       input.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          saveEdit();
-        }
-        if (event.key === "Escape") {
-          event.preventDefault();
-          event.stopPropagation();
-          renderParentIdeaDialog();
+          input.blur();
         }
       });
-      cancel.addEventListener("click", renderParentIdeaDialog);
 
       text.replaceWith(input);
-      edit.replaceWith(save);
-      item.insertBefore(cancel, remove);
+      edit.remove();
       input.focus();
       input.select();
     });
@@ -1663,6 +1637,24 @@ function renderParentIdeaDialog() {
   }));
 }
 
+function persistOpenParentIdeaEdits() {
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  if (!parentCase) return;
+  let changed = false;
+  parentIdeaDialogList.querySelectorAll(".parent-idea-dialog-edit-input").forEach((input) => {
+    const memo = parentCase.ideaMemos.find((item) => item.id === input.dataset.memoId);
+    const nextText = input.value.trim();
+    if (!memo || !nextText || memo.text === nextText) return;
+    memo.text = nextText;
+    changed = true;
+  });
+  if (!changed) return;
+  saveParentCases(parentCases).then((savedParentCases) => {
+    parentCases = savedParentCases;
+    showToast("アイデアメモを自動保存しました");
+  });
+}
+
 function openParentIdeaDialog(parentCaseId) {
   ideaMemoParentCaseId = parentCaseId;
   parentIdeaDialogInput.value = "";
@@ -1672,6 +1664,7 @@ function openParentIdeaDialog(parentCaseId) {
 }
 
 function closeParentIdeaDialog() {
+  persistOpenParentIdeaEdits();
   ideaMemoParentCaseId = null;
   parentIdeaDialog.close();
 }
@@ -2217,6 +2210,7 @@ parentIdeaDialog.addEventListener("click", (event) => {
   if (event.target === parentIdeaDialog) closeParentIdeaDialog();
 });
 parentIdeaDialog.addEventListener("close", () => {
+  persistOpenParentIdeaEdits();
   ideaMemoParentCaseId = null;
 });
 

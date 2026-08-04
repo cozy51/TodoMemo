@@ -64,11 +64,14 @@ if (!source.includes('number.textContent = `💡 ${index + 1}`')) {
 if (!source.includes('edit.textContent = "編集"')) {
   throw new Error("Idea-memo rows must provide an edit button");
 }
-if (!source.includes('save.textContent = "保存"')) {
-  throw new Error("Idea-memo editing must provide an explicit save action");
+if (source.includes('save.textContent = "保存"') || source.includes('cancel.textContent = "キャンセル"')) {
+  throw new Error("Idea-memo editing must not require save or cancel buttons");
 }
-if (!source.includes('memo.text = nextText')) {
-  throw new Error("Edited idea memos must be persisted");
+if (!source.includes('input.addEventListener("blur", persistOpenParentIdeaEdits)')) {
+  throw new Error("Idea memos must auto-save when their edit field loses focus");
+}
+if (!source.includes("function persistOpenParentIdeaEdits()")) {
+  throw new Error("Edited idea memos must be persisted automatically");
 }
 if (!css.includes(".parent-idea-dialog-list li + li")) {
   throw new Error("Idea-memo rows must be separated by rules");
