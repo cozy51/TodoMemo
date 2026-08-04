@@ -50,6 +50,12 @@ if (!html.includes('<dialog id="parentIdeaDialog"')) {
 if (source.includes('ideas.className = "parent-idea-memos"') || css.includes(".parent-idea-memos")) {
   throw new Error("The retired inline idea-memo editor must be removed, not merely hidden");
 }
+if (!source.includes("function removeRetiredInlineIdeaMemoEditors")) {
+  throw new Error("Legacy inline idea-memo elements must be removed from the DOM");
+}
+if (!source.includes('element.remove()')) {
+  throw new Error("Legacy inline idea-memo cleanup must delete elements rather than hide them");
+}
 if (!css.includes('.parent-task-group-idea-button[data-state="empty"]')) {
   throw new Error("Empty idea-memo buttons must have a distinct visual state");
 }

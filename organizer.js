@@ -93,6 +93,19 @@ let detailTaskId = null;
 let ideaMemoParentCaseId = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 
+function removeRetiredInlineIdeaMemoEditors(root = parentCaseGroups) {
+  if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
+  root.querySelectorAll?.(".parent-idea-memos").forEach((element) => element.remove());
+}
+
+new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node instanceof Element) removeRetiredInlineIdeaMemoEditors(node);
+    });
+  });
+}).observe(parentCaseGroups, { childList: true, subtree: true });
+
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
 
@@ -1602,6 +1615,7 @@ function renderParentCaseGroups() {
       createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId)
     )
   );
+  removeRetiredInlineIdeaMemoEditors();
 }
 
 function setParentCaseViewMode(mode) {
