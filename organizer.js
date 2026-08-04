@@ -1611,7 +1611,11 @@ function renderParentIdeaDialog() {
     remove.type = "button";
     remove.textContent = "削除";
     remove.title = `アイデアメモ「${memo.text}」を削除`;
+    remove.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+    });
     remove.addEventListener("click", async () => {
+      applyOpenParentIdeaEdits();
       parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
       parentCases = await saveParentCases(parentCases);
       render();
@@ -1623,9 +1627,9 @@ function renderParentIdeaDialog() {
   }));
 }
 
-function persistOpenParentIdeaEdits() {
+function applyOpenParentIdeaEdits() {
   const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
-  if (!parentCase) return;
+  if (!parentCase) return false;
   let changed = false;
   parentIdeaDialogList.querySelectorAll(".parent-idea-dialog-edit-input").forEach((input) => {
     const memo = parentCase.ideaMemos.find((item) => item.id === input.dataset.memoId);
@@ -1634,7 +1638,11 @@ function persistOpenParentIdeaEdits() {
     memo.text = nextText;
     changed = true;
   });
-  if (!changed) return;
+  return changed;
+}
+
+function persistOpenParentIdeaEdits() {
+  if (!applyOpenParentIdeaEdits()) return;
   saveParentCases(parentCases).then((savedParentCases) => {
     parentCases = savedParentCases;
     showToast("アイデアメモを自動保存しました");

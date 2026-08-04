@@ -76,6 +76,12 @@ if (!source.includes('input.addEventListener("blur", persistOpenParentIdeaEdits)
 if (!source.includes("function persistOpenParentIdeaEdits()")) {
   throw new Error("Edited idea memos must be persisted automatically");
 }
+if (!source.includes('remove.addEventListener("pointerdown", (event) => {')) {
+  throw new Error("Idea-memo deletion must not be swallowed by an edit-field blur");
+}
+if (!source.includes("applyOpenParentIdeaEdits();")) {
+  throw new Error("Idea-memo deletion must retain other pending edits before saving");
+}
 if (!css.includes(".parent-idea-dialog-list li + li")) {
   throw new Error("Idea-memo rows must be separated by rules");
 }
