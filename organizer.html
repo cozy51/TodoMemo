@@ -340,6 +340,27 @@
       </div>
     </dialog>
 
+    <dialog id="parentIdeaDialog" class="task-dialog parent-idea-dialog" aria-labelledby="parentIdeaDialogTitle">
+      <div class="parent-idea-dialog-body">
+        <div class="dialog-header">
+          <div>
+            <p id="parentIdeaDialogCaseNumber" class="case-number"></p>
+            <h2 id="parentIdeaDialogTitle"></h2>
+          </div>
+          <div class="dialog-header-actions">
+            <span id="parentIdeaDialogCount" class="parent-idea-dialog-count"></span>
+            <button id="closeParentIdeaDialogButton" class="icon-button" type="button" aria-label="アイデアメモを閉じる">×</button>
+          </div>
+        </div>
+        <form id="parentIdeaDialogForm" class="parent-idea-dialog-form">
+          <input id="parentIdeaDialogInput" type="text" maxlength="500" autocomplete="off" placeholder="まとまっていない考えをメモ…" aria-label="アイデアメモ">
+          <button type="submit">メモ追加</button>
+        </form>
+        <ol id="parentIdeaDialogList" class="parent-idea-dialog-list"></ol>
+        <p id="parentIdeaDialogEmpty" class="parent-idea-dialog-empty">アイデアメモはまだありません。</p>
+      </div>
+    </dialog>
+
     <template id="activeTaskTemplate">
       <article class="task-card" draggable="true">
         <button class="drag-handle" type="button" aria-label="ドラッグして並び替え" title="ドラッグして並び替え">
