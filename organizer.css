@@ -1946,27 +1946,55 @@ button {
 }
 
 .parent-idea-dialog-list {
-  display: grid;
-  gap: 5px;
-  margin: 9px 0 0;
+  margin: 14px 0 0;
   padding: 0;
+  overflow: hidden;
+  border: 1px solid #d8cbea;
+  border-radius: 10px;
+  background: #fff;
   list-style: none;
 }
 
 .parent-idea-dialog-list li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 10px;
   align-items: center;
-  padding: 6px 8px 6px 10px;
-  border-radius: 7px;
+  min-height: 48px;
+  padding: 8px 10px 8px 12px;
   background: #fff;
   color: #3d344b;
   font-size: 12px;
 }
 
-.parent-idea-dialog-list span {
+.parent-idea-dialog-list li + li {
+  border-top: 1px solid #e5dcef;
+}
+
+.parent-idea-dialog-item-number {
+  min-width: 42px;
+  padding: 4px 7px;
+  color: #6842b8;
+  border-radius: 999px;
+  background: #f2ebff;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.parent-idea-dialog-item-text {
   overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.parent-idea-dialog-edit-input {
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid #8a61d1;
+  border-radius: 7px;
+  font: inherit;
+  outline: 3px solid rgba(104, 66, 184, .12);
 }
 
 .parent-idea-dialog-empty {

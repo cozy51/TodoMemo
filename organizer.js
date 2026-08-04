@@ -1587,10 +1587,66 @@ function renderParentIdeaDialog() {
   parentIdeaDialogEmpty.hidden = parentCase.ideaMemos.length > 0;
   parentIdeaDialogInput.disabled = parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS;
 
-  parentIdeaDialogList.replaceChildren(...parentCase.ideaMemos.map((memo) => {
+  parentIdeaDialogList.replaceChildren(...parentCase.ideaMemos.map((memo, index) => {
     const item = document.createElement("li");
+    const number = document.createElement("span");
+    number.className = "parent-idea-dialog-item-number";
+    number.textContent = `💡 ${index + 1}`;
+    number.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
+    text.className = "parent-idea-dialog-item-text";
     text.textContent = memo.text;
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.textContent = "編集";
+    edit.title = `アイデアメモ「${memo.text}」を編集`;
+    edit.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.className = "parent-idea-dialog-edit-input";
+      input.type = "text";
+      input.maxLength = 500;
+      input.value = memo.text;
+      input.setAttribute("aria-label", "アイデアメモを編集");
+
+      const save = document.createElement("button");
+      save.type = "button";
+      save.textContent = "保存";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "キャンセル";
+
+      const saveEdit = async () => {
+        const nextText = input.value.trim();
+        if (!nextText) {
+          showToast("アイデアメモを入力してください");
+          input.focus();
+          return;
+        }
+        memo.text = nextText;
+        parentCases = await saveParentCases(parentCases);
+        renderParentIdeaDialog();
+        showToast("アイデアメモを更新しました");
+      };
+      save.addEventListener("click", saveEdit);
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          saveEdit();
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          renderParentIdeaDialog();
+        }
+      });
+      cancel.addEventListener("click", renderParentIdeaDialog);
+
+      text.replaceWith(input);
+      edit.replaceWith(save);
+      item.insertBefore(cancel, remove);
+      input.focus();
+      input.select();
+    });
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = "削除";
@@ -1602,7 +1658,7 @@ function renderParentIdeaDialog() {
       renderParentIdeaDialog();
       showToast("アイデアメモを削除しました");
     });
-    item.append(text, remove);
+    item.append(number, text, edit, remove);
     return item;
   }));
 }

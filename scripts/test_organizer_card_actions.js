@@ -55,6 +55,24 @@ if (
 if (!html.includes('<dialog id="parentIdeaDialog"')) {
   throw new Error("The organizer must provide an idea-memo dialog");
 }
+if (!html.includes('<ol id="parentIdeaDialogList"')) {
+  throw new Error("Idea memos must use semantic ordered-list markup");
+}
+if (!source.includes('number.textContent = `💡 ${index + 1}`')) {
+  throw new Error("Idea-memo rows must display a clear numbered marker");
+}
+if (!source.includes('edit.textContent = "編集"')) {
+  throw new Error("Idea-memo rows must provide an edit button");
+}
+if (!source.includes('save.textContent = "保存"')) {
+  throw new Error("Idea-memo editing must provide an explicit save action");
+}
+if (!source.includes('memo.text = nextText')) {
+  throw new Error("Edited idea memos must be persisted");
+}
+if (!css.includes(".parent-idea-dialog-list li + li")) {
+  throw new Error("Idea-memo rows must be separated by rules");
+}
 if (source.includes('ideas.className = "parent-idea-memos"') || css.includes(".parent-idea-memos")) {
   throw new Error("The retired inline idea-memo editor must be removed, not merely hidden");
 }
