@@ -23,7 +23,7 @@ const copied = vm.runInContext(`
     content: "構成を確認\\r\\n初稿を作成"
   })
 `, context);
-const expected = "(TD26-0701) 企画書を作る [\n構成を確認\n初稿を作成\n]\n";
+const expected = "TD26-0701_企画書を作る [\n構成を確認\n初稿を作成\n]\n";
 
 if (copied !== expected) {
   throw new Error(`Unexpected copy format: ${JSON.stringify(copied)}`);
@@ -36,7 +36,7 @@ const copiedWithoutContent = vm.runInContext(`
     content: ""
   })
 `, context);
-if (copiedWithoutContent !== "(TD26-0702) 本文なし [\n\n]\n") {
+if (copiedWithoutContent !== "TD26-0702_本文なし [\n\n]\n") {
   throw new Error(`Unexpected empty-content format: ${JSON.stringify(copiedWithoutContent)}`);
 }
 
