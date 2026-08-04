@@ -60,6 +60,14 @@ const parentCaseGroupModeButton = document.querySelector("#parentCaseGroupModeBu
 const parentCaseManageView = document.querySelector("#parentCaseManageView");
 const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
 const parentCaseGroups = document.querySelector("#parentCaseGroups");
+const parentIdeaDialog = document.querySelector("#parentIdeaDialog");
+const parentIdeaDialogCaseNumber = document.querySelector("#parentIdeaDialogCaseNumber");
+const parentIdeaDialogTitle = document.querySelector("#parentIdeaDialogTitle");
+const parentIdeaDialogCount = document.querySelector("#parentIdeaDialogCount");
+const parentIdeaDialogForm = document.querySelector("#parentIdeaDialogForm");
+const parentIdeaDialogInput = document.querySelector("#parentIdeaDialogInput");
+const parentIdeaDialogList = document.querySelector("#parentIdeaDialogList");
+const parentIdeaDialogEmpty = document.querySelector("#parentIdeaDialogEmpty");
 const backupButton = document.querySelector("#backupButton");
 const backupChangeCount = document.querySelector("#backupChangeCount");
 const restoreBackupButton = document.querySelector("#restoreBackupButton");
@@ -82,6 +90,7 @@ let toastTimer = null;
 let pendingRestore = null;
 let taskAutoSavePromise = Promise.resolve();
 let detailTaskId = null;
+let ideaMemoParentCaseId = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 
 enableMarkdownTabInput(contentInput);
@@ -1381,7 +1390,21 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   summary.className = "parent-task-group-summary";
   summary.textContent = `${groupedTasks.length}件`;
 
-  header.append(identity, summary);
+  header.append(identity);
+  if (parentCase) {
+    const ideaButton = document.createElement("button");
+    ideaButton.className = "parent-task-group-idea-button";
+    ideaButton.type = "button";
+    ideaButton.textContent = `${parentCase.ideaMemos.length}件`;
+    ideaButton.title = `${parentCase.name}のアイデアメモを表示`;
+    ideaButton.setAttribute(
+      "aria-label",
+      `${parentCase.name}のアイデアメモ ${parentCase.ideaMemos.length}件を表示`
+    );
+    ideaButton.addEventListener("click", () => openParentIdeaDialog(parentCase.id));
+    header.append(ideaButton);
+  }
+  header.append(summary);
   if (parentCase) {
     const addTaskButton = document.createElement("button");
     addTaskButton.className = "parent-task-group-add-task";
@@ -1519,6 +1542,51 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   });
   group.append(list);
   return group;
+}
+
+function renderParentIdeaDialog() {
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  if (!parentCase) {
+    if (parentIdeaDialog.open) parentIdeaDialog.close();
+    return;
+  }
+  parentIdeaDialogCaseNumber.textContent = parentCase.caseNumber;
+  parentIdeaDialogTitle.textContent = ensureEmojiPresentation(parentCase.name);
+  parentIdeaDialogCount.textContent = `${parentCase.ideaMemos.length}件`;
+  parentIdeaDialogEmpty.hidden = parentCase.ideaMemos.length > 0;
+  parentIdeaDialogInput.disabled = parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS;
+
+  parentIdeaDialogList.replaceChildren(...parentCase.ideaMemos.map((memo) => {
+    const item = document.createElement("li");
+    const text = document.createElement("span");
+    text.textContent = memo.text;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "削除";
+    remove.title = `アイデアメモ「${memo.text}」を削除`;
+    remove.addEventListener("click", async () => {
+      parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
+      parentCases = await saveParentCases(parentCases);
+      render();
+      renderParentIdeaDialog();
+      showToast("アイデアメモを削除しました");
+    });
+    item.append(text, remove);
+    return item;
+  }));
+}
+
+function openParentIdeaDialog(parentCaseId) {
+  ideaMemoParentCaseId = parentCaseId;
+  parentIdeaDialogInput.value = "";
+  renderParentIdeaDialog();
+  parentIdeaDialog.showModal();
+  parentIdeaDialogInput.focus();
+}
+
+function closeParentIdeaDialog() {
+  ideaMemoParentCaseId = null;
+  parentIdeaDialog.close();
 }
 
 function renderParentCaseGroups() {
@@ -2030,6 +2098,39 @@ linkInputs.addEventListener("click", (event) => {
   markTaskEditorDirty();
 });
 pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
+
+parentIdeaDialogForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  const text = parentIdeaDialogInput.value.trim();
+  if (!parentCase || !text) return;
+  if (parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS) {
+    showToast(`アイデアメモは${TODO_MEMO_MAX_PARENT_IDEA_MEMOS}件まで登録できます`);
+    return;
+  }
+  parentCase.ideaMemos.push({
+    id: crypto.randomUUID(),
+    text,
+    createdAt: new Date().toISOString()
+  });
+  parentCases = await saveParentCases(parentCases);
+  parentIdeaDialogInput.value = "";
+  render();
+  renderParentIdeaDialog();
+  parentIdeaDialogInput.focus();
+  showToast("アイデアメモを追加しました");
+});
+
+document.querySelector("#closeParentIdeaDialogButton").addEventListener(
+  "click",
+  closeParentIdeaDialog
+);
+parentIdeaDialog.addEventListener("click", (event) => {
+  if (event.target === parentIdeaDialog) closeParentIdeaDialog();
+});
+parentIdeaDialog.addEventListener("close", () => {
+  ideaMemoParentCaseId = null;
+});
 
 taskDialog.addEventListener("click", (event) => {
   if (event.target === taskDialog) closeTaskDialog();

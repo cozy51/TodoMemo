@@ -1,6 +1,7 @@
 const fs = require("fs");
 
 const source = fs.readFileSync("organizer.js", "utf8");
+const html = fs.readFileSync("organizer.html", "utf8");
 
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");
@@ -22,8 +23,17 @@ if (!parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" 
 if (!parentGroupFunction.includes('addTaskButton.textContent = "＋ タスク追加"')) {
   throw new Error("Parent-case task creation must use a dedicated button");
 }
-if (!parentGroupFunction.includes('ideaTitle.textContent = "アイデアメモ"')) {
-  throw new Error("Parent cases must render the idea-memo list");
+if (!parentGroupFunction.includes('ideaButton.textContent = `${parentCase.ideaMemos.length}件`')) {
+  throw new Error("Parent cases must render an idea-memo count button");
+}
+if (parentGroupFunction.includes('ideas.className = "parent-idea-memos"')) {
+  throw new Error("Idea memos must remain hidden until the count button opens the dialog");
+}
+if (!source.includes("function openParentIdeaDialog(parentCaseId)")) {
+  throw new Error("The idea-memo count button must open a dialog");
+}
+if (!html.includes('<dialog id="parentIdeaDialog"')) {
+  throw new Error("The organizer must provide an idea-memo dialog");
 }
 
 const renderFunction = source.match(/function render\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
