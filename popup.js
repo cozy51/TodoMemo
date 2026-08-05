@@ -39,6 +39,7 @@ let tags = [];
 let parentCases = [];
 let saveRevision = 0;
 let latestSavePromise = Promise.resolve();
+let editorSaveTimer = null;
 let popupToastTimer = null;
 let isCreatingTask = false;
 const EDITOR_AUTO_SAVE_DELAY_MS = 1200;
@@ -615,12 +616,14 @@ async function closeEditor() {
 
 function persistEditorChanges({ quiet = false } = {}) {
   clearTimeout(editorSaveTimer);
+  editorSaveTimer = null;
   const title = editTitleInput.value.trim();
 
   if (!title) {
     editTitleError.textContent = "タイトルを入力してください";
     autoSaveStatus.textContent = "タイトルが必要です";
     autoSaveStatus.dataset.state = "error";
+    autoSaveStatus.hidden = false;
     editTitleInput.focus();
     return false;
   }
@@ -634,6 +637,7 @@ function persistEditorChanges({ quiet = false } = {}) {
     } catch (_error) {
       autoSaveStatus.textContent = "今月の案件番号はすべて使用されています";
       autoSaveStatus.dataset.state = "error";
+      autoSaveStatus.hidden = false;
       return false;
     }
     target = {
@@ -671,6 +675,7 @@ function persistEditorChanges({ quiet = false } = {}) {
   if (!quiet) {
     autoSaveStatus.textContent = "保存中…";
     autoSaveStatus.dataset.state = "saving";
+    autoSaveStatus.hidden = false;
   }
 
   latestSavePromise = saveTasks(snapshot);
@@ -681,6 +686,7 @@ function persistEditorChanges({ quiet = false } = {}) {
       currentTask = allTasks.find((task) => task.id === currentTaskId) || currentTask;
       autoSaveStatus.textContent = "保存済み";
       autoSaveStatus.dataset.state = "saved";
+      autoSaveStatus.hidden = false;
     })
     .catch(() => {
       if (revision !== saveRevision) return;
@@ -689,8 +695,16 @@ function persistEditorChanges({ quiet = false } = {}) {
   return true;
 }
 
+function scheduleEditorAutoSave() {
+  clearTimeout(editorSaveTimer);
+  editorSaveTimer = setTimeout(() => {
+    persistEditorChanges();
+  }, EDITOR_AUTO_SAVE_DELAY_MS);
+}
+
 function markEditorDirty() {
   autoSaveStatus.hidden = true;
+  scheduleEditorAutoSave();
 }
 
 document.querySelector("#openOrganizer").addEventListener("click", openOrganizer);
