@@ -157,6 +157,13 @@ button {
   letter-spacing: .02em;
 }
 
+.brand-version {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .brand-mark {
   position: relative;
   width: 18px;
