@@ -1614,6 +1614,26 @@ button {
   background: transparent;
 }
 
+
+.quick-edit-button {
+  min-width: 58px;
+  height: 38px;
+  padding: 0 14px;
+  color: #2f6fed;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid #b8cbf4;
+  border-radius: 10px;
+  background: #f7f9ff;
+}
+
+.quick-edit-button:hover {
+  color: #174fb8;
+  border-color: #8fb0ef;
+  background: #eaf1ff;
+}
+
 .move-button {
   width: 38px;
   height: 38px;
@@ -3156,6 +3176,12 @@ button:focus-visible {
 
   .calendar-deadlines {
     max-height: none;
+  }
+
+
+  .quick-edit-button {
+    min-width: 52px;
+    padding: 0 10px;
   }
 
   .move-button {
