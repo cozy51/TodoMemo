@@ -17,6 +17,7 @@ const editTaskButton = document.querySelector("#editTaskButton");
 const editTaskForm = document.querySelector("#editTaskForm");
 const editTitleInput = document.querySelector("#editTitleInput");
 const editParentCaseSelect = document.querySelector("#editParentCaseSelect");
+const editPrioritySelect = document.querySelector("#editPrioritySelect");
 const editContentInput = document.querySelector("#editContentInput");
 const editContentHighlightBackdrop = document.querySelector("#editContentHighlightBackdrop");
 const editDueDateInput = document.querySelector("#editDueDateInput");
@@ -426,6 +427,20 @@ function renderParentCaseOptions(selectedId = "") {
     : "";
 }
 
+function renderPriorityOptions(task = null) {
+  const activeTasks = allTasks.filter((item) => !item.completed);
+  const currentIndex = task
+    ? activeTasks.findIndex((item) => item.id === task.id)
+    : -1;
+  const optionCount = activeTasks.length + (currentIndex < 0 ? 1 : 0);
+  editPrioritySelect.replaceChildren(
+    ...Array.from({ length: optionCount }, (_, index) =>
+      new Option(`${index + 1}番`, String(index + 1))
+    )
+  );
+  editPrioritySelect.value = String(currentIndex >= 0 ? currentIndex + 1 : optionCount);
+}
+
 async function render() {
   const [tasks, storedTags, storedParentCases, backupSnapshot] = await Promise.all([
     loadTasks(),
@@ -546,6 +561,7 @@ function openEditor() {
   editCaseNumber.textContent = `案件番号 ${currentTask.caseNumber}`;
   editTitleInput.value = currentTask.title;
   renderParentCaseOptions(currentTask.parentCaseId);
+  renderPriorityOptions(currentTask);
   editContentInput.value = currentTask.content;
   renderEditContentSelectionHighlights();
   editDueDateInput.value = currentTask.dueDate;
@@ -572,6 +588,7 @@ function openNewTaskEditor() {
   editCaseNumber.textContent = "案件番号は保存時に自動採番します";
   editTitleInput.value = "";
   renderParentCaseOptions();
+  renderPriorityOptions();
   editContentInput.value = "";
   renderEditContentSelectionHighlights();
   editDueDateInput.value = "";
@@ -665,6 +682,7 @@ function persistEditorChanges({ quiet = false } = {}) {
     .map((input) => input.value);
   target.links = collectLinkInputValues();
   currentTask = target;
+  allTasks = moveActiveTaskToPriority(allTasks, target.id, editPrioritySelect.value);
 
   const snapshot = allTasks.map((task) => ({
     ...task,
@@ -721,6 +739,7 @@ editTitleInput.addEventListener("input", () => {
   markEditorDirty();
 });
 editParentCaseSelect.addEventListener("change", markEditorDirty);
+editPrioritySelect.addEventListener("change", markEditorDirty);
 editContentInput.addEventListener("input", () => {
   renderEditContentSelectionHighlights();
   markEditorDirty();
