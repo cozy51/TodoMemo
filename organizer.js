@@ -1,3 +1,4 @@
+const appVersion = document.querySelector("#appVersion");
 const activeList = document.querySelector("#activeList");
 const completedList = document.querySelector("#completedList");
 const activeEmpty = document.querySelector("#activeEmpty");
@@ -2288,6 +2289,10 @@ chrome.storage.onChanged.addListener(async () => {
 });
 
 (async function initialize() {
+  if (appVersion && chrome.runtime?.getManifest) {
+    appVersion.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
+
   const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases] = await Promise.all([
     loadTasks(),
