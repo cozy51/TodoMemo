@@ -1170,10 +1170,29 @@ function attachMenu(card, task) {
   });
 }
 
-function attachCardOpenActions(card, task) {
+function isInteractiveCardTarget(target) {
+  return target.closest("a, button, input, textarea, select, label, [contenteditable]");
+}
+
+function attachCardOpenActions(card, task, { editOnDoubleClick = false } = {}) {
+  let detailOpenTimer = null;
+
   card.addEventListener("click", (event) => {
-    if (event.target.closest("a, button, input, textarea, select, label, [contenteditable]")) return;
-    openTaskDetail(task);
+    if (isInteractiveCardTarget(event.target)) return;
+    clearTimeout(detailOpenTimer);
+    detailOpenTimer = setTimeout(() => {
+      openTaskDetail(task);
+      detailOpenTimer = null;
+    }, 220);
+  });
+
+  if (!editOnDoubleClick) return;
+
+  card.addEventListener("dblclick", (event) => {
+    if (isInteractiveCardTarget(event.target)) return;
+    clearTimeout(detailOpenTimer);
+    detailOpenTimer = null;
+    openTaskDialog(task);
   });
 }
 
@@ -1218,7 +1237,7 @@ function createActiveCard(task, index, total) {
   }
   fillTaskCopy(card, task, { showEmptyContent: true });
   attachMenu(card, task);
-  attachCardOpenActions(card, task);
+  attachCardOpenActions(card, task, { editOnDoubleClick: true });
   attachTaskCopy(card, task);
 
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, true));
