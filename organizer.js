@@ -1222,6 +1222,7 @@ function createActiveCard(task, index, total) {
   attachTaskCopy(card, task);
 
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, true));
+  card.querySelector(".quick-edit-button").addEventListener("click", () => openTaskDialog(task));
   card.querySelector(".edit-button").addEventListener("click", () => openTaskDialog(task));
 
   const moveUp = card.querySelector(".move-up");
