@@ -27,6 +27,16 @@ if (!source.includes('content.scrollHeight > content.clientHeight + 1')) {
 if (!source.includes('▼ 以下に続きます（クリックで全文表示）')) {
   throw new Error("Clipped task content must clearly explain how to view the remainder");
 }
+if (!source.includes('parentJumpLink.href = `#${encodeURIComponent(getParentCaseAnchorId(parentCase))}`')) {
+  throw new Error("Task-card parent-case names must link to their organizer section");
+}
+if (!source.includes('parentJumpLink.addEventListener("click"')
+  || !source.includes('setParentCaseViewMode("group")')) {
+  throw new Error("Parent-case name links must reveal and jump to the parent case");
+}
+if (source.includes("parentJumpLink.target")) {
+  throw new Error("Parent-case name links must stay in the organizer tab");
+}
 
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");

@@ -945,17 +945,17 @@ function fillParentCaseElement(element, task) {
     return;
   }
 
-  if (parentCase.url) {
-    const link = document.createElement("a");
-    link.href = parentCase.url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.title = parentCase.url;
-    appendParentCaseLabel(link, parentCase);
-    element.append(link);
-  } else {
-    appendParentCaseLabel(element, parentCase);
-  }
+  const parentJumpLink = document.createElement("a");
+  parentJumpLink.href = `#${encodeURIComponent(getParentCaseAnchorId(parentCase))}`;
+  parentJumpLink.title = `親案件「${parentCase.name}」へ移動`;
+  appendParentCaseLabel(parentJumpLink, parentCase);
+  parentJumpLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (taskDetailDialog.open) closeTaskDetail();
+    setParentCaseViewMode("group");
+    jumpToElement(document.getElementById(getParentCaseAnchorId(parentCase)));
+  });
+  element.append(parentJumpLink);
   appendParentCaseActions(element, parentCase);
   element.hidden = false;
 }
