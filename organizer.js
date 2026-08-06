@@ -1259,6 +1259,14 @@ function attachTaskCopy(card, task) {
       showToast("案件をコピーできませんでした");
     }
   });
+  card.querySelector(".copy-task-heading-button").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(formatTaskHeadingForCopy(task));
+      showToast("案件番号とタイトルをコピーしました");
+    } catch (_error) {
+      showToast("案件番号とタイトルをコピーできませんでした");
+    }
+  });
 }
 
 function createActiveCard(task, index, total) {
