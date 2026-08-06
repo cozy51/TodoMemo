@@ -74,8 +74,11 @@ if (!completedCardFunction?.[1].includes("attachCardOpenActions(card, task)")) {
 const parentGroupFunction = source.match(
   /function createParentCaseTaskGroup\(parentCase, groupedTasks, priorityByTaskId\) \{([\s\S]*?)\n\}/
 )?.[1] || "";
-if (!parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" : "div")')) {
-  throw new Error("A parent case with a URL must render its identity as a link");
+if (!parentGroupFunction.includes('appendParentCaseActions(identity, parentCase)')) {
+  throw new Error("Parent-case groups must expose the shared link-status and copy actions");
+}
+if (parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" : "div")')) {
+  throw new Error("Parent-case group identities must not duplicate the dedicated link button");
 }
 if (!parentGroupFunction.includes('addTaskButton.textContent = "＋ タスク追加"')) {
   throw new Error("Parent-case task creation must use a dedicated button");
