@@ -3093,6 +3093,31 @@ button {
   margin-top: 30px;
 }
 
+.dialog-actions:has(.delete-task-button:not([hidden])) {
+  justify-content: space-between;
+}
+
+.delete-task-button {
+  min-height: 46px;
+  padding: 0 18px;
+  color: white;
+  cursor: pointer;
+  border: 1px solid #b3261e;
+  border-radius: 11px;
+  background: #c9342b;
+  font-weight: 750;
+}
+
+.delete-task-button:hover {
+  border-color: #8f1d17;
+  background: #a92821;
+}
+
+.delete-task-button:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
 .dialog-actions .secondary-button {
   color: var(--muted);
   border: 1px solid var(--line-strong);

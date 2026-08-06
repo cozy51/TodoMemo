@@ -7,6 +7,19 @@ const css = fs.readFileSync("organizer.css", "utf8");
 const activeTaskTemplate = html.match(
   /<template id="activeTaskTemplate">([\s\S]*?)<\/template>/
 )?.[1] || "";
+if (!html.includes('id="deleteTaskButton" class="delete-task-button" type="button" hidden')) {
+  throw new Error("The task editor must provide a hidden-by-default delete button");
+}
+if (!source.includes("async function deleteTaskFromEditor()")
+  || !source.includes('deleteTaskButton.addEventListener("click", deleteTaskFromEditor)')) {
+  throw new Error("The task editor delete button must delete the edited task");
+}
+if (!source.includes("この操作は取り消せません。")) {
+  throw new Error("Deleting a task from the editor must require explicit confirmation");
+}
+if (!css.includes(".delete-task-button") || !css.includes("background: #c9342b")) {
+  throw new Error("The task editor delete action must have a red danger style");
+}
 const activeLinksIndex = activeTaskTemplate.indexOf('class="card-links-section"');
 const activeContentIndex = activeTaskTemplate.indexOf('class="card-content markdown-body"');
 if (activeLinksIndex < 0 || activeContentIndex < activeLinksIndex) {

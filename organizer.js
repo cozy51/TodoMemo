@@ -44,6 +44,7 @@ const titleError = document.querySelector("#titleError");
 const dialogTitle = document.querySelector("#dialogTitle");
 const taskAutoSaveStatus = document.querySelector("#taskAutoSaveStatus");
 const cancelButton = document.querySelector("#cancelButton");
+const deleteTaskButton = document.querySelector("#deleteTaskButton");
 const toast = document.querySelector("#toast");
 const tagForm = document.querySelector("#tagForm");
 const tagNameInput = document.querySelector("#tagNameInput");
@@ -1933,6 +1934,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     taskAutoSaveStatus.dataset.state = "saved";
     taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
+    deleteTaskButton.hidden = false;
   } else {
     dialogTitle.textContent = "新しいタスク";
     dialogCaseNumber.textContent = "案件番号は保存時に自動採番します";
@@ -1946,6 +1948,7 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     taskAutoSaveStatus.dataset.state = "saved";
     taskAutoSaveStatus.hidden = true;
     cancelButton.textContent = "閉じる";
+    deleteTaskButton.hidden = true;
   }
 
   renderContentSelectionHighlights();
@@ -1961,6 +1964,22 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 async function closeTaskDialog() {
   if (titleInput.value.trim()) await persistEditedTask();
   taskDialog.close();
+}
+
+async function deleteTaskFromEditor() {
+  const task = tasks.find((item) => item.id === taskIdInput.value);
+  if (!task || !confirm(`「${task.title}」を削除しますか？\nこの操作は取り消せません。`)) return;
+
+  deleteTaskButton.disabled = true;
+  try {
+    await taskAutoSavePromise.catch(() => undefined);
+    tasks = await saveTasks(tasks.filter((item) => item.id !== task.id));
+    taskDialog.close();
+    render();
+    showToast("タスクを削除しました");
+  } finally {
+    deleteTaskButton.disabled = false;
+  }
 }
 
 function collectTaskFormValues(task) {
@@ -2185,6 +2204,7 @@ taskDetailDialog.addEventListener("click", (event) => {
 document.querySelector("#addFirstTaskButton").addEventListener("click", () => openTaskDialog());
 document.querySelector("#closeDialogButton").addEventListener("click", closeTaskDialog);
 cancelButton.addEventListener("click", closeTaskDialog);
+deleteTaskButton.addEventListener("click", deleteTaskFromEditor);
 clearCompletedButton.addEventListener("click", clearCompleted);
 taskForm.addEventListener("submit", handleSubmit);
 copyActiveTasksButton.addEventListener("click", copyActiveTasks);
