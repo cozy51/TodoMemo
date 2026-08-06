@@ -155,6 +155,18 @@ if (JSON.stringify(remainingIdeaMemoIds) !== JSON.stringify(["idea-2"])) {
   throw new Error(`Unexpected memos after deletion: ${JSON.stringify(remainingIdeaMemoIds)}`);
 }
 
+const ideaMemoPreview = run(`
+  formatParentIdeaMemoPreview([
+    { text: "最初のアイデア" },
+    { text: "改行を\\n含むアイデア" },
+    { text: "1234567890" },
+    { text: "4件目" }
+  ], 3, 5)
+`);
+if (ideaMemoPreview !== "1. 最初のアイ…\n2. 改行を 含…\n3. 12345…\nほか1件") {
+  throw new Error(`Unexpected idea-memo preview: ${JSON.stringify(ideaMemoPreview)}`);
+}
+
 const parentCaseId = run(`normalizeTask({ parentCaseId: "parent-1" }, 0).parentCaseId`);
 if (parentCaseId !== "parent-1") {
   throw new Error(`Expected parentCaseId to be retained, received ${parentCaseId}`);

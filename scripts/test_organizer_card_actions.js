@@ -84,6 +84,9 @@ if (!parentGroupFunction.includes(
 )) {
   throw new Error("Parent cases must render a clearly labeled idea-memo count button");
 }
+if (!parentGroupFunction.includes("formatParentIdeaMemoPreview(parentCase.ideaMemos)")) {
+  throw new Error("Idea-memo buttons must show registered ideas in their tooltip");
+}
 if (!parentGroupFunction.includes(
   'ideaButton.dataset.state = parentCase.ideaMemos.length > 0 ? "has-memos" : "empty"'
 )) {

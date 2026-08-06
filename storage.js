@@ -255,6 +255,19 @@ function removeParentIdeaMemo(parentCases, parentCaseId, memoId) {
     : parentCase);
 }
 
+function formatParentIdeaMemoPreview(ideaMemos, maxItems = 5, maxTextLength = 40) {
+  const memos = Array.isArray(ideaMemos) ? ideaMemos : [];
+  const lines = memos.slice(0, maxItems).map((memo, index) => {
+    const text = String(memo?.text || "").replace(/\s+/g, " ").trim();
+    const preview = text.length > maxTextLength
+      ? `${text.slice(0, maxTextLength)}…`
+      : text;
+    return `${index + 1}. ${preview}`;
+  });
+  if (memos.length > maxItems) lines.push(`ほか${memos.length - maxItems}件`);
+  return lines.join("\n");
+}
+
 function normalizeTaskLinks(values) {
   const normalized = Array.isArray(values)
     ? values.map(normalizeTaskLink).filter(Boolean)
