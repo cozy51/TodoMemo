@@ -19,6 +19,19 @@ function run(source) {
   return vm.runInContext(source, context);
 }
 
+const descendingTaskNumbers = run(`
+  sortTasksByCaseNumberDescending([
+    { caseNumber: "TD26-0703" },
+    { caseNumber: "TD26-0801" },
+    { caseNumber: "TD26-0711" }
+  ]).map((task) => task.caseNumber)
+`);
+if (JSON.stringify([...descendingTaskNumbers]) !== JSON.stringify([
+  "TD26-0801", "TD26-0711", "TD26-0703"
+])) {
+  throw new Error(`Unexpected descending task order: ${JSON.stringify(descendingTaskNumbers)}`);
+}
+
 const julyGap = run(`
   generateCaseNumber(
     [{ caseNumber: "TD26-0701" }, { caseNumber: "TD26-0703" }],
