@@ -1377,7 +1377,8 @@ button {
   margin-bottom: 3px;
 }
 
-.copy-task-button {
+.copy-task-button,
+.copy-task-heading-button {
   padding: 2px 6px;
   color: var(--accent);
   cursor: pointer;
@@ -1388,7 +1389,8 @@ button {
   font-weight: 750;
 }
 
-.copy-task-button:hover {
+.copy-task-button:hover,
+.copy-task-heading-button:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -1430,8 +1432,37 @@ button {
 }
 
 .card-content.is-empty {
+  display: none;
+}
+
+.card-content-end-marker {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 0;
   color: #8b96aa;
-  font-style: italic;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.card-content-end-marker::before,
+.card-content-end-marker::after {
+  height: 1px;
+  flex: 1;
+  content: "";
+  background: #d7dfec;
+}
+
+.card-content-end-marker.is-continued {
+  color: #b35a00;
+  letter-spacing: 0;
+}
+
+.card-content-end-marker.is-continued::before,
+.card-content-end-marker.is-continued::after {
+  background: #efb36f;
 }
 
 .card-parent-case {
@@ -1531,6 +1562,29 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
+}
+
+.card-links-section {
+  margin-top: 10px;
+}
+
+.card-links-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #414d65;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-links-heading + .card-links {
+  margin-top: 6px;
+}
+
+.card-paste-link-button {
+  padding: 5px 8px;
+  font-size: 10px;
 }
 
 .card-link {
@@ -2046,7 +2100,7 @@ button {
 
 .parent-idea-dialog-list li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   min-height: 48px;
@@ -2054,6 +2108,23 @@ button {
   background: #fff;
   color: #3d344b;
   font-size: 12px;
+}
+
+.parent-idea-dialog-move-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.parent-idea-dialog-move-actions button {
+  min-width: 30px;
+  padding: 7px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.parent-idea-dialog-move-actions button:disabled {
+  cursor: default;
+  opacity: .35;
 }
 
 .parent-idea-dialog-list li + li {
@@ -3037,6 +3108,31 @@ button {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 30px;
+}
+
+.dialog-actions:has(.delete-task-button:not([hidden])) {
+  justify-content: space-between;
+}
+
+.delete-task-button {
+  min-height: 46px;
+  padding: 0 18px;
+  color: white;
+  cursor: pointer;
+  border: 1px solid #b3261e;
+  border-radius: 11px;
+  background: #c9342b;
+  font-weight: 750;
+}
+
+.delete-task-button:hover {
+  border-color: #8f1d17;
+  background: #a92821;
+}
+
+.delete-task-button:disabled {
+  cursor: wait;
+  opacity: .6;
 }
 
 .dialog-actions .secondary-button {

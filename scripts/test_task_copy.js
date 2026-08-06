@@ -40,6 +40,13 @@ if (copiedWithoutContent !== "TD26-0702_本文なし [\n\n]\n") {
   throw new Error(`Unexpected empty-content format: ${JSON.stringify(copiedWithoutContent)}`);
 }
 
+const copiedHeading = vm.runInContext(`
+  formatTaskHeadingForCopy({ caseNumber: "TD26-0701", title: "企画書を作る", content: "コピーしない内容" })
+`, context);
+if (copiedHeading !== "TD26-0701_企画書を作る") {
+  throw new Error(`Unexpected heading-only copy format: ${JSON.stringify(copiedHeading)}`);
+}
+
 const copiedTasks = vm.runInContext(`
   formatTasksForCopy([
     {
