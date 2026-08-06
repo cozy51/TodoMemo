@@ -64,6 +64,27 @@
           <div id="deadlineCalendar" class="calendar-months" aria-live="polite"></div>
         </section>
 
+        <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
+          <div class="case-jump-heading">
+            <p class="section-kicker">案件へジャンプ</p>
+            <h2 id="caseJumpHeading">目的の案件を選択</h2>
+          </div>
+          <div class="case-jump-fields">
+            <label for="parentCaseJumpSelect">
+              <span>親案件</span>
+              <select id="parentCaseJumpSelect">
+                <option value="">親案件コード・親案件名から選択</option>
+              </select>
+            </label>
+            <label for="taskJumpSelect">
+              <span>案件</span>
+              <select id="taskJumpSelect">
+                <option value="">案件コード・案件名から選択</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
         <section id="compactTaskSection" class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
           <div class="section-heading compact-task-heading">
             <div>
