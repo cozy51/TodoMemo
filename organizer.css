@@ -501,6 +501,68 @@ button {
   gap: 14px;
 }
 
+.case-jump-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, .45fr) minmax(0, 1.55fr);
+  gap: 24px;
+  align-items: center;
+  margin: 28px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 3px 14px rgba(31, 52, 92, .04);
+}
+
+.case-jump-heading .section-kicker {
+  margin-bottom: 4px;
+}
+
+.case-jump-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.case-jump-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.case-jump-fields label {
+  display: grid;
+  gap: 7px;
+  color: #46546d;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.case-jump-fields select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 34px 10px 11px;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: white;
+  font: inherit;
+  font-weight: 500;
+}
+
+.case-jump-fields select:focus {
+  border-color: var(--accent);
+  outline: 3px solid rgba(47, 111, 237, .16);
+}
+
+.case-jump-fields select:disabled {
+  color: var(--muted);
+  background: #f2f5fa;
+}
+
+.parent-task-group[id] {
+  scroll-margin-top: 24px;
+}
+
 .calendar-month {
   position: relative;
   min-width: 0;
@@ -3030,6 +3092,11 @@ button:focus-visible {
 
   .app-header-actions {
     width: 100%;
+  }
+
+  .case-jump-panel,
+  .case-jump-fields {
+    grid-template-columns: 1fr;
   }
 
   .backup-button,

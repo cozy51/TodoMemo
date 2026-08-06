@@ -11,6 +11,8 @@ const activeCollapsedNotice = document.querySelector("#activeCollapsedNotice");
 const activeCollapsedCount = document.querySelector("#activeCollapsedCount");
 const copyActiveTasksButton = document.querySelector("#copyActiveTasksButton");
 const deadlineCalendar = document.querySelector("#deadlineCalendar");
+const parentCaseJumpSelect = document.querySelector("#parentCaseJumpSelect");
+const taskJumpSelect = document.querySelector("#taskJumpSelect");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
@@ -262,6 +264,46 @@ function getTaskAnchorHref(task) {
     ? getCompletedTaskAnchorId(task)
     : getActiveTaskAnchorId(task);
   return `#${encodeURIComponent(id)}`;
+}
+
+function getParentCaseAnchorId(parentCase) {
+  return `parent-case-${parentCase.id}`;
+}
+
+function jumpToElement(element) {
+  if (!element) return;
+  window.location.hash = `#${encodeURIComponent(element.id)}`;
+  element.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderCaseJumpOptions(activeTasks) {
+  const parentPlaceholder = document.createElement("option");
+  parentPlaceholder.value = "";
+  parentPlaceholder.textContent = "親案件コード・親案件名から選択";
+  parentCaseJumpSelect.replaceChildren(
+    parentPlaceholder,
+    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
+      const option = document.createElement("option");
+      option.value = parentCase.id;
+      option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
+      return option;
+    })
+  );
+  parentCaseJumpSelect.disabled = parentCases.length === 0;
+
+  const taskPlaceholder = document.createElement("option");
+  taskPlaceholder.value = "";
+  taskPlaceholder.textContent = "案件コード・案件名から選択";
+  taskJumpSelect.replaceChildren(
+    taskPlaceholder,
+    ...activeTasks.map((task) => {
+      const option = document.createElement("option");
+      option.value = task.id;
+      option.textContent = `${task.caseNumber}｜${task.title}`;
+      return option;
+    })
+  );
+  taskJumpSelect.disabled = activeTasks.length === 0;
 }
 
 function createCalendarMonth(activeTasks, year, month, monthOffset) {
@@ -1399,6 +1441,7 @@ function renderParentCaseSettings() {
 function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const group = document.createElement("article");
   group.className = "parent-task-group";
+  if (parentCase) group.id = getParentCaseAnchorId(parentCase);
   if (!parentCase) group.classList.add("is-unassigned");
 
   const header = document.createElement("div");
@@ -1454,74 +1497,6 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     header.append(addTaskButton);
   }
   group.append(header);
-
-  if (parentCase) {
-    const ideas = document.createElement("section");
-    ideas.className = "parent-idea-memos";
-    ideas.setAttribute("aria-label", `${parentCase.name}のアイデアメモ`);
-
-    const ideaHeading = document.createElement("div");
-    ideaHeading.className = "parent-idea-memos-heading";
-    const ideaTitle = document.createElement("strong");
-    ideaTitle.textContent = "アイデアメモ";
-    const ideaCount = document.createElement("span");
-    ideaCount.textContent = `${parentCase.ideaMemos.length}件`;
-    ideaHeading.append(ideaTitle, ideaCount);
-
-    const ideaForm = document.createElement("form");
-    ideaForm.className = "parent-idea-memo-form";
-    const ideaInput = document.createElement("input");
-    ideaInput.type = "text";
-    ideaInput.maxLength = 500;
-    ideaInput.placeholder = "まとまっていない考えをメモ…";
-    ideaInput.setAttribute("aria-label", `${parentCase.name}にアイデアメモを追加`);
-    const addIdeaButton = document.createElement("button");
-    addIdeaButton.type = "submit";
-    addIdeaButton.textContent = "メモ追加";
-    ideaForm.append(ideaInput, addIdeaButton);
-    ideaForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const text = ideaInput.value.trim();
-      if (!text) return;
-      if (parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS) {
-        showToast(`アイデアメモは${TODO_MEMO_MAX_PARENT_IDEA_MEMOS}件まで登録できます`);
-        return;
-      }
-      parentCase.ideaMemos.push({
-        id: crypto.randomUUID(),
-        text,
-        createdAt: new Date().toISOString()
-      });
-      parentCases = await saveParentCases(parentCases);
-      render();
-      showToast("アイデアメモを追加しました");
-    });
-    ideas.append(ideaHeading, ideaForm);
-
-    if (parentCase.ideaMemos.length > 0) {
-      const ideaList = document.createElement("ul");
-      ideaList.className = "parent-idea-memo-list";
-      parentCase.ideaMemos.forEach((memo) => {
-        const item = document.createElement("li");
-        const text = document.createElement("span");
-        text.textContent = memo.text;
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.textContent = "削除";
-        remove.title = `アイデアメモ「${memo.text}」を削除`;
-        remove.addEventListener("click", async () => {
-          parentCase.ideaMemos = parentCase.ideaMemos.filter((item) => item.id !== memo.id);
-          parentCases = await saveParentCases(parentCases);
-          render();
-          showToast("アイデアメモを削除しました");
-        });
-        item.append(text, remove);
-        ideaList.append(item);
-      });
-      ideas.append(ideaList);
-    }
-    group.append(ideas);
-  }
 
   if (groupedTasks.length === 0) {
     const empty = document.createElement("p");
@@ -1747,6 +1722,7 @@ function render() {
 
   activeList.replaceChildren(...active.map((task, index) => createActiveCard(task, index, active.length)));
   renderDeadlineCalendar(active);
+  renderCaseJumpOptions(active);
   renderCompactTaskTable(active);
   completedList.replaceChildren(...completed.map(createCompletedCard));
   renderParentCaseGroups();
@@ -2182,6 +2158,18 @@ dueDateInput.addEventListener("input", markTaskEditorDirty);
 taskTagOptions.addEventListener("change", markTaskEditorDirty);
 parentCaseSelect.addEventListener("change", markTaskEditorDirty);
 prioritySelect.addEventListener("change", markTaskEditorDirty);
+parentCaseJumpSelect.addEventListener("change", () => {
+  const parentCase = parentCases.find((item) => item.id === parentCaseJumpSelect.value);
+  if (!parentCase) return;
+  setParentCaseViewMode("group");
+  jumpToElement(document.getElementById(getParentCaseAnchorId(parentCase)));
+});
+taskJumpSelect.addEventListener("change", () => {
+  const task = getActiveTasks().find((item) => item.id === taskJumpSelect.value);
+  if (!task) return;
+  setActiveListCollapsed(false);
+  jumpToElement(document.getElementById(getActiveTaskAnchorId(task)));
+});
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
   if (!input) return;
