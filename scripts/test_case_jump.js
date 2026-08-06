@@ -11,6 +11,21 @@ for (const id of ["parentCaseJumpSelect", "taskJumpSelect"]) {
   }
 }
 
+for (const placeholder of [
+  "親案件コード・親案件名から選択",
+  "案件コード・案件名から選択"
+]) {
+  if (!html.includes(`<option value="" selected disabled hidden>${placeholder}</option>`)) {
+    throw new Error(`${placeholder} must be a hidden, non-selectable placeholder`);
+  }
+}
+if (!source.includes("parentPlaceholder.disabled = true")
+  || !source.includes("parentPlaceholder.hidden = true")
+  || !source.includes("taskPlaceholder.disabled = true")
+  || !source.includes("taskPlaceholder.hidden = true")) {
+  throw new Error("Rendered jump placeholders must not appear as selectable list data");
+}
+
 if (!source.includes("function renderCaseJumpOptions(activeTasks)")) {
   throw new Error("Jump options must be refreshed with rendered task data");
 }
