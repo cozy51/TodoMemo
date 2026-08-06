@@ -1958,36 +1958,20 @@ button {
 .parent-task-group-identity {
   display: flex;
   min-width: 0;
-  gap: 12px;
-  align-items: baseline;
-}
-
-.parent-task-group-identity-link {
   width: fit-content;
   max-width: 100%;
-  margin: -7px;
-  padding: 7px;
-  color: inherit;
-  border-radius: 8px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid #d8c7f2;
+  border-radius: 10px;
+  background: #fbf8ff;
+}
+
+.parent-task-group.is-unassigned .parent-task-group-identity {
+  padding: 0;
+  border: 0;
   background: transparent;
-  text-decoration: none;
-}
-
-.parent-task-group-identity-link:hover {
-  background: #e9e0f8;
-}
-
-.parent-task-group-identity-link:focus-visible {
-  outline: 2px solid #6842b8;
-  outline-offset: 2px;
-}
-
-.parent-task-group-identity-link::after {
-  flex: 0 0 auto;
-  color: #6842b8;
-  content: "↗";
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .parent-task-group-add-task {
@@ -2028,6 +2012,25 @@ button {
   font-size: 15px;
   line-height: 1.45;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parent-task-group-identity .parent-case-kind {
+  font-size: 10px;
+}
+
+.parent-task-group-identity .parent-case-inline-number {
+  font-size: 14px;
+}
+
+.parent-task-group-identity .parent-case-title-text {
+  font-size: 15px;
+}
+
+.parent-task-group-identity .parent-case-link-status,
+.parent-task-group-identity .parent-case-copy-button {
+  padding: 4px 8px;
+  font-size: 10px;
   white-space: nowrap;
 }
 

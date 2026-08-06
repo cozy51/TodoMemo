@@ -1527,23 +1527,20 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const header = document.createElement("div");
   header.className = "parent-task-group-header";
 
-  const identity = document.createElement(parentCase?.url ? "a" : "div");
+  const identity = document.createElement("div");
   identity.className = "parent-task-group-identity";
-  if (parentCase?.url) {
-    identity.classList.add("parent-task-group-identity-link");
-    identity.href = parentCase.url;
-    identity.target = "_blank";
-    identity.rel = "noopener noreferrer";
-    identity.title = `${parentCase.name}のリンクを開く: ${parentCase.url}`;
+  if (parentCase) {
+    appendParentCaseLabel(identity, parentCase);
+    appendParentCaseActions(identity, parentCase);
+  } else {
+    const number = document.createElement("span");
+    number.className = "parent-task-group-number";
+    number.textContent = "親案件未設定";
+
+    const name = document.createElement("h3");
+    name.textContent = "親案件なし";
+    identity.append(number, name);
   }
-
-  const number = document.createElement("span");
-  number.className = "parent-task-group-number";
-  number.textContent = parentCase?.caseNumber || "親案件未設定";
-
-  const name = document.createElement("h3");
-  name.textContent = ensureEmojiPresentation(parentCase?.name || "親案件なし");
-  identity.append(number, name);
 
   const summary = document.createElement("span");
   summary.className = "parent-task-group-summary";
