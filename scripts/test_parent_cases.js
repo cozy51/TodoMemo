@@ -155,6 +155,18 @@ if (JSON.stringify(remainingIdeaMemoIds) !== JSON.stringify(["idea-2"])) {
   throw new Error(`Unexpected memos after deletion: ${JSON.stringify(remainingIdeaMemoIds)}`);
 }
 
+const reorderedIdeaMemoIds = run(`
+  moveParentIdeaMemo([
+    {
+      id: "parent-1",
+      ideaMemos: [{ id: "idea-1" }, { id: "idea-2" }, { id: "idea-3" }]
+    }
+  ], "parent-1", "idea-2", -1)[0].ideaMemos.map((memo) => memo.id)
+`);
+if (JSON.stringify(reorderedIdeaMemoIds) !== JSON.stringify(["idea-2", "idea-1", "idea-3"])) {
+  throw new Error(`Unexpected reordered memos: ${JSON.stringify(reorderedIdeaMemoIds)}`);
+}
+
 const ideaMemoPreview = run(`
   formatParentIdeaMemoPreview([
     { text: "最初のアイデア" },

@@ -255,6 +255,22 @@ function removeParentIdeaMemo(parentCases, parentCaseId, memoId) {
     : parentCase);
 }
 
+function moveParentIdeaMemo(parentCases, parentCaseId, memoId, direction) {
+  return parentCases.map((parentCase) => {
+    if (parentCase.id !== parentCaseId) return parentCase;
+    const ideaMemos = [...parentCase.ideaMemos];
+    const currentIndex = ideaMemos.findIndex((memo) => memo.id === memoId);
+    const destination = currentIndex + direction;
+    if (currentIndex < 0 || destination < 0 || destination >= ideaMemos.length) {
+      return parentCase;
+    }
+    [ideaMemos[currentIndex], ideaMemos[destination]] = [
+      ideaMemos[destination], ideaMemos[currentIndex]
+    ];
+    return { ...parentCase, ideaMemos };
+  });
+}
+
 function formatParentIdeaMemoPreview(ideaMemos, maxItems = 5, maxTextLength = 40) {
   const memos = Array.isArray(ideaMemos) ? ideaMemos : [];
   const lines = memos.slice(0, maxItems).map((memo, index) => {

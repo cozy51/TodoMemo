@@ -1691,13 +1691,30 @@ function renderParentIdeaDialog() {
         input.blur();
       }
     });
+    const moveActions = document.createElement("span");
+    moveActions.className = "parent-idea-dialog-move-actions";
+    const moveUp = document.createElement("button");
+    moveUp.type = "button";
+    moveUp.textContent = "↑";
+    moveUp.title = `アイデアメモ ${index + 1}を上へ移動`;
+    moveUp.setAttribute("aria-label", moveUp.title);
+    moveUp.disabled = index === 0;
+    moveUp.addEventListener("click", () => reorderParentIdeaMemo(memo.id, -1));
+    const moveDown = document.createElement("button");
+    moveDown.type = "button";
+    moveDown.textContent = "↓";
+    moveDown.title = `アイデアメモ ${index + 1}を下へ移動`;
+    moveDown.setAttribute("aria-label", moveDown.title);
+    moveDown.disabled = index === parentCase.ideaMemos.length - 1;
+    moveDown.addEventListener("click", () => reorderParentIdeaMemo(memo.id, 1));
+    moveActions.append(moveUp, moveDown);
     const remove = document.createElement("button");
     remove.className = "parent-idea-dialog-delete";
     remove.type = "button";
     remove.textContent = "削除";
     remove.title = `アイデアメモ「${memo.text}」を削除`;
     remove.dataset.memoId = memo.id;
-    item.append(number, input, remove);
+    item.append(number, input, moveActions, remove);
     return item;
   }));
 }
@@ -1736,6 +1753,14 @@ function queueParentIdeaSave(message) {
 function persistOpenParentIdeaEdits() {
   if (!applyOpenParentIdeaEdits()) return;
   queueParentIdeaSave("アイデアメモを自動保存しました");
+}
+
+function reorderParentIdeaMemo(memoId, direction) {
+  applyOpenParentIdeaEdits();
+  parentCases = moveParentIdeaMemo(parentCases, ideaMemoParentCaseId, memoId, direction);
+  render();
+  renderParentIdeaDialog();
+  queueParentIdeaSave("アイデアメモの順番を変更しました");
 }
 
 function openParentIdeaDialog(parentCaseId) {

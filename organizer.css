@@ -2100,7 +2100,7 @@ button {
 
 .parent-idea-dialog-list li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   min-height: 48px;
@@ -2108,6 +2108,23 @@ button {
   background: #fff;
   color: #3d344b;
   font-size: 12px;
+}
+
+.parent-idea-dialog-move-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.parent-idea-dialog-move-actions button {
+  min-width: 30px;
+  padding: 7px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.parent-idea-dialog-move-actions button:disabled {
+  cursor: default;
+  opacity: .35;
 }
 
 .parent-idea-dialog-list li + li {

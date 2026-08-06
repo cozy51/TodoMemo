@@ -126,6 +126,13 @@ if (!source.includes('input.addEventListener("blur", persistOpenParentIdeaEdits)
 if (!source.includes("function persistOpenParentIdeaEdits()")) {
   throw new Error("Edited idea memos must be persisted automatically");
 }
+if (!source.includes("function reorderParentIdeaMemo(memoId, direction)")
+  || !source.includes("moveParentIdeaMemo(parentCases, ideaMemoParentCaseId, memoId, direction)")) {
+  throw new Error("Idea memos must provide persisted ordering controls");
+}
+if (!source.includes('moveUp.textContent = "↑"') || !source.includes('moveDown.textContent = "↓"')) {
+  throw new Error("Idea-memo rows must provide up and down buttons");
+}
 if (!source.includes('parentIdeaDialogList.addEventListener("click", deleteParentIdeaMemoFromEvent)')) {
   throw new Error("Idea-memo deletion must use stable event delegation across dialog rerenders");
 }
