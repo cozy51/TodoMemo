@@ -9,6 +9,7 @@
   --accent: #2f6fed;
   --accent-dark: #2359c4;
   --accent-soft: #eaf1ff;
+  --parent-case-number: #b4233f;
   --danger: #b4483d;
   --shadow: 0 14px 45px rgba(31, 52, 92, .09);
   font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
@@ -1518,7 +1519,7 @@ button {
 
 .parent-case-inline-number {
   flex: 0 0 auto;
-  color: #6d4cab;
+  color: var(--parent-case-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 800;
@@ -1992,7 +1993,7 @@ button {
 
 .parent-task-group-number {
   flex: 0 0 auto;
-  color: #6842b8;
+  color: var(--parent-case-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 15px;
   font-weight: 850;
@@ -2422,12 +2423,16 @@ button {
 }
 
 .parent-case-number {
-  color: #6842b8;
+  color: var(--parent-case-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: .01em;
   white-space: nowrap;
+}
+
+#parentIdeaDialogCaseNumber {
+  color: var(--parent-case-number);
 }
 
 .parent-case-used-count {
