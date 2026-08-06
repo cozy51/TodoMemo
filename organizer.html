@@ -73,13 +73,13 @@
             <label for="parentCaseJumpSelect">
               <span>親案件</span>
               <select id="parentCaseJumpSelect">
-                <option value="">親案件コード・親案件名から選択</option>
+                <option value="" selected disabled hidden>親案件コード・親案件名から選択</option>
               </select>
             </label>
             <label for="taskJumpSelect">
               <span>案件</span>
               <select id="taskJumpSelect">
-                <option value="">案件コード・案件名から選択</option>
+                <option value="" selected disabled hidden>案件コード・案件名から選択</option>
               </select>
             </label>
           </div>
@@ -394,13 +394,21 @@
           <div class="card-case-row">
             <p class="card-case-number case-number"></p>
             <button class="copy-task-button" type="button">案件COPY</button>
+            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
           </div>
           <h3></h3>
           <p class="card-parent-case" hidden></p>
-          <div class="card-content markdown-body"></div>
           <div class="card-tags" hidden></div>
           <p class="card-due" hidden></p>
-          <div class="card-links" aria-label="関連リンク" hidden></div>
+          <div class="card-links-section">
+            <div class="card-links-heading">
+              <span>関連リンク</span>
+              <button class="card-paste-link-button paste-link-button" type="button">📋 URLを取り込む</button>
+            </div>
+            <div class="card-links" aria-label="関連リンク" hidden></div>
+          </div>
+          <div class="card-content markdown-body"></div>
+          <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
         </div>
         <div class="task-actions">
           <button class="quick-edit-button" type="button" aria-label="このタスクを編集" title="編集">編集</button>
@@ -430,14 +438,22 @@
           <div class="card-case-row">
             <p class="card-case-number case-number"></p>
             <button class="copy-task-button" type="button">案件COPY</button>
+            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
           </div>
           <h3></h3>
           <p class="card-parent-case" hidden></p>
-          <div class="card-content markdown-body"></div>
           <div class="card-tags" hidden></div>
           <p class="card-due" hidden></p>
           <p class="card-completed-at"></p>
-          <div class="card-links" aria-label="関連リンク" hidden></div>
+          <div class="card-links-section">
+            <div class="card-links-heading">
+              <span>関連リンク</span>
+              <button class="card-paste-link-button paste-link-button" type="button">📋 URLを取り込む</button>
+            </div>
+            <div class="card-links" aria-label="関連リンク" hidden></div>
+          </div>
+          <div class="card-content markdown-body"></div>
+          <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
         </div>
         <div class="task-actions">
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>

@@ -123,6 +123,12 @@ function sortParentCasesByNumberDescending(parentCases) {
   );
 }
 
+function sortTasksByCaseNumberDescending(tasks) {
+  return [...tasks].sort((a, b) =>
+    String(b.caseNumber || "").localeCompare(String(a.caseNumber || ""), "en")
+  );
+}
+
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
   const priorityByTaskId = new Map(tasks.map((task, index) => [task.id, index]));
@@ -172,6 +178,12 @@ function formatTaskForCopy(task) {
   const title = String(task.title || "").trim();
   const content = String(task.content || "").replace(/\r\n?/g, "\n");
   return `${caseNumber}_${title} [\n${content}\n]\n`;
+}
+
+function formatTaskHeadingForCopy(task) {
+  const caseNumber = String(task.caseNumber || "").trim();
+  const title = String(task.title || "").trim();
+  return `${caseNumber}_${title}`;
 }
 
 function formatParentCaseForCopy(parentCase) {
