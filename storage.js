@@ -123,6 +123,12 @@ function sortParentCasesByNumberDescending(parentCases) {
   );
 }
 
+function sortTasksByCaseNumberDescending(tasks) {
+  return [...tasks].sort((a, b) =>
+    String(b.caseNumber || "").localeCompare(String(a.caseNumber || ""), "en")
+  );
+}
+
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
   const priorityByTaskId = new Map(tasks.map((task, index) => [task.id, index]));
@@ -172,6 +178,12 @@ function formatTaskForCopy(task) {
   const title = String(task.title || "").trim();
   const content = String(task.content || "").replace(/\r\n?/g, "\n");
   return `${caseNumber}_${title} [\n${content}\n]\n`;
+}
+
+function formatTaskHeadingForCopy(task) {
+  const caseNumber = String(task.caseNumber || "").trim();
+  const title = String(task.title || "").trim();
+  return `${caseNumber}_${title}`;
 }
 
 function formatParentCaseForCopy(parentCase) {
@@ -241,6 +253,19 @@ function removeParentIdeaMemo(parentCases, parentCaseId, memoId) {
         ideaMemos: parentCase.ideaMemos.filter((memo) => memo.id !== memoId)
       }
     : parentCase);
+}
+
+function formatParentIdeaMemoPreview(ideaMemos, maxItems = 5, maxTextLength = 40) {
+  const memos = Array.isArray(ideaMemos) ? ideaMemos : [];
+  const lines = memos.slice(0, maxItems).map((memo, index) => {
+    const text = String(memo?.text || "").replace(/\s+/g, " ").trim();
+    const preview = text.length > maxTextLength
+      ? `${text.slice(0, maxTextLength)}…`
+      : text;
+    return `${index + 1}. ${preview}`;
+  });
+  if (memos.length > maxItems) lines.push(`ほか${memos.length - maxItems}件`);
+  return lines.join("\n");
 }
 
 function normalizeTaskLinks(values) {
