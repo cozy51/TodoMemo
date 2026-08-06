@@ -280,6 +280,9 @@ function renderCaseJumpOptions(activeTasks) {
   const parentPlaceholder = document.createElement("option");
   parentPlaceholder.value = "";
   parentPlaceholder.textContent = "親案件コード・親案件名から選択";
+  parentPlaceholder.selected = true;
+  parentPlaceholder.disabled = true;
+  parentPlaceholder.hidden = true;
   parentCaseJumpSelect.replaceChildren(
     parentPlaceholder,
     ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
@@ -294,6 +297,9 @@ function renderCaseJumpOptions(activeTasks) {
   const taskPlaceholder = document.createElement("option");
   taskPlaceholder.value = "";
   taskPlaceholder.textContent = "案件コード・案件名から選択";
+  taskPlaceholder.selected = true;
+  taskPlaceholder.disabled = true;
+  taskPlaceholder.hidden = true;
   taskJumpSelect.replaceChildren(
     taskPlaceholder,
     ...activeTasks.map((task) => {
