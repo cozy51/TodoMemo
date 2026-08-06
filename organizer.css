@@ -1377,7 +1377,8 @@ button {
   margin-bottom: 3px;
 }
 
-.copy-task-button {
+.copy-task-button,
+.copy-task-heading-button {
   padding: 2px 6px;
   color: var(--accent);
   cursor: pointer;
@@ -1388,7 +1389,8 @@ button {
   font-weight: 750;
 }
 
-.copy-task-button:hover {
+.copy-task-button:hover,
+.copy-task-heading-button:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -1531,6 +1533,29 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
+}
+
+.card-links-section {
+  margin-top: 10px;
+}
+
+.card-links-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #414d65;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-links-heading + .card-links {
+  margin-top: 6px;
+}
+
+.card-paste-link-button {
+  padding: 5px 8px;
+  font-size: 10px;
 }
 
 .card-link {
