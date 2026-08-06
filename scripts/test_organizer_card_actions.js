@@ -18,6 +18,15 @@ if (!activeTaskTemplate.includes("📋 URLを取り込む")) {
 if (!source.includes("function attachTaskLinkPaste(card, task)")) {
   throw new Error("Task-card URL import must have a clipboard handler");
 }
+if (!activeTaskTemplate.includes('class="card-content-end-marker"')) {
+  throw new Error("Task cards must visibly mark the end of their content");
+}
+if (!source.includes('content.scrollHeight > content.clientHeight + 1')) {
+  throw new Error("Task cards must detect when their content is clipped");
+}
+if (!source.includes('▼ 以下に続きます（クリックで全文表示）')) {
+  throw new Error("Clipped task content must clearly explain how to view the remainder");
+}
 
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");

@@ -971,9 +971,14 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
     renderMarkdown(cardContent, task.content);
   } else {
     cardContent.replaceChildren();
-    if (showEmptyContent) cardContent.textContent = "内容未記入";
   }
   cardContent.hidden = !hasContent && !showEmptyContent;
+  const endMarker = card.querySelector(".card-content-end-marker");
+  if (endMarker) {
+    endMarker.classList.remove("is-continued");
+    endMarker.querySelector("span").textContent = "END";
+    endMarker.setAttribute("aria-label", "内容はここまでです");
+  }
 
   const cardTags = card.querySelector(".card-tags");
   const selectedTags = tags.filter((tag) => task.tagIds.includes(tag.id));
@@ -1003,6 +1008,23 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
     due.dataset.state = "none";
     due.hidden = false;
   }
+}
+
+function updateCardContentEndMarkers() {
+  document.querySelectorAll(".task-card").forEach((card) => {
+    const content = card.querySelector(".card-content");
+    const marker = card.querySelector(".card-content-end-marker");
+    if (!content || !marker) return;
+
+    const isClipped = !content.hidden && content.scrollHeight > content.clientHeight + 1;
+    marker.classList.toggle("is-continued", isClipped);
+    marker.querySelector("span").textContent = isClipped
+      ? "▼ 以下に続きます（クリックで全文表示）"
+      : "END";
+    marker.setAttribute("aria-label", isClipped
+      ? "内容は以下に続きます。カードをクリックすると全文を表示します"
+      : "内容はここまでです");
+  });
 }
 
 function createTagOption(tag, selectedIds) {
@@ -1776,6 +1798,7 @@ function render() {
   renderCaseJumpOptions(active);
   renderCompactTaskTable(active);
   completedList.replaceChildren(...completed.map(createCompletedCard));
+  updateCardContentEndMarkers();
   renderParentCaseGroups();
 
   activeCount.textContent = `${active.length}件`;

@@ -1432,8 +1432,37 @@ button {
 }
 
 .card-content.is-empty {
+  display: none;
+}
+
+.card-content-end-marker {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 0;
   color: #8b96aa;
-  font-style: italic;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.card-content-end-marker::before,
+.card-content-end-marker::after {
+  height: 1px;
+  flex: 1;
+  content: "";
+  background: #d7dfec;
+}
+
+.card-content-end-marker.is-continued {
+  color: #b35a00;
+  letter-spacing: 0;
+}
+
+.card-content-end-marker.is-continued::before,
+.card-content-end-marker.is-continued::after {
+  background: #efb36f;
 }
 
 .card-parent-case {
