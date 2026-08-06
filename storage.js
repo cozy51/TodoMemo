@@ -123,6 +123,12 @@ function sortParentCasesByNumberDescending(parentCases) {
   );
 }
 
+function sortTasksByCaseNumberDescending(tasks) {
+  return [...tasks].sort((a, b) =>
+    String(b.caseNumber || "").localeCompare(String(a.caseNumber || ""), "en")
+  );
+}
+
 function groupTasksByParentCase(parentCases, tasks) {
   const validParentIds = new Set(parentCases.map((parentCase) => parentCase.id));
   const priorityByTaskId = new Map(tasks.map((task, index) => [task.id, index]));

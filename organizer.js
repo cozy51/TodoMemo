@@ -302,7 +302,7 @@ function renderCaseJumpOptions(activeTasks) {
   taskPlaceholder.hidden = true;
   taskJumpSelect.replaceChildren(
     taskPlaceholder,
-    ...activeTasks.map((task) => {
+    ...sortTasksByCaseNumberDescending(activeTasks).map((task) => {
       const option = document.createElement("option");
       option.value = task.id;
       option.textContent = `${task.caseNumber}｜${task.title}`;
