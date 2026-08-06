@@ -4,6 +4,21 @@ const source = fs.readFileSync("organizer.js", "utf8");
 const html = fs.readFileSync("organizer.html", "utf8");
 const css = fs.readFileSync("organizer.css", "utf8");
 
+const activeTaskTemplate = html.match(
+  /<template id="activeTaskTemplate">([\s\S]*?)<\/template>/
+)?.[1] || "";
+const activeLinksIndex = activeTaskTemplate.indexOf('class="card-links-section"');
+const activeContentIndex = activeTaskTemplate.indexOf('class="card-content markdown-body"');
+if (activeLinksIndex < 0 || activeContentIndex < activeLinksIndex) {
+  throw new Error("Task-card content must be displayed after the related-links section");
+}
+if (!activeTaskTemplate.includes("📋 URLを取り込む")) {
+  throw new Error("Task cards must provide a URL import button");
+}
+if (!source.includes("function attachTaskLinkPaste(card, task)")) {
+  throw new Error("Task-card URL import must have a clipboard handler");
+}
+
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");
 }
