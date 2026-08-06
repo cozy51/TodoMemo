@@ -1199,7 +1199,15 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 0;
+}
+
+.card-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .card-tag {
@@ -1561,7 +1569,28 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin: 0;
+}
+
+.card-links-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.card-links-label {
+  flex: 0 0 auto;
+  color: #414d65;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-paste-link-button {
+  margin-left: auto;
+  padding: 5px 8px;
+  font-size: 10px;
 }
 
 .card-links-section {
@@ -1630,7 +1659,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 12px 0 0;
+  margin: 0;
   padding: 7px 10px;
   color: #24569a;
   border: 1px solid #b7cdf2;

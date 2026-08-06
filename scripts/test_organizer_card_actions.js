@@ -28,6 +28,15 @@ if (activeLinksIndex < 0 || activeContentIndex < activeLinksIndex) {
 if (!activeTaskTemplate.includes("📋 URLを取り込む")) {
   throw new Error("Task cards must provide a URL import button");
 }
+const relatedLabelIndex = activeTaskTemplate.indexOf('class="card-links-label"');
+const relatedLinksIndex = activeTaskTemplate.indexOf('class="card-links"');
+const relatedPasteIndex = activeTaskTemplate.indexOf('class="card-paste-link-button');
+if (!(relatedLabelIndex < relatedLinksIndex && relatedLinksIndex < relatedPasteIndex)) {
+  throw new Error("Related links must appear directly to the right of their label");
+}
+if (!activeTaskTemplate.includes('class="card-meta-row"')) {
+  throw new Error("Task tags and due date must share a compact metadata row");
+}
 if (!source.includes("function attachTaskLinkPaste(card, task)")) {
   throw new Error("Task-card URL import must have a clipboard handler");
 }
@@ -86,6 +95,14 @@ if (!parentGroupFunction.includes(
 }
 if (!parentGroupFunction.includes("formatParentIdeaMemoPreview(parentCase.ideaMemos)")) {
   throw new Error("Idea-memo buttons must show registered ideas in their tooltip");
+}
+if (!parentGroupFunction.includes(
+  'ideaButton.title = ideaPreview || `${parentCase.name}のアイデアメモを表示`'
+)) {
+  throw new Error("Idea-memo tooltips must contain only the concise memo preview when memos exist");
+}
+if (source.includes("登録済みアイデア") || source.includes("クリックして一覧を表示")) {
+  throw new Error("Idea-memo tooltips must not include redundant explanatory text");
 }
 if (!parentGroupFunction.includes(
   'ideaButton.dataset.state = parentCase.ideaMemos.length > 0 ? "has-memos" : "empty"'

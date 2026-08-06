@@ -1557,9 +1557,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     ideaButton.dataset.state = parentCase.ideaMemos.length > 0 ? "has-memos" : "empty";
     ideaButton.textContent = `💡 アイデアメモ ${parentCase.ideaMemos.length}件`;
     const ideaPreview = formatParentIdeaMemoPreview(parentCase.ideaMemos);
-    ideaButton.title = ideaPreview
-      ? `登録済みアイデア\n${ideaPreview}\n\nクリックして一覧を表示`
-      : `${parentCase.name}のアイデアメモを表示`;
+    ideaButton.title = ideaPreview || `${parentCase.name}のアイデアメモを表示`;
     ideaButton.setAttribute("aria-haspopup", "dialog");
     ideaButton.setAttribute("aria-controls", "parentIdeaDialog");
     ideaButton.setAttribute(
