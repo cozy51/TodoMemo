@@ -4,6 +4,53 @@ const source = fs.readFileSync("organizer.js", "utf8");
 const html = fs.readFileSync("organizer.html", "utf8");
 const css = fs.readFileSync("organizer.css", "utf8");
 
+const activeTaskTemplate = html.match(
+  /<template id="activeTaskTemplate">([\s\S]*?)<\/template>/
+)?.[1] || "";
+if (!html.includes('id="deleteTaskButton" class="delete-task-button" type="button" hidden')) {
+  throw new Error("The task editor must provide a hidden-by-default delete button");
+}
+if (!source.includes("async function deleteTaskFromEditor()")
+  || !source.includes('deleteTaskButton.addEventListener("click", deleteTaskFromEditor)')) {
+  throw new Error("The task editor delete button must delete the edited task");
+}
+if (!source.includes("この操作は取り消せません。")) {
+  throw new Error("Deleting a task from the editor must require explicit confirmation");
+}
+if (!css.includes(".delete-task-button") || !css.includes("background: #c9342b")) {
+  throw new Error("The task editor delete action must have a red danger style");
+}
+const activeLinksIndex = activeTaskTemplate.indexOf('class="card-links-section"');
+const activeContentIndex = activeTaskTemplate.indexOf('class="card-content markdown-body"');
+if (activeLinksIndex < 0 || activeContentIndex < activeLinksIndex) {
+  throw new Error("Task-card content must be displayed after the related-links section");
+}
+if (!activeTaskTemplate.includes("📋 URLを取り込む")) {
+  throw new Error("Task cards must provide a URL import button");
+}
+if (!source.includes("function attachTaskLinkPaste(card, task)")) {
+  throw new Error("Task-card URL import must have a clipboard handler");
+}
+if (!activeTaskTemplate.includes('class="card-content-end-marker"')) {
+  throw new Error("Task cards must visibly mark the end of their content");
+}
+if (!source.includes('content.scrollHeight > content.clientHeight + 1')) {
+  throw new Error("Task cards must detect when their content is clipped");
+}
+if (!source.includes('▼ 以下に続きます（クリックで全文表示）')) {
+  throw new Error("Clipped task content must clearly explain how to view the remainder");
+}
+if (!source.includes('parentJumpLink.href = `#${encodeURIComponent(getParentCaseAnchorId(parentCase))}`')) {
+  throw new Error("Task-card parent-case names must link to their organizer section");
+}
+if (!source.includes('parentJumpLink.addEventListener("click"')
+  || !source.includes('setParentCaseViewMode("group")')) {
+  throw new Error("Parent-case name links must reveal and jump to the parent case");
+}
+if (source.includes("parentJumpLink.target")) {
+  throw new Error("Parent-case name links must stay in the organizer tab");
+}
+
 if (source.includes("attachDoubleClickEdit")) {
   throw new Error("organizer.js still references the removed attachDoubleClickEdit helper");
 }
