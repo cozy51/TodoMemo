@@ -11,6 +11,13 @@ const activeCollapsedNotice = document.querySelector("#activeCollapsedNotice");
 const activeCollapsedCount = document.querySelector("#activeCollapsedCount");
 const copyActiveTasksButton = document.querySelector("#copyActiveTasksButton");
 const deadlineCalendar = document.querySelector("#deadlineCalendar");
+const manageHolidaysButton = document.querySelector("#manageHolidaysButton");
+const holidayDialog = document.querySelector("#holidayDialog");
+const holidayForm = document.querySelector("#holidayForm");
+const holidayDateInput = document.querySelector("#holidayDateInput");
+const holidayTypeInput = document.querySelector("#holidayTypeInput");
+const holidayList = document.querySelector("#holidayList");
+const holidayEmpty = document.querySelector("#holidayEmpty");
 const parentCaseJumpSelect = document.querySelector("#parentCaseJumpSelect");
 const taskJumpSelect = document.querySelector("#taskJumpSelect");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
@@ -87,6 +94,7 @@ const confirmRestoreButton = document.querySelector("#confirmRestoreButton");
 let tasks = [];
 let tags = [];
 let parentCases = [];
+let holidays = [];
 let parentCaseViewMode = "group";
 let activeListCollapsed = false;
 let draggedTaskId = null;
@@ -193,16 +201,17 @@ function createBackupTimestamp(date) {
 async function downloadBackup() {
   backupButton.disabled = true;
   try {
-    const [storedTasks, storedTags, storedParentCases] = await Promise.all([
+    const [storedTasks, storedTags, storedParentCases, storedHolidays] = await Promise.all([
       loadTasks(),
       loadTags(),
-      loadParentCases()
+      loadParentCases(),
+      loadHolidays()
     ]);
     const now = new Date();
     const timestamp = createBackupTimestamp(now);
     const backup = {
       format: "TodoMemo Backup",
-      schemaVersion: 2,
+      schemaVersion: 3,
       extensionVersion: chrome.runtime.getManifest?.().version || "unknown",
       exportedAt: now.toISOString(),
       localTimestamp: timestamp,
@@ -211,11 +220,13 @@ async function downloadBackup() {
         active: storedTasks.filter((task) => !task.completed).length,
         completed: storedTasks.filter((task) => task.completed).length,
         tags: storedTags.length,
-        parentCases: storedParentCases.length
+        parentCases: storedParentCases.length,
+        holidays: storedHolidays.length
       },
       tasks: storedTasks,
       tags: storedTags,
-      parentCases: storedParentCases
+      parentCases: storedParentCases,
+      holidays: storedHolidays
     };
     const url = URL.createObjectURL(new Blob(
       [JSON.stringify(backup, null, 2)],
@@ -382,10 +393,32 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
     }
 
     const dateKey = `${monthPrefix}${String(dayNumber).padStart(2, "0")}`;
+    const holiday = holidays.find((item) => item.date === dateKey);
     const dayNumberLabel = document.createElement("span");
     dayNumberLabel.className = "calendar-day-number";
     dayNumberLabel.textContent = dayNumber;
     day.append(dayNumberLabel);
+
+    day.classList.add("is-selectable");
+    day.tabIndex = 0;
+    if (holiday) {
+      day.classList.add(`is-${holiday.type}-holiday`);
+      const holidayLabel = document.createElement("span");
+      holidayLabel.className = "calendar-holiday-label";
+      holidayLabel.textContent = holiday.type === "company" ? "会社休" : "自分休";
+      day.append(holidayLabel);
+    }
+    const openHolidayForDay = (event) => {
+      if (event.target.closest("a, details")) return;
+      if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
+      event.preventDefault();
+      holidayDateInput.value = dateKey;
+      holidayTypeInput.value = holiday?.type || "personal";
+      renderHolidayList();
+      holidayDialog.showModal();
+    };
+    day.addEventListener("click", openHolidayForDay);
+    day.addEventListener("keydown", openHolidayForDay);
 
     if (dateKey === todayKey) day.classList.add("is-today");
     const dayTasks = tasksByDate.get(dateKey) || [];
@@ -478,6 +511,22 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
 
   monthPanel.append(title, weekdayRow, days, deadlines);
   return monthPanel;
+}
+
+function renderHolidayList() {
+  holidayList.replaceChildren(...holidays.map((holiday) => {
+    const item = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = `${holiday.date.replaceAll("-", "/")}　${holiday.type === "company" ? "会社の休み" : "自分の休み"}`;
+    label.className = `is-${holiday.type}`;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "削除";
+    remove.dataset.date = holiday.date;
+    item.append(label, remove);
+    return item;
+  }));
+  holidayEmpty.hidden = holidays.length > 0;
 }
 
 function renderDeadlineCalendar(activeTasks) {
@@ -671,7 +720,7 @@ function validateBackup(data) {
   }
   if (
     data.format !== "TodoMemo Backup" ||
-    ![1, 2].includes(data.schemaVersion)
+    ![1, 2, 3].includes(data.schemaVersion)
   ) {
     throw new Error("対応していないバックアップ形式です");
   }
@@ -679,8 +728,12 @@ function validateBackup(data) {
     throw new Error("タスクまたはタグのデータがありません");
   }
   const backupParentCases = data.parentCases === undefined ? [] : data.parentCases;
+  const backupHolidays = data.holidays === undefined ? [] : data.holidays;
   if (!Array.isArray(backupParentCases)) {
     throw new Error("親案件のデータが不正です");
+  }
+  if (!Array.isArray(backupHolidays) || backupHolidays.some((holiday) => !normalizeHoliday(holiday))) {
+    throw new Error("休みのデータが不正です");
   }
   if (
     data.tasks.length > 10000 ||
@@ -737,6 +790,7 @@ function validateBackup(data) {
   });
 
   data.parentCases = backupParentCases;
+  data.holidays = backupHolidays;
   return data;
 }
 
@@ -819,16 +873,21 @@ async function confirmRestore() {
         : "",
       order: index
     })));
+    const restoredHolidays = pendingRestore.backup.holidays
+      .map(normalizeHoliday)
+      .filter(Boolean);
 
     await chrome.storage.local.set({
       [TODO_MEMO_STORAGE_KEY]: restoredTasks,
       [TODO_MEMO_TAGS_STORAGE_KEY]: restoredTags,
-      [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: restoredParentCases
+      [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: restoredParentCases,
+      [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: restoredHolidays
     });
 
     tasks = restoredTasks;
     tags = restoredTags;
     parentCases = restoredParentCases;
+    holidays = restoredHolidays;
     const restoredCount = restoredTasks.length;
     pendingRestore = null;
     restoreDialog.close();
@@ -2407,12 +2466,42 @@ tagNameInput.addEventListener("input", () => {
   if (tagNameInput.value.trim()) tagError.textContent = "";
 });
 
+manageHolidaysButton.addEventListener("click", () => {
+  holidayDateInput.value = formatLocalDateKey(new Date());
+  holidayTypeInput.value = "personal";
+  renderHolidayList();
+  holidayDialog.showModal();
+});
+document.querySelector("#closeHolidayDialogButton").addEventListener("click", () => holidayDialog.close());
+holidayDialog.addEventListener("click", (event) => {
+  if (event.target === holidayDialog) holidayDialog.close();
+});
+holidayForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  holidays = await saveHolidays([
+    ...holidays.filter((holiday) => holiday.date !== holidayDateInput.value),
+    { date: holidayDateInput.value, type: holidayTypeInput.value }
+  ]);
+  render();
+  renderHolidayList();
+  showToast("休みを登録しました");
+});
+holidayList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-date]");
+  if (!button) return;
+  holidays = await saveHolidays(holidays.filter((holiday) => holiday.date !== button.dataset.date));
+  render();
+  renderHolidayList();
+  showToast("休みを削除しました");
+});
+
 chrome.storage.onChanged.addListener(async () => {
   const snapshotPromise = loadBackupSnapshot();
-  [tasks, tags, parentCases] = await Promise.all([
+  [tasks, tags, parentCases, holidays] = await Promise.all([
     loadTasks(),
     loadTags(),
-    loadParentCases()
+    loadParentCases(),
+    loadHolidays()
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
@@ -2425,10 +2514,11 @@ chrome.storage.onChanged.addListener(async () => {
   }
 
   const snapshotPromise = loadBackupSnapshot();
-  [tasks, tags, parentCases] = await Promise.all([
+  [tasks, tags, parentCases, holidays] = await Promise.all([
     loadTasks(),
     loadTags(),
-    loadParentCases()
+    loadParentCases(),
+    loadHolidays()
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
