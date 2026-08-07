@@ -59,10 +59,32 @@
               <p class="section-kicker">今月から3ヶ月</p>
               <h2 id="deadlineCalendarHeading">期限カレンダー</h2>
             </div>
-            <p class="calendar-description">案件リンクから該当カードへ移動できます</p>
+            <div class="calendar-heading-actions">
+              <div class="calendar-legend" aria-label="休みの表示凡例">
+                <span class="is-personal">自分の休み</span><span class="is-company">会社の休み</span>
+              </div>
+              <button id="manageHolidaysButton" class="secondary-button calendar-holiday-button" type="button">休みを登録</button>
+            </div>
           </div>
           <div id="deadlineCalendar" class="calendar-months" aria-live="polite"></div>
         </section>
+
+        <dialog id="holidayDialog" class="holiday-dialog" aria-labelledby="holidayDialogHeading">
+          <form id="holidayForm" method="dialog">
+            <div class="holiday-dialog-heading">
+              <div><p class="section-kicker">カレンダー設定</p><h2 id="holidayDialogHeading">休みを登録</h2></div>
+              <button id="closeHolidayDialogButton" class="icon-button" type="button" aria-label="閉じる">×</button>
+            </div>
+            <div class="holiday-fields">
+              <label><span>日付</span><input id="holidayDateInput" type="date" required></label>
+              <label><span>区分</span><select id="holidayTypeInput"><option value="personal">自分の休み</option><option value="company">会社の休み</option></select></label>
+              <button class="primary-button" type="submit">登録する</button>
+            </div>
+            <p class="holiday-help">カレンダーの日付をクリックして登録することもできます。</p>
+            <ul id="holidayList" class="holiday-list" aria-label="登録済みの休み"></ul>
+            <p id="holidayEmpty" class="holiday-empty">登録済みの休みはありません。</p>
+          </form>
+        </dialog>
 
         <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
           <div class="case-jump-heading">

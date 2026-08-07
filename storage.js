@@ -2,6 +2,7 @@ const TODO_MEMO_STORAGE_KEY = "todoMemoTasks";
 const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
 const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
+const TODO_MEMO_HOLIDAYS_STORAGE_KEY = "todoMemoHolidays";
 const TODO_MEMO_MAX_LINKS = 3;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
@@ -14,6 +15,37 @@ const TODO_MEMO_CASE_SEQUENCE = [
 const TODO_MEMO_CASE_NUMBER_PATTERN = /^TD\d{2}-(?:0[1-9]|1[0-2])(?:0[1-9]|[1-9]\d|[A-HJ-NQ-Z]\d)$/;
 const TODO_MEMO_PARENT_CASE_SEQUENCE = [..."123456789ABCDEFGHJKLMNPQRSTUVWXYZ"];
 const TODO_MEMO_PARENT_CASE_NUMBER_PATTERN = /^TD\d{2}-(?:0[1-9]|1[0-2])P[1-9A-HJ-NP-Z]$/;
+
+function normalizeHoliday(holiday) {
+  const date = String(holiday?.date || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(`${date}T00:00:00`).getTime())) {
+    return null;
+  }
+  return {
+    date,
+    type: holiday?.type === "company" ? "company" : "personal"
+  };
+}
+
+async function loadHolidays() {
+  const result = await chrome.storage.local.get(TODO_MEMO_HOLIDAYS_STORAGE_KEY);
+  return (Array.isArray(result[TODO_MEMO_HOLIDAYS_STORAGE_KEY])
+    ? result[TODO_MEMO_HOLIDAYS_STORAGE_KEY]
+    : [])
+    .map(normalizeHoliday)
+    .filter(Boolean)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+async function saveHolidays(holidays) {
+  const byDate = new Map();
+  holidays.map(normalizeHoliday).filter(Boolean).forEach((holiday) => {
+    byDate.set(holiday.date, holiday);
+  });
+  const normalized = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  await chrome.storage.local.set({ [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: normalized });
+  return normalized;
+}
 
 function getCaseNumberPrefix(date = new Date()) {
   const year = String(date.getFullYear()).slice(-2).padStart(2, "0");
