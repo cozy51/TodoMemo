@@ -403,10 +403,9 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
     day.tabIndex = 0;
     if (holiday) {
       day.classList.add(`is-${holiday.type}-holiday`);
-      const holidayLabel = document.createElement("span");
-      holidayLabel.className = "calendar-holiday-label";
-      holidayLabel.textContent = holiday.type === "company" ? "会社休" : "自分休";
-      day.append(holidayLabel);
+      const holidayName = holiday.type === "company" ? "会社の休み" : "自分の休み";
+      day.title = `${month + 1}月${dayNumber}日（${holidayName}）`;
+      day.setAttribute("aria-label", `${year}年${month + 1}月${dayNumber}日（${holidayName}）`);
     }
     const openHolidayForDay = (event) => {
       if (event.target.closest("a, details")) return;

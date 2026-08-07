@@ -499,8 +499,8 @@ button {
 .calendar-heading-actions, .calendar-legend { display: flex; align-items: center; gap: 12px; }
 .calendar-legend { color: var(--muted); font-size: 11px; }
 .calendar-legend span::before { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 3px; content: ""; }
-.calendar-legend .is-personal::before { background: #daf3e5; border: 1px solid #58a77b; }
-.calendar-legend .is-company::before { background: #fff0d8; border: 1px solid #d99a37; }
+.calendar-legend .is-personal::before { background: #fff0d8; border: 1px solid #d99a37; }
+.calendar-legend .is-company::before { background: #daf3e5; border: 1px solid #58a77b; }
 .calendar-holiday-button { padding: 8px 12px; }
 
 .calendar-months {
@@ -638,11 +638,8 @@ button {
 }
 .calendar-day.is-selectable { cursor: pointer; }
 .calendar-day.is-selectable:focus-visible { outline: 3px solid rgba(47, 111, 237, .25); }
-.calendar-day.is-personal-holiday { border-color: #78bd96; background: #e9f8ef; }
-.calendar-day.is-company-holiday { border-color: #dfaa55; background: #fff4df; }
-.calendar-holiday-label { position: absolute; left: 3px; bottom: 2px; color: #397251; font-size: 8px; font-weight: 800; }
-.calendar-day.is-company-holiday .calendar-holiday-label { color: #9a6214; }
-.calendar-day.has-deadline .calendar-holiday-label { left: 4px; bottom: 3px; }
+.calendar-day.is-personal-holiday { border-color: #dfaa55; background: #fff4df; }
+.calendar-day.is-company-holiday { border-color: #78bd96; background: #e9f8ef; }
 
 .holiday-dialog { width: min(560px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 16px; box-shadow: 0 24px 70px rgba(20, 35, 65, .28); }
 .holiday-dialog::backdrop { background: rgba(24, 35, 55, .45); }
@@ -657,7 +654,7 @@ button {
 .holiday-list { display: grid; gap: 6px; max-height: 220px; margin: 16px 0 0; padding: 0; overflow: auto; list-style: none; }
 .holiday-list li { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px; border-radius: 8px; background: #f5f7fb; font-size: 12px; }
 .holiday-list span { font-weight: 700; }
-.holiday-list .is-personal { color: #397251; }.holiday-list .is-company { color: #9a6214; }
+.holiday-list .is-personal { color: #9a6214; }.holiday-list .is-company { color: #397251; }
 .holiday-list button { color: var(--danger); border: 0; background: transparent; cursor: pointer; }
 
 .calendar-day-number {
