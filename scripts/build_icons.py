@@ -7,7 +7,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets" / "icons" / "todomemo-icon-source.png"
 OUTPUT_DIR = ROOT / "assets" / "icons"
+FAVICON = ROOT / "favicon.ico"
 SIZES = (16, 32, 48, 128)
+FAVICON_SIZES = ((16, 16), (32, 32), (48, 48))
 
 
 def is_connected_background(pixel):
@@ -68,6 +70,9 @@ def main():
         output = OUTPUT_DIR / f"icon-{size}.png"
         resized.save(output, optimize=True)
         print(f"Wrote {output.relative_to(ROOT)}")
+
+    icon.resize((48, 48), Image.Resampling.LANCZOS).save(FAVICON, sizes=FAVICON_SIZES)
+    print(f"Wrote {FAVICON.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
