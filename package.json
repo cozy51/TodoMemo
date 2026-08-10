@@ -1,0 +1,10 @@
+{
+  "name": "todomemo",
+  "version": "1.10.0",
+  "private": true,
+  "description": "ブラウザーのlocalStorageで動作するTodoメモWebアプリ",
+  "scripts": {
+    "dev": "vercel dev",
+    "test": "node scripts/test_case_numbers.js && node scripts/test_parent_cases.js && node scripts/test_backup_changes.js && node scripts/test_emoji_presentation.js && node scripts/test_selection_highlight.js && node scripts/test_link_presentation.js && node scripts/test_visual_list_input.js && node scripts/test_organizer_card_actions.js"
+  }
+}

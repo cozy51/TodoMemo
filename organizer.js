@@ -1,3 +1,4 @@
+const TODO_MEMO_APP_VERSION = "1.10.0";
 const appVersion = document.querySelector("#appVersion");
 const activeList = document.querySelector("#activeList");
 const completedList = document.querySelector("#completedList");
@@ -212,7 +213,7 @@ async function downloadBackup() {
     const backup = {
       format: "TodoMemo Backup",
       schemaVersion: 3,
-      extensionVersion: chrome.runtime.getManifest?.().version || "unknown",
+      extensionVersion: TODO_MEMO_APP_VERSION,
       exportedAt: now.toISOString(),
       localTimestamp: timestamp,
       counts: {
@@ -876,7 +877,7 @@ async function confirmRestore() {
       .map(normalizeHoliday)
       .filter(Boolean);
 
-    await chrome.storage.local.set({
+    await todoMemoStorage.set({
       [TODO_MEMO_STORAGE_KEY]: restoredTasks,
       [TODO_MEMO_TAGS_STORAGE_KEY]: restoredTags,
       [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: restoredParentCases,
@@ -2494,7 +2495,7 @@ holidayList.addEventListener("click", async (event) => {
   showToast("休みを削除しました");
 });
 
-chrome.storage.onChanged.addListener(async () => {
+async function refreshFromStorage() {
   const snapshotPromise = loadBackupSnapshot();
   [tasks, tags, parentCases, holidays] = await Promise.all([
     loadTasks(),
@@ -2505,11 +2506,14 @@ chrome.storage.onChanged.addListener(async () => {
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
   if (parentIdeaDialog.open) renderParentIdeaDialog();
-});
+}
+
+window.addEventListener("storage", refreshFromStorage);
+window.addEventListener("todomemo-storage-change", refreshFromStorage);
 
 (async function initialize() {
-  if (appVersion && chrome.runtime?.getManifest) {
-    appVersion.textContent = `v${chrome.runtime.getManifest().version}`;
+  if (appVersion) {
+    appVersion.textContent = `v${TODO_MEMO_APP_VERSION}`;
   }
 
   const snapshotPromise = loadBackupSnapshot();

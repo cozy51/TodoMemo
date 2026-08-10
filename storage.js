@@ -5,6 +5,27 @@ const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_HOLIDAYS_STORAGE_KEY = "todoMemoHolidays";
 const TODO_MEMO_MAX_LINKS = 3;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
+
+// Keep the persistence API asynchronous so the rest of the application can
+// remain unchanged, while storing every collection in the browser's native
+// localStorage.  The custom event keeps multiple views in the same tab in sync;
+// the native `storage` event handles other tabs.
+const todoMemoStorage = {
+  async get(key) {
+    try {
+      const value = localStorage.getItem(key);
+      return { [key]: value === null ? undefined : JSON.parse(value) };
+    } catch (_error) {
+      return { [key]: undefined };
+    }
+  },
+  async set(items) {
+    Object.entries(items).forEach(([key, value]) => {
+      localStorage.setItem(key, JSON.stringify(value));
+    });
+    window.dispatchEvent(new CustomEvent("todomemo-storage-change"));
+  }
+};
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
 const TODO_MEMO_CASE_SEQUENCE = [
   ...Array.from({ length: 99 }, (_, index) => String(index + 1).padStart(2, "0")),
@@ -28,7 +49,7 @@ function normalizeHoliday(holiday) {
 }
 
 async function loadHolidays() {
-  const result = await chrome.storage.local.get(TODO_MEMO_HOLIDAYS_STORAGE_KEY);
+  const result = await todoMemoStorage.get(TODO_MEMO_HOLIDAYS_STORAGE_KEY);
   return (Array.isArray(result[TODO_MEMO_HOLIDAYS_STORAGE_KEY])
     ? result[TODO_MEMO_HOLIDAYS_STORAGE_KEY]
     : [])
@@ -43,7 +64,7 @@ async function saveHolidays(holidays) {
     byDate.set(holiday.date, holiday);
   });
   const normalized = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-  await chrome.storage.local.set({ [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: normalized });
+  await todoMemoStorage.set({ [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: normalized });
   return normalized;
 }
 
@@ -480,7 +501,7 @@ function normalizeTag(tag) {
 }
 
 async function loadTags() {
-  const result = await chrome.storage.local.get(TODO_MEMO_TAGS_STORAGE_KEY);
+  const result = await todoMemoStorage.get(TODO_MEMO_TAGS_STORAGE_KEY);
   const storedTags = Array.isArray(result[TODO_MEMO_TAGS_STORAGE_KEY])
     ? result[TODO_MEMO_TAGS_STORAGE_KEY]
     : [];
@@ -495,7 +516,7 @@ async function saveTags(tags) {
     .map(normalizeTag)
     .filter((tag) => tag.name);
 
-  await chrome.storage.local.set({
+  await todoMemoStorage.set({
     [TODO_MEMO_TAGS_STORAGE_KEY]: normalized
   });
 
@@ -503,7 +524,7 @@ async function saveTags(tags) {
 }
 
 async function loadParentCases() {
-  const result = await chrome.storage.local.get(TODO_MEMO_PARENT_CASES_STORAGE_KEY);
+  const result = await todoMemoStorage.get(TODO_MEMO_PARENT_CASES_STORAGE_KEY);
   const storedParentCases = Array.isArray(result[TODO_MEMO_PARENT_CASES_STORAGE_KEY])
     ? result[TODO_MEMO_PARENT_CASES_STORAGE_KEY]
     : [];
@@ -521,7 +542,7 @@ async function loadParentCases() {
     return String(stored?.caseNumber || "").trim().toUpperCase() !== parentCase.caseNumber;
   });
   if (numbersChanged) {
-    await chrome.storage.local.set({
+    await todoMemoStorage.set({
       [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: normalized
     });
   }
@@ -534,14 +555,14 @@ async function saveParentCases(parentCases) {
       .map(normalizeParentCase)
       .filter((parentCase) => parentCase.name)
   ));
-  await chrome.storage.local.set({
+  await todoMemoStorage.set({
     [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: normalized
   });
   return normalized;
 }
 
 async function loadTasks() {
-  const result = await chrome.storage.local.get(TODO_MEMO_STORAGE_KEY);
+  const result = await todoMemoStorage.get(TODO_MEMO_STORAGE_KEY);
   const storedTasks = Array.isArray(result[TODO_MEMO_STORAGE_KEY])
     ? result[TODO_MEMO_STORAGE_KEY]
     : [];
@@ -559,7 +580,7 @@ async function loadTasks() {
     return String(storedTask?.caseNumber || "").trim().toUpperCase() !== task.caseNumber;
   });
   if (caseNumbersChanged) {
-    await chrome.storage.local.set({
+    await todoMemoStorage.set({
       [TODO_MEMO_STORAGE_KEY]: normalized
     });
   }
@@ -573,7 +594,7 @@ async function saveTasks(tasks) {
     order: index
   })));
 
-  await chrome.storage.local.set({
+  await todoMemoStorage.set({
     [TODO_MEMO_STORAGE_KEY]: normalized
   });
 
@@ -608,14 +629,14 @@ function createBackupSnapshot(tasks, tags, parentCases) {
 
 async function saveBackupSnapshot(tasks, tags, parentCases) {
   const snapshot = createBackupSnapshot(tasks, tags, parentCases);
-  await chrome.storage.local.set({
+  await todoMemoStorage.set({
     [TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY]: snapshot
   });
   return snapshot;
 }
 
 async function loadBackupSnapshot() {
-  const result = await chrome.storage.local.get(TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY);
+  const result = await todoMemoStorage.get(TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY);
   const snapshot = result[TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY];
   if (!snapshot || !Array.isArray(snapshot.tasks)
     || !Array.isArray(snapshot.tags) || !Array.isArray(snapshot.parentCases)) {
@@ -623,12 +644,12 @@ async function loadBackupSnapshot() {
   }
   if (snapshot.version === 2) return snapshot;
 
-  // Version 1 stored complete records and could consume most of chrome.storage.local.
-  // Compact it as soon as the extension is updated so ordinary task saves keep working.
+  // Version 1 stored complete records and could consume excessive browser storage.
+  // Compact it as soon as the app loads so ordinary task saves keep working.
   const compactSnapshot = createBackupSnapshot(
     snapshot.tasks, snapshot.tags, snapshot.parentCases
   );
-  await chrome.storage.local.set({
+  await todoMemoStorage.set({
     [TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY]: compactSnapshot
   });
   return compactSnapshot;
