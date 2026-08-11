@@ -42,6 +42,32 @@ button {
   color: inherit;
 }
 
+.cloud-backup-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.cloud-backup-panel input {
+  width: 170px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.cloud-backup-status {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cloud-backup-status[data-state="saved"] { color: #24734b; }
+.cloud-backup-status[data-state="error"] { color: var(--danger); }
+
 .app-shell {
   width: min(960px, calc(100% - 72px));
   margin: 0 auto;
