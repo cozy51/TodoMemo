@@ -44,11 +44,12 @@ button {
 
 .cloud-backup-panel {
   display: flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   justify-content: flex-end;
-  width: 100%;
+  min-width: 0;
 }
 
 .cloud-backup-panel input {
@@ -170,8 +171,12 @@ button {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 40px;
+  gap: 24px;
   margin-bottom: 58px;
+}
+
+.app-header > :first-child {
+  flex: 0 0 290px;
 }
 
 .brand {
@@ -226,8 +231,12 @@ button {
 
 .app-header-actions {
   display: flex;
+  flex: 0 1 620px;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
   flex-shrink: 0;
 }
 
@@ -3278,6 +3287,19 @@ button:focus-visible {
 
   .app-header-actions {
     width: 100%;
+  }
+
+  .app-header > :first-child {
+    flex-basis: auto;
+  }
+
+  .cloud-backup-panel {
+    justify-content: flex-start;
+  }
+
+  .cloud-backup-panel input {
+    flex: 1 1 180px;
+    width: auto;
   }
 
   .case-jump-panel,
