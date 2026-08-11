@@ -34,6 +34,13 @@
           <p>一番上が「今すること」です。新しいタスクは、一覧の最後に追加されます。</p>
         </div>
         <div class="app-header-actions">
+          <div class="cloud-backup-panel" aria-label="自動バックアップ">
+            <span id="cloudBackupStatus" class="cloud-backup-status" aria-live="polite">自動バックアップを確認中…</span>
+            <input id="cloudBackupEmail" type="email" autocomplete="username" placeholder="メールアドレス" aria-label="Supabaseのメールアドレス">
+            <input id="cloudBackupPassword" type="password" autocomplete="current-password" placeholder="パスワード" aria-label="Supabaseのパスワード">
+            <button id="cloudBackupSignIn" class="secondary-button" type="button">ログイン</button>
+            <button id="cloudBackupSignOut" class="secondary-button" type="button" hidden>ログアウト</button>
+          </div>
           <button id="backupButton" class="backup-button" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/>
@@ -493,7 +500,10 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
+    <script src="/api/supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="storage.js"></script>
+    <script src="supabase-backup.js"></script>
     <script src="markdown.js"></script>
     <script src="organizer.js"></script>
   </body>
