@@ -24,6 +24,9 @@ const todoMemoStorage = {
       localStorage.setItem(key, JSON.stringify(value));
     });
     window.dispatchEvent(new CustomEvent("todomemo-storage-change"));
+    // Cloud backup is deliberately fire-and-forget: a network or authentication
+    // failure must never turn a successful local save into an application error.
+    window.todoMemoCloudBackup?.schedule();
   }
 };
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
