@@ -1091,6 +1091,31 @@ function assessRestoreRegression({
   return { level, staleMs, backupAt, currentAt, shrink, comparable };
 }
 
+// The record counts of a document, however it was written: newer documents
+// carry a `counts` block, older ones only the collections themselves.
+function readDatasetCounts(source) {
+  const counts = source?.counts;
+  const tasks = Array.isArray(source?.tasks) ? source.tasks : [];
+  return {
+    tasks: Number.isFinite(counts?.tasks) ? counts.tasks : tasks.length,
+    active: Number.isFinite(counts?.active)
+      ? counts.active
+      : tasks.filter((task) => !task?.completed).length,
+    parentCases: Number.isFinite(counts?.parentCases)
+      ? counts.parentCases
+      : (Array.isArray(source?.parentCases) ? source.parentCases.length : 0),
+    tags: Number.isFinite(counts?.tags)
+      ? counts.tags
+      : (Array.isArray(source?.tags) ? source.tags.length : 0)
+  };
+}
+
+function formatRecordCounts(counts) {
+  if (!counts) return "";
+  return `タスク${counts.tasks}件（未完了${counts.active}）`
+    + `・親案件${counts.parentCases}件・タグ${counts.tags}件`;
+}
+
 function formatElapsedJa(milliseconds) {
   const minutes = Math.floor(Math.max(0, milliseconds) / 60000);
   if (minutes < 1) return "1分未満";

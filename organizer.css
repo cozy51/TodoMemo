@@ -178,6 +178,14 @@ button {
   font-size: 12px;
 }
 
+/* Specific enough to beat the muted `.cloud-history-item span` above: the
+   counts are the figure the user compares, so they read as primary text. */
+.cloud-history-item .cloud-history-counts {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .app-shell {
   width: min(960px, calc(100% - 72px));
   margin: 0 auto;

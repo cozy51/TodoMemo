@@ -21,7 +21,8 @@ const {
   decideSyncAction, assessDatasetShrink, createDatasetFingerprint, normalizeDataset,
   loadTodoMemoSyncState, saveTodoMemoSyncState, countDatasetRecords, isDatasetEmpty,
   validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId, selectExpiredHistory,
-  assessRestoreRegression, getDatasetActivityAt, formatElapsedJa
+  assessRestoreRegression, getDatasetActivityAt, formatElapsedJa,
+  readDatasetCounts, formatRecordCounts
 } = context;
 
 function check(actual, expected, label) {
@@ -343,6 +344,31 @@ check(
   "約3時間",
   "An 'about' figure rounds rather than understating what a restore discards"
 );
+
+// --- record counts shown against each restore point -------------------------
+
+check(
+  formatRecordCounts(readDatasetCounts({
+    counts: { tasks: 13, active: 11, completed: 2, parentCases: 12, tags: 3 }
+  })),
+  "タスク13件（未完了11）・親案件12件・タグ3件",
+  "A document's own counts are used when it carries them"
+);
+check(
+  formatRecordCounts(readDatasetCounts({
+    tasks: [{ completed: false }, { completed: true }, { completed: false }],
+    parentCases: [{ id: "p" }],
+    tags: []
+  })),
+  "タスク3件（未完了2）・親案件1件・タグ0件",
+  "Older documents without a counts block are counted from their records"
+);
+check(
+  formatRecordCounts(readDatasetCounts({})),
+  "タスク0件（未完了0）・親案件0件・タグ0件",
+  "An empty document reports zeroes rather than blanks"
+);
+check(formatRecordCounts(null), "", "Unknown counts render as nothing to show");
 
 // --- cloud history retention ------------------------------------------------
 
