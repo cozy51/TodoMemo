@@ -34,12 +34,18 @@
           <p>一番上が「今すること」です。新しいタスクは、一覧の最後に追加されます。</p>
         </div>
         <div class="app-header-actions">
-          <div class="cloud-backup-panel" aria-label="自動バックアップ">
-            <span id="cloudBackupStatus" class="cloud-backup-status" aria-live="polite">自動バックアップを確認中…</span>
-            <input id="cloudBackupEmail" type="email" autocomplete="username" placeholder="メールアドレス" aria-label="Supabaseのメールアドレス">
-            <input id="cloudBackupPassword" type="password" autocomplete="current-password" placeholder="パスワード" aria-label="Supabaseのパスワード">
-            <button id="cloudBackupSignIn" class="secondary-button" type="button">ログイン</button>
-            <button id="cloudBackupSignOut" class="secondary-button" type="button" hidden>ログアウト</button>
+          <div class="cloud-sync-panel" aria-label="クラウド同期">
+            <span class="cloud-sync-texts">
+              <span id="cloudSyncStatus" class="cloud-sync-status" aria-live="polite">クラウド同期を確認中…</span>
+              <span id="cloudSyncDetail" class="cloud-sync-detail" hidden></span>
+            </span>
+            <input id="cloudSyncEmail" type="email" autocomplete="username" placeholder="メールアドレス" aria-label="Supabaseのメールアドレス">
+            <input id="cloudSyncPassword" type="password" autocomplete="current-password" placeholder="パスワード" aria-label="Supabaseのパスワード">
+            <button id="cloudSyncSignIn" class="secondary-button" type="button">ログイン</button>
+            <button id="cloudSyncResolve" class="secondary-button cloud-sync-resolve" type="button" hidden>同期の確認</button>
+            <button id="cloudSyncNow" class="secondary-button" type="button" hidden>今すぐ同期</button>
+            <button id="cloudSyncHistory" class="secondary-button" type="button" hidden>クラウド履歴</button>
+            <button id="cloudSyncSignOut" class="secondary-button" type="button" hidden>ログアウト</button>
           </div>
           <button id="backupButton" class="backup-button" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -254,6 +260,59 @@
         </section>
       </main>
     </div>
+
+    <dialog id="cloudConflictDialog" class="task-dialog cloud-conflict-dialog" aria-labelledby="cloudConflictHeading">
+      <div class="cloud-dialog-body">
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">クラウド同期</p>
+            <h2 id="cloudConflictHeading">どちらの内容を残しますか？</h2>
+          </div>
+        </div>
+
+        <p id="cloudConflictReason" class="restore-warning"></p>
+
+        <div class="cloud-conflict-choices">
+          <div class="cloud-conflict-choice">
+            <span class="cloud-conflict-label">クラウド（他のPCを含む最新）</span>
+            <strong id="cloudConflictRemoteSummary"></strong>
+          </div>
+          <div class="cloud-conflict-choice">
+            <span class="cloud-conflict-label">このPC（未同期の内容）</span>
+            <strong id="cloudConflictLocalSummary"></strong>
+          </div>
+        </div>
+
+        <p class="cloud-conflict-note">
+          選ばなかった内容はクラウド履歴へ退避するため、あとから「クラウド履歴」で元に戻せます。
+        </p>
+
+        <div class="dialog-actions">
+          <button id="cloudConflictLater" class="secondary-button" type="button">あとで決める</button>
+          <button id="cloudConflictUseLocal" class="secondary-button" type="button">このPCの内容を残す</button>
+          <button id="cloudConflictUseRemote" class="primary-button" type="button">クラウドの内容を残す</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="cloudHistoryDialog" class="task-dialog cloud-history-dialog" aria-labelledby="cloudHistoryHeading">
+      <div class="cloud-dialog-body">
+        <div class="dialog-header">
+          <div>
+            <p class="section-kicker">クラウド同期</p>
+            <h2 id="cloudHistoryHeading">クラウド履歴から戻す</h2>
+          </div>
+          <button id="cloudHistoryClose" class="icon-button" type="button" aria-label="閉じる">×</button>
+        </div>
+
+        <p class="cloud-conflict-note">
+          上書きされる前の内容を自動で保管しています。戻す操作も新しい版として記録するため、他のPCにも安全に反映されます。
+        </p>
+
+        <ul id="cloudHistoryList" class="cloud-history-list"></ul>
+        <p id="cloudHistoryEmpty" class="parent-idea-dialog-empty">まだ履歴はありません</p>
+      </div>
+    </dialog>
 
     <dialog id="restoreDialog" class="task-dialog restore-dialog">
       <div class="restore-dialog-body">
@@ -503,7 +562,7 @@
     <script src="/api/supabase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="storage.js"></script>
-    <script src="supabase-backup.js"></script>
+    <script src="cloud-sync.js"></script>
     <script src="markdown.js"></script>
     <script src="organizer.js"></script>
   </body>

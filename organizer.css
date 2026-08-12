@@ -42,7 +42,7 @@ button {
   color: inherit;
 }
 
-.cloud-backup-panel {
+.cloud-sync-panel {
   display: flex;
   flex-basis: 100%;
   flex-wrap: wrap;
@@ -52,7 +52,7 @@ button {
   min-width: 0;
 }
 
-.cloud-backup-panel input {
+.cloud-sync-panel input {
   width: 170px;
   padding: 8px 10px;
   border: 1px solid var(--line-strong);
@@ -60,14 +60,118 @@ button {
   background: var(--surface);
 }
 
-.cloud-backup-status {
+.cloud-sync-texts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cloud-sync-status {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
 }
 
-.cloud-backup-status[data-state="saved"] { color: #24734b; }
-.cloud-backup-status[data-state="error"] { color: var(--danger); }
+.cloud-sync-status[data-state="saved"] { color: #24734b; }
+.cloud-sync-status[data-state="saving"] { color: var(--muted); }
+.cloud-sync-status[data-state="error"] { color: var(--danger); }
+
+.cloud-sync-detail {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cloud-sync-resolve {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.cloud-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+/* The shared dialog spacing assumes a form below it; these dialogs stack their
+   own rows, so the gap above already separates the heading. */
+.cloud-dialog-body .dialog-header {
+  margin-bottom: 0;
+}
+
+.cloud-dialog-body .dialog-actions {
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.cloud-dialog-body .dialog-actions button {
+  white-space: nowrap;
+}
+
+.cloud-conflict-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.cloud-conflict-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-muted, #f7f8fa);
+}
+
+.cloud-conflict-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cloud-conflict-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.cloud-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cloud-history-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.cloud-history-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cloud-history-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .app-shell {
   width: min(960px, calc(100% - 72px));
@@ -3293,11 +3397,16 @@ button:focus-visible {
     flex-basis: auto;
   }
 
-  .cloud-backup-panel {
+  .cloud-sync-panel {
     justify-content: flex-start;
   }
 
-  .cloud-backup-panel input {
+  .cloud-sync-texts {
+    align-items: flex-start;
+    flex-basis: 100%;
+  }
+
+  .cloud-sync-panel input {
     flex: 1 1 180px;
     width: auto;
   }
