@@ -6,6 +6,10 @@ const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_HOLIDAYS_STORAGE_KEY = "todoMemoHolidays";
 const TODO_MEMO_SYNC_STATE_STORAGE_KEY = "todoMemoSyncState";
 const TODO_MEMO_DEVICE_ID_STORAGE_KEY = "todoMemoDeviceId";
+const TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY = "todoMemoDataUpdatedAt";
+// Clocks between devices drift, so a file has to look meaningfully older than
+// the current data before the restore is treated as a step backwards.
+const TODO_MEMO_STALE_RESTORE_TOLERANCE_MS = 60 * 1000;
 const TODO_MEMO_MAX_LINKS = 3;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_DATASET_STORAGE_KEYS = [
@@ -38,6 +42,18 @@ const todoMemoStorage = {
     Object.entries(items).forEach(([key, value]) => {
       localStorage.setItem(key, JSON.stringify(value));
     });
+    // Remember when the data last changed, so a restore can tell whether the
+    // file it is about to apply predates what is already here.
+    if (Object.keys(items).some((key) => TODO_MEMO_DATASET_STORAGE_KEYS.includes(key))) {
+      try {
+        localStorage.setItem(
+          TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY,
+          options.updatedAt || new Date().toISOString()
+        );
+      } catch (_error) {
+        // Without the stamp a restore falls back to the timestamps in the data.
+      }
+    }
     window.dispatchEvent(new CustomEvent("todomemo-storage-change"));
     if (options.origin === "cloud") return;
     // Cloud synchronisation is deliberately fire-and-forget: a network or
@@ -1016,6 +1032,74 @@ function assessDatasetShrink(remoteDataset, localDataset) {
     return { reason: "shrink", remoteCount, localCount, removed };
   }
   return null;
+}
+
+function loadTodoMemoDataUpdatedAt() {
+  try {
+    return String(localStorage.getItem(TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY) || "");
+  } catch (_error) {
+    return "";
+  }
+}
+
+// The newest timestamp anywhere in a dataset.  Browsers that have not written
+// the update stamp yet — and backup files, which never carry one — can still be
+// dated from the records themselves.
+function getDatasetActivityAt(dataset) {
+  let newest = 0;
+  const consider = (value) => {
+    const time = new Date(value ?? NaN).getTime();
+    if (Number.isFinite(time) && time > newest) newest = time;
+  };
+  (dataset?.tasks || []).forEach((task) => {
+    consider(task?.createdAt);
+    consider(task?.completedAt);
+  });
+  (dataset?.parentCases || []).forEach((parentCase) => {
+    consider(parentCase?.createdAt);
+    (parentCase?.ideaMemos || []).forEach((memo) => consider(memo?.createdAt));
+  });
+  return newest ? new Date(newest).toISOString() : "";
+}
+
+function pickNewestTimestamp(...values) {
+  let newest = 0;
+  values.forEach((value) => {
+    const time = new Date(value ?? NaN).getTime();
+    if (Number.isFinite(time) && time > newest) newest = time;
+  });
+  return newest ? new Date(newest).toISOString() : "";
+}
+
+// Restoring a file is the one path that can walk the data backwards on purpose,
+// so it is judged on age rather than size alone: a backup taken before the
+// current data was last changed would silently discard everything since.
+function assessRestoreRegression({
+  backupExportedAt, backupDataset, currentUpdatedAt, currentDataset
+} = {}) {
+  const backupAt = pickNewestTimestamp(backupExportedAt, getDatasetActivityAt(backupDataset));
+  const currentAt = pickNewestTimestamp(currentUpdatedAt, getDatasetActivityAt(currentDataset));
+  const shrink = assessDatasetShrink(currentDataset, backupDataset);
+  const backupTime = Date.parse(backupAt);
+  const currentTime = Date.parse(currentAt);
+  const comparable = Number.isFinite(backupTime) && Number.isFinite(currentTime);
+  const staleMs = comparable ? currentTime - backupTime : 0;
+
+  const level = comparable && staleMs > TODO_MEMO_STALE_RESTORE_TOLERANCE_MS ? "danger"
+    : shrink ? "caution"
+    : "none";
+  return { level, staleMs, backupAt, currentAt, shrink, comparable };
+}
+
+function formatElapsedJa(milliseconds) {
+  const minutes = Math.floor(Math.max(0, milliseconds) / 60000);
+  if (minutes < 1) return "1分未満";
+  if (minutes < 60) return `${minutes}分`;
+  // Rounded, because these read as "about": floor would call 2時間59分 "2時間",
+  // understating what a restore would discard.
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `約${hours}時間`;
+  return `約${Math.round(minutes / 1440)}日`;
 }
 
 // Cloud history retention.  Recent restore points are what undo a mis-click and

@@ -329,27 +329,50 @@
             <span>ファイル</span>
             <strong id="restoreFileName"></strong>
           </div>
-          <div>
-            <span>作成日時</span>
-            <strong id="restoreExportedAt"></strong>
-          </div>
-          <div>
-            <span>タスク</span>
-            <strong id="restoreTaskCount"></strong>
-          </div>
-          <div>
-            <span>分類タグ</span>
-            <strong id="restoreTagCount"></strong>
-          </div>
-          <div>
-            <span>親案件</span>
-            <strong id="restoreParentCaseCount"></strong>
-          </div>
         </div>
+
+        <table class="restore-compare">
+          <thead>
+            <tr>
+              <th scope="col"><span class="visually-hidden">項目</span></th>
+              <th scope="col">現在のデータ</th>
+              <th scope="col">バックアップ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">最終更新</th>
+              <td id="restoreCurrentUpdatedAt"></td>
+              <td id="restoreExportedAt"></td>
+            </tr>
+            <tr>
+              <th scope="row">タスク</th>
+              <td id="restoreCurrentTaskCount"></td>
+              <td id="restoreTaskCount"></td>
+            </tr>
+            <tr>
+              <th scope="row">分類タグ</th>
+              <td id="restoreCurrentTagCount"></td>
+              <td id="restoreTagCount"></td>
+            </tr>
+            <tr>
+              <th scope="row">親案件</th>
+              <td id="restoreCurrentParentCaseCount"></td>
+              <td id="restoreParentCaseCount"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p id="restoreRegressionWarning" class="restore-danger" role="alert" hidden></p>
 
         <p class="restore-warning">
           現在のタスク・分類タグ・親案件は、バックアップの内容に置き換わります。この操作を続けますか？
         </p>
+
+        <label id="restoreAcknowledgeRow" class="restore-acknowledge" hidden>
+          <input id="restoreAcknowledge" type="checkbox">
+          <span>古い内容で上書きし、それ以降の変更が失われることを確認しました</span>
+        </label>
 
         <div class="dialog-actions">
           <button id="cancelRestoreButton" class="secondary-button" type="button">キャンセル</button>

@@ -20,7 +20,8 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "storage.js"), "utf8"
 const {
   decideSyncAction, assessDatasetShrink, createDatasetFingerprint, normalizeDataset,
   loadTodoMemoSyncState, saveTodoMemoSyncState, countDatasetRecords, isDatasetEmpty,
-  validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId, selectExpiredHistory
+  validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId, selectExpiredHistory,
+  assessRestoreRegression, getDatasetActivityAt, formatElapsedJa
 } = context;
 
 function check(actual, expected, label) {
@@ -236,6 +237,111 @@ check(
   store.has("todoMemoTasks"),
   false,
   "Sync bookkeeping must not be written into the synced collections"
+);
+
+// --- restoring a file must not walk the data backwards ----------------------
+// Restoring is the one manual action that can overwrite newer data with older,
+// so it is judged on age, not only on how many records would disappear.
+
+const task = (id, createdAt) => ({ id, title: id, createdAt, completed: false });
+const currentDataset = {
+  tasks: [task("a", "2026-08-12T21:01:00.000Z"), task("b", "2026-08-12T20:00:00.000Z")],
+  tags: [], parentCases: [], holidays: []
+};
+
+const stale = assessRestoreRegression({
+  backupExportedAt: "2026-08-12T18:00:00.000Z",
+  backupDataset: { tasks: [task("a", "2026-08-12T17:00:00.000Z")] },
+  currentUpdatedAt: "2026-08-12T21:02:00.000Z",
+  currentDataset
+});
+check(stale.level, "danger", "A backup older than the current data is a step backwards");
+check(stale.staleMs, 3 * 3600000 + 2 * 60000, "The gap that would be lost is measured");
+
+// The same file with no counts lost is still a step backwards.
+check(
+  assessRestoreRegression({
+    backupExportedAt: "2026-08-12T18:00:00.000Z",
+    backupDataset: { tasks: [task("a", "x"), task("b", "y"), task("c", "z")] },
+    currentUpdatedAt: "2026-08-12T21:02:00.000Z",
+    currentDataset
+  }).level,
+  "danger",
+  "Age alone triggers the warning, even when the backup holds more records"
+);
+
+check(
+  assessRestoreRegression({
+    backupExportedAt: "2026-08-13T09:00:00.000Z",
+    backupDataset: { tasks: [task("a", "2026-08-13T09:00:00.000Z")] },
+    currentUpdatedAt: "2026-08-12T21:02:00.000Z",
+    currentDataset: { tasks: [task("a", "2026-08-12T21:00:00.000Z")] }
+  }).level,
+  "none",
+  "A newer backup restores without a warning"
+);
+
+check(
+  assessRestoreRegression({
+    backupExportedAt: "2026-08-12T21:02:20.000Z",
+    backupDataset: { tasks: currentDataset.tasks },
+    currentUpdatedAt: "2026-08-12T21:02:40.000Z",
+    currentDataset
+  }).level,
+  "none",
+  "Clock drift of a few seconds is not treated as a regression"
+);
+
+check(
+  assessRestoreRegression({
+    backupExportedAt: "2026-08-13T09:00:00.000Z",
+    backupDataset: { tasks: [] },
+    currentUpdatedAt: "2026-08-12T21:02:00.000Z",
+    currentDataset: {
+      tasks: Array.from({ length: 8 }, (_, i) => task(`t${i}`, "2026-08-12T20:00:00.000Z"))
+    }
+  }).level,
+  "caution",
+  "A newer but nearly empty backup still warns about what disappears"
+);
+
+check(
+  assessRestoreRegression({
+    backupExportedAt: "壊れた日付",
+    backupDataset: { tasks: [{ id: "a", title: "a" }] },
+    currentUpdatedAt: "",
+    currentDataset: { tasks: [{ id: "b", title: "b" }] }
+  }).comparable,
+  false,
+  "Unreadable dates are reported as such rather than assumed safe"
+);
+
+// A browser that has never written the update stamp is dated from its records.
+check(
+  getDatasetActivityAt(currentDataset),
+  "2026-08-12T21:01:00.000Z",
+  "A dataset is dated by its newest record"
+);
+check(
+  getDatasetActivityAt({
+    tasks: [],
+    parentCases: [{ createdAt: "2026-01-01T00:00:00.000Z", ideaMemos: [
+      { createdAt: "2026-03-01T00:00:00.000Z" }
+    ] }]
+  }),
+  "2026-03-01T00:00:00.000Z",
+  "Parent cases and their idea memos count as activity"
+);
+check(getDatasetActivityAt({ tasks: [] }), "", "An empty dataset has no activity date");
+
+check(formatElapsedJa(30 * 1000), "1分未満", "Elapsed time reads naturally");
+check(formatElapsedJa(45 * 60000), "45分", "Elapsed time reads naturally");
+check(formatElapsedJa(3 * 3600000), "約3時間", "Elapsed time reads naturally");
+check(formatElapsedJa(50 * 3600000), "約2日", "Elapsed time reads naturally");
+check(
+  formatElapsedJa(2 * 3600000 + 59 * 60000 + 58000),
+  "約3時間",
+  "An 'about' figure rounds rather than understating what a restore discards"
 );
 
 // --- cloud history retention ------------------------------------------------
