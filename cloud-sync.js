@@ -229,10 +229,14 @@
   }
 
   // The timestamp leads the name so a plain descending sort is chronological,
-  // whatever revision each entry carries.
-  function historyName(revision, label) {
+  // whatever revision each entry carries.  The record counts ride along so the
+  // history list can show them without downloading every file.
+  function historyName(revision, label, counts) {
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
-    return `${stamp}-r${String(revision).padStart(6, "0")}-${label}.json`;
+    const tally = counts
+      ? `-c${counts.tasks}.${counts.active}.${counts.parentCases}.${counts.tags}`
+      : "";
+    return `${stamp}-r${String(revision).padStart(6, "0")}${tally}-${label}.json`;
   }
 
   // Keep the copy that is about to be replaced.  Every overwrite is archived:
@@ -240,7 +244,13 @@
   // pruneHistory keeps the count bounded.
   async function archiveText(text, revision, label, required = false) {
     try {
-      await uploadObject(objectPath(HISTORY_FOLDER, historyName(revision, label)), text);
+      let counts = null;
+      try {
+        counts = readDatasetCounts(JSON.parse(text));
+      } catch (_error) {
+        // An unreadable archive still deserves to be kept, just without counts.
+      }
+      await uploadObject(objectPath(HISTORY_FOLDER, historyName(revision, label, counts)), text);
       await pruneHistory();
     } catch (error) {
       // Losing a routine history copy must not block the sync itself, but an
@@ -466,17 +476,24 @@
   }
 
   function parseHistoryName(name) {
-    // Current form is timestamp-first; the leading-revision form was written by
-    // the first version of this feature and still has to be readable.
-    const match = /^(\d{8})T(\d{6})Z-r(\d+)-(.+)\.json$/.exec(name)
-      || /^r(\d+)-(\d{8})T(\d{6})Z-(.+)\.json$/.exec(name);
-    if (!match) return { revision: null, date: null, label: name };
-    const [day, time, revision] = /^\d{8}T/.test(name)
-      ? [match[1], match[2], match[3]]
-      : [match[2], match[3], match[1]];
+    // Current form is timestamp-first with an optional counts segment; the
+    // leading-revision form was written by the first version of this feature
+    // and still has to be readable.
+    const modern = /^(\d{8})T(\d{6})Z-r(\d+)(?:-c([\d.]+))?-(.+)\.json$/.exec(name);
+    const legacy = modern ? null : /^r(\d+)-(\d{8})T(\d{6})Z-(.+)\.json$/.exec(name);
+    if (!modern && !legacy) return { revision: null, date: null, label: name, counts: null };
+
+    const [day, time, revision, tally, label] = modern
+      ? [modern[1], modern[2], modern[3], modern[4], modern[5]]
+      : [legacy[2], legacy[3], legacy[1], "", legacy[4]];
     const iso = `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`
       + `T${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}Z`;
-    return { revision: Number(revision), date: new Date(iso), label: match[4] };
+
+    const parts = tally ? tally.split(".").map(Number) : [];
+    const counts = parts.length === 4 && parts.every(Number.isFinite)
+      ? { tasks: parts[0], active: parts[1], parentCases: parts[2], tags: parts[3] }
+      : null;
+    return { revision: Number(revision), date: new Date(iso), label, counts };
   }
 
   const HISTORY_LABELS = {
@@ -495,8 +512,38 @@
     }).format(date);
   }
 
+  // Entries written before the counts were part of the name have to be read to
+  // be counted.  That is done after the list is on screen, a few at a time, so
+  // opening the dialog stays instant and a slow file never blocks the rest.
+  const COUNT_FETCH_CONCURRENCY = 4;
+  let historyRequestId = 0;
+
+  async function fillMissingCounts(entries, requestId) {
+    const pending = entries.filter((entry) => !entry.counts);
+    const workers = Array.from(
+      { length: Math.min(COUNT_FETCH_CONCURRENCY, pending.length) },
+      async () => {
+        while (pending.length > 0 && requestId === historyRequestId) {
+          const entry = pending.shift();
+          try {
+            const text = await downloadObject(entry.path);
+            entry.counts = text ? readDatasetCounts(JSON.parse(text)) : null;
+          } catch (_error) {
+            entry.counts = null;
+          }
+          if (requestId !== historyRequestId) return;
+          entry.countsElement.textContent = entry.counts
+            ? formatRecordCounts(entry.counts)
+            : "件数を読み取れませんでした";
+        }
+      }
+    );
+    await Promise.all(workers);
+  }
+
   async function openHistoryDialog() {
     if (!historyDialog) return;
+    const requestId = (historyRequestId += 1);
     historyList.innerHTML = "";
     historyEmpty.textContent = "読み込み中…";
     historyEmpty.hidden = false;
@@ -509,25 +556,31 @@
       historyEmpty.textContent = "履歴を読み込めませんでした";
       return;
     }
+    if (requestId !== historyRequestId) return;
     if (entries.length === 0) {
       historyEmpty.textContent = "まだ履歴はありません（クラウドが上書きされたときに増えます）";
       return;
     }
     historyEmpty.hidden = true;
 
-    // The current cloud version anchors the list: everything below it is a
-    // state the cloud has already moved on from.
+    // The current cloud version anchors the list: it is the row every restore
+    // point below is being compared against.
     const current = loadTodoMemoSyncState(user.id);
     const currentRow = document.createElement("li");
     currentRow.className = "cloud-history-item cloud-history-current";
     const currentInfo = document.createElement("div");
     const currentHeading = document.createElement("strong");
     currentHeading.textContent = "現在のクラウド";
+    const currentCounts = document.createElement("span");
+    currentCounts.className = "cloud-history-counts";
+    currentCounts.textContent = formatRecordCounts(
+      readDatasetCounts(await loadTodoMemoDataset())
+    );
     const currentNote = document.createElement("span");
     currentNote.textContent = current.remoteUpdatedAt
       ? `更新 ${formatTime(current.remoteUpdatedAt)}`
       : "同期の記録がありません";
-    currentInfo.append(currentHeading, currentNote);
+    currentInfo.append(currentHeading, currentCounts, currentNote);
     currentRow.append(currentInfo);
     historyList.append(currentRow);
 
@@ -537,9 +590,13 @@
       const info = document.createElement("div");
       const heading = document.createElement("strong");
       heading.textContent = entry.date ? formatHistoryTime(entry.date) : entry.name;
+      const counts = document.createElement("span");
+      counts.className = "cloud-history-counts";
+      counts.textContent = entry.counts ? formatRecordCounts(entry.counts) : "件数を確認中…";
+      entry.countsElement = counts;
       const note = document.createElement("span");
       note.textContent = HISTORY_LABELS[entry.label] || entry.label;
-      info.append(heading, note);
+      info.append(heading, counts, note);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "secondary-button";
@@ -548,6 +605,8 @@
       item.append(info, button);
       historyList.append(item);
     });
+
+    await fillMissingCounts(entries, requestId);
   }
 
   async function restoreFromHistory(entry, button) {
@@ -558,6 +617,7 @@
       : 0;
     if (!window.confirm(
       `${when} の内容に戻します。\n`
+      + (entry.counts ? `${formatRecordCounts(entry.counts)}\n` : "")
       + (behindBy > 0
         ? `現在のクラウドより${formatElapsedJa(behindBy)}古い内容です。`
           + "その間の変更は、戻したあとは表示されなくなります。\n"
@@ -646,6 +706,8 @@
   syncNowButton?.addEventListener("click", syncNow);
   historyButton?.addEventListener("click", () => openHistoryDialog());
   closeHistoryButton?.addEventListener("click", () => historyDialog.close());
+  // Abandon any counts still being fetched once the list is off screen.
+  historyDialog?.addEventListener("close", () => { historyRequestId += 1; });
   useRemoteButton?.addEventListener("click", () => {
     closeConflictDialog();
     run(resolveWithRemote);
