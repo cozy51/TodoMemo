@@ -1,4 +1,3 @@
-const TODO_MEMO_APP_VERSION = "1.10.0";
 const appVersion = document.querySelector("#appVersion");
 const activeList = document.querySelector("#activeList");
 const completedList = document.querySelector("#completedList");
@@ -714,86 +713,6 @@ async function copyActiveTasks() {
   }
 }
 
-function validateBackup(data) {
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("バックアップファイルではありません");
-  }
-  if (
-    data.format !== "TodoMemo Backup" ||
-    ![1, 2, 3].includes(data.schemaVersion)
-  ) {
-    throw new Error("対応していないバックアップ形式です");
-  }
-  if (!Array.isArray(data.tasks) || !Array.isArray(data.tags)) {
-    throw new Error("タスクまたはタグのデータがありません");
-  }
-  const backupParentCases = data.parentCases === undefined ? [] : data.parentCases;
-  const backupHolidays = data.holidays === undefined ? [] : data.holidays;
-  if (!Array.isArray(backupParentCases)) {
-    throw new Error("親案件のデータが不正です");
-  }
-  if (!Array.isArray(backupHolidays) || backupHolidays.some((holiday) => !normalizeHoliday(holiday))) {
-    throw new Error("休みのデータが不正です");
-  }
-  if (
-    data.tasks.length > 10000 ||
-    data.tags.length > 1000 ||
-    backupParentCases.length > 1000
-  ) {
-    throw new Error("バックアップの件数が多すぎます");
-  }
-
-  const taskIds = new Set();
-  data.tasks.forEach((task) => {
-    if (!task || typeof task !== "object" || !String(task.title || "").trim()) {
-      throw new Error("タイトルのないタスクが含まれています");
-    }
-    const id = String(task.id || "");
-    if (!id || taskIds.has(id)) {
-      throw new Error("タスクIDが不正または重複しています");
-    }
-    taskIds.add(id);
-    if (task.tagIds !== undefined && !Array.isArray(task.tagIds)) {
-      throw new Error("タスクのタグ情報が不正です");
-    }
-    if (task.links !== undefined && !Array.isArray(task.links)) {
-      throw new Error("タスクのリンク情報が不正です");
-    }
-  });
-
-  const tagIds = new Set();
-  data.tags.forEach((tag) => {
-    if (!tag || typeof tag !== "object" || !String(tag.name || "").trim()) {
-      throw new Error("名前のないタグが含まれています");
-    }
-    const id = String(tag.id || "");
-    if (!id || tagIds.has(id)) {
-      throw new Error("タグIDが不正または重複しています");
-    }
-    tagIds.add(id);
-  });
-
-  const parentCaseIds = new Set();
-  backupParentCases.forEach((parentCase) => {
-    if (
-      !parentCase ||
-      typeof parentCase !== "object" ||
-      !String(parentCase.name || "").trim()
-    ) {
-      throw new Error("名前のない親案件が含まれています");
-    }
-    const id = String(parentCase.id || "");
-    if (!id || parentCaseIds.has(id)) {
-      throw new Error("親案件IDが不正または重複しています");
-    }
-    parentCaseIds.add(id);
-  });
-
-  data.parentCases = backupParentCases;
-  data.holidays = backupHolidays;
-  return data;
-}
-
 function formatRestoreDate(exportedAt) {
   const date = new Date(exportedAt);
   if (Number.isNaN(date.getTime())) return "日時不明";
@@ -851,44 +770,13 @@ async function confirmRestore() {
   confirmRestoreButton.disabled = true;
 
   try {
-    const restoredTags = pendingRestore.backup.tags
-      .map(normalizeTag)
-      .filter((tag) => tag.name);
-    const validTagIds = new Set(restoredTags.map((tag) => tag.id));
-    const restoredParentCases = assignParentCaseNumbers(
-      pendingRestore.backup.parentCases
-        .map(normalizeParentCase)
-        .filter((parentCase) => parentCase.name)
-    );
-    const validParentCaseIds = new Set(
-      restoredParentCases.map((parentCase) => parentCase.id)
-    );
-    const restoredTasks = assignCaseNumbers(pendingRestore.backup.tasks.map((task, index) => ({
-      ...normalizeTask(task, index),
-      tagIds: Array.isArray(task.tagIds)
-        ? task.tagIds.map(String).filter((tagId) => validTagIds.has(tagId))
-        : [],
-      parentCaseId: validParentCaseIds.has(String(task.parentCaseId || ""))
-        ? String(task.parentCaseId)
-        : "",
-      order: index
-    })));
-    const restoredHolidays = pendingRestore.backup.holidays
-      .map(normalizeHoliday)
-      .filter(Boolean);
+    // The cloud sync layer normalizes the same way, so a restored file and a
+    // cloud document stay directly comparable.
+    const restored = normalizeDataset(pendingRestore.backup);
+    await saveTodoMemoDataset(restored);
 
-    await todoMemoStorage.set({
-      [TODO_MEMO_STORAGE_KEY]: restoredTasks,
-      [TODO_MEMO_TAGS_STORAGE_KEY]: restoredTags,
-      [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: restoredParentCases,
-      [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: restoredHolidays
-    });
-
-    tasks = restoredTasks;
-    tags = restoredTags;
-    parentCases = restoredParentCases;
-    holidays = restoredHolidays;
-    const restoredCount = restoredTasks.length;
+    ({ tasks, tags, parentCases, holidays } = restored);
+    const restoredCount = restored.tasks.length;
     pendingRestore = null;
     restoreDialog.close();
     render();

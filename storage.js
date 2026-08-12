@@ -1,15 +1,30 @@
+const TODO_MEMO_APP_VERSION = "1.11.0";
 const TODO_MEMO_STORAGE_KEY = "todoMemoTasks";
 const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";
 const TODO_MEMO_BACKUP_SNAPSHOT_STORAGE_KEY = "todoMemoBackupSnapshot";
 const TODO_MEMO_HOLIDAYS_STORAGE_KEY = "todoMemoHolidays";
+const TODO_MEMO_SYNC_STATE_STORAGE_KEY = "todoMemoSyncState";
+const TODO_MEMO_DEVICE_ID_STORAGE_KEY = "todoMemoDeviceId";
 const TODO_MEMO_MAX_LINKS = 3;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
+const TODO_MEMO_DATASET_STORAGE_KEYS = [
+  TODO_MEMO_STORAGE_KEY,
+  TODO_MEMO_TAGS_STORAGE_KEY,
+  TODO_MEMO_PARENT_CASES_STORAGE_KEY,
+  TODO_MEMO_HOLIDAYS_STORAGE_KEY
+];
+// Fingerprints are order sensitive, so the collection order is fixed here.
+const TODO_MEMO_DATASET_COLLECTIONS = ["tasks", "tags", "parentCases", "holidays"];
 
 // Keep the persistence API asynchronous so the rest of the application can
 // remain unchanged, while storing every collection in the browser's native
 // localStorage.  The custom event keeps multiple views in the same tab in sync;
 // the native `storage` event handles other tabs.
+//
+// localStorage is the offline copy; Supabase holds the authoritative version.
+// A write that came *from* the cloud must not be pushed back, so `set` accepts
+// `{ origin: "cloud" }` to suppress the upload while still refreshing the UI.
 const todoMemoStorage = {
   async get(key) {
     try {
@@ -19,14 +34,16 @@ const todoMemoStorage = {
       return { [key]: undefined };
     }
   },
-  async set(items) {
+  async set(items, options = {}) {
     Object.entries(items).forEach(([key, value]) => {
       localStorage.setItem(key, JSON.stringify(value));
     });
     window.dispatchEvent(new CustomEvent("todomemo-storage-change"));
-    // Cloud backup is deliberately fire-and-forget: a network or authentication
-    // failure must never turn a successful local save into an application error.
-    window.todoMemoCloudBackup?.schedule();
+    if (options.origin === "cloud") return;
+    // Cloud synchronisation is deliberately fire-and-forget: a network or
+    // authentication failure must never turn a successful local save into an
+    // application error.
+    window.todoMemoCloudSync?.notifyLocalChange();
   }
 };
 const TODO_MEMO_CASE_LETTERS = [..."ABCDEFGHJKLMNQRSTUVWXYZ"];
@@ -680,6 +697,325 @@ function countChangesSinceBackup(tasks, tags, parentCases, snapshot) {
   return countCollectionChanges(tasks, snapshot.tasks)
     + countCollectionChanges(tags, snapshot.tags)
     + countCollectionChanges(parentCases, snapshot.parentCases);
+}
+
+// ---------------------------------------------------------------------------
+// Cloud synchronisation helpers
+//
+// Supabase holds the authoritative copy of the data and localStorage keeps an
+// offline copy of it.  Every cloud document carries a monotonically increasing
+// `sync.revision`; each browser remembers the revision its local copy is based
+// on.  A device may only overwrite the cloud when the revision it is based on
+// still matches the one stored there, which is what stops an idle or offline
+// machine from resurrecting old data on top of newer work.
+// ---------------------------------------------------------------------------
+
+function validateBackup(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("バックアップファイルではありません");
+  }
+  if (
+    data.format !== "TodoMemo Backup" ||
+    ![1, 2, 3].includes(data.schemaVersion)
+  ) {
+    throw new Error("対応していないバックアップ形式です");
+  }
+  if (!Array.isArray(data.tasks) || !Array.isArray(data.tags)) {
+    throw new Error("タスクまたはタグのデータがありません");
+  }
+  const backupParentCases = data.parentCases === undefined ? [] : data.parentCases;
+  const backupHolidays = data.holidays === undefined ? [] : data.holidays;
+  if (!Array.isArray(backupParentCases)) {
+    throw new Error("親案件のデータが不正です");
+  }
+  if (!Array.isArray(backupHolidays) || backupHolidays.some((holiday) => !normalizeHoliday(holiday))) {
+    throw new Error("休みのデータが不正です");
+  }
+  if (
+    data.tasks.length > 10000 ||
+    data.tags.length > 1000 ||
+    backupParentCases.length > 1000
+  ) {
+    throw new Error("バックアップの件数が多すぎます");
+  }
+
+  const taskIds = new Set();
+  data.tasks.forEach((task) => {
+    if (!task || typeof task !== "object" || !String(task.title || "").trim()) {
+      throw new Error("タイトルのないタスクが含まれています");
+    }
+    const id = String(task.id || "");
+    if (!id || taskIds.has(id)) {
+      throw new Error("タスクIDが不正または重複しています");
+    }
+    taskIds.add(id);
+    if (task.tagIds !== undefined && !Array.isArray(task.tagIds)) {
+      throw new Error("タスクのタグ情報が不正です");
+    }
+    if (task.links !== undefined && !Array.isArray(task.links)) {
+      throw new Error("タスクのリンク情報が不正です");
+    }
+  });
+
+  const tagIds = new Set();
+  data.tags.forEach((tag) => {
+    if (!tag || typeof tag !== "object" || !String(tag.name || "").trim()) {
+      throw new Error("名前のないタグが含まれています");
+    }
+    const id = String(tag.id || "");
+    if (!id || tagIds.has(id)) {
+      throw new Error("タグIDが不正または重複しています");
+    }
+    tagIds.add(id);
+  });
+
+  const parentCaseIds = new Set();
+  backupParentCases.forEach((parentCase) => {
+    if (
+      !parentCase ||
+      typeof parentCase !== "object" ||
+      !String(parentCase.name || "").trim()
+    ) {
+      throw new Error("名前のない親案件が含まれています");
+    }
+    const id = String(parentCase.id || "");
+    if (!id || parentCaseIds.has(id)) {
+      throw new Error("親案件IDが不正または重複しています");
+    }
+    parentCaseIds.add(id);
+  });
+
+  data.parentCases = backupParentCases;
+  data.holidays = backupHolidays;
+  return data;
+}
+
+// Normalize an arbitrary backup payload the same way the app normalizes its own
+// state, so a cloud document and the local copy can be compared byte for byte.
+function normalizeDataset(source) {
+  const tags = (Array.isArray(source?.tags) ? source.tags : [])
+    .map(normalizeTag)
+    .filter((tag) => tag.name);
+  const validTagIds = new Set(tags.map((tag) => tag.id));
+
+  const parentCases = sortParentCasesByNumberDescending(assignParentCaseNumbers(
+    (Array.isArray(source?.parentCases) ? source.parentCases : [])
+      .map(normalizeParentCase)
+      .filter((parentCase) => parentCase.name)
+  ));
+  const validParentCaseIds = new Set(parentCases.map((parentCase) => parentCase.id));
+
+  const tasks = assignCaseNumbers(
+    (Array.isArray(source?.tasks) ? source.tasks : []).map((task, index) => ({
+      ...normalizeTask(task, index),
+      tagIds: Array.isArray(task?.tagIds)
+        ? task.tagIds.map(String).filter((tagId) => validTagIds.has(tagId))
+        : [],
+      parentCaseId: validParentCaseIds.has(String(task?.parentCaseId || ""))
+        ? String(task.parentCaseId)
+        : "",
+      order: index
+    }))
+  );
+
+  const holidays = (Array.isArray(source?.holidays) ? source.holidays : [])
+    .map(normalizeHoliday)
+    .filter(Boolean)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return { tasks, tags, parentCases, holidays };
+}
+
+async function loadTodoMemoDataset() {
+  const [tasks, tags, parentCases, holidays] = await Promise.all([
+    loadTasks(),
+    loadTags(),
+    loadParentCases(),
+    loadHolidays()
+  ]);
+  return { tasks, tags, parentCases, holidays };
+}
+
+async function saveTodoMemoDataset(dataset, options = {}) {
+  await todoMemoStorage.set({
+    [TODO_MEMO_STORAGE_KEY]: dataset.tasks,
+    [TODO_MEMO_TAGS_STORAGE_KEY]: dataset.tags,
+    [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: dataset.parentCases,
+    [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: dataset.holidays
+  }, options);
+  return dataset;
+}
+
+function countDatasetRecords(dataset) {
+  return TODO_MEMO_DATASET_COLLECTIONS.reduce(
+    (total, name) => total + (Array.isArray(dataset?.[name]) ? dataset[name].length : 0),
+    0
+  );
+}
+
+function isDatasetEmpty(dataset) {
+  return countDatasetRecords(dataset) === 0;
+}
+
+// A 32-bit hash alone would make an undetected collision — a change that never
+// reaches the cloud — a real if unlikely risk, so combine two independent
+// hashes with the serialized length.
+function createDatasetFingerprint(dataset) {
+  const source = JSON.stringify(
+    TODO_MEMO_DATASET_COLLECTIONS.map((name) => dataset?.[name] ?? [])
+  );
+  let low = 2166136261;
+  let high = 40389;
+  for (let index = 0; index < source.length; index += 1) {
+    const code = source.charCodeAt(index);
+    low = Math.imul(low ^ code, 16777619);
+    high = Math.imul(high ^ (code + index), 2246822519);
+  }
+  return `${source.length.toString(36)}.${(low >>> 0).toString(36)}.${(high >>> 0).toString(36)}`;
+}
+
+function getTodoMemoDeviceId() {
+  let deviceId = "";
+  try {
+    deviceId = localStorage.getItem(TODO_MEMO_DEVICE_ID_STORAGE_KEY) || "";
+  } catch (_error) {
+    deviceId = "";
+  }
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    try {
+      localStorage.setItem(TODO_MEMO_DEVICE_ID_STORAGE_KEY, deviceId);
+    } catch (_error) {
+      // A device without persistent storage still syncs; it just looks new.
+    }
+  }
+  return deviceId;
+}
+
+function describeTodoMemoDevice() {
+  const agent = typeof navigator === "undefined" ? "" : String(navigator.userAgent || "");
+  const platform = /Windows/.test(agent) ? "Windows"
+    : /Macintosh|Mac OS/.test(agent) ? "Mac"
+    : /iPhone|iPad|iPod/.test(agent) ? "iOS"
+    : /Android/.test(agent) ? "Android"
+    : /Linux/.test(agent) ? "Linux"
+    : "不明な端末";
+  const browser = /Edg\//.test(agent) ? "Edge"
+    : /OPR\//.test(agent) ? "Opera"
+    : /Chrome\//.test(agent) ? "Chrome"
+    : /Firefox\//.test(agent) ? "Firefox"
+    : /Safari\//.test(agent) ? "Safari"
+    : "ブラウザー";
+  return `${platform} / ${browser}`;
+}
+
+function createEmptySyncState() {
+  return {
+    userId: "",
+    revision: 0,
+    fingerprint: "",
+    remoteUpdatedAt: "",
+    lastSyncedAt: ""
+  };
+}
+
+function loadTodoMemoSyncState(userId = "") {
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem(TODO_MEMO_SYNC_STATE_STORAGE_KEY));
+  } catch (_error) {
+    stored = null;
+  }
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+    return createEmptySyncState();
+  }
+  const state = {
+    userId: String(stored.userId || ""),
+    revision: Number.isFinite(stored.revision) && stored.revision > 0
+      ? Math.floor(stored.revision)
+      : 0,
+    fingerprint: String(stored.fingerprint || ""),
+    remoteUpdatedAt: String(stored.remoteUpdatedAt || ""),
+    lastSyncedAt: String(stored.lastSyncedAt || "")
+  };
+  // Revisions belong to one account's document; another account's history says
+  // nothing about how fresh this browser's copy is.
+  if (userId && state.userId && state.userId !== userId) return createEmptySyncState();
+  return state;
+}
+
+function saveTodoMemoSyncState(state) {
+  // Sync bookkeeping is local metadata, never part of the synced payload, so it
+  // is written directly instead of through `todoMemoStorage.set`.
+  const next = { ...createEmptySyncState(), ...state };
+  try {
+    localStorage.setItem(TODO_MEMO_SYNC_STATE_STORAGE_KEY, JSON.stringify(next));
+  } catch (_error) {
+    // Ignore quota errors: the next sync simply re-detects the state.
+  }
+  return next;
+}
+
+// Decide what to do with a cloud document without touching either copy, so the
+// rule that prevents older data from winning stays small enough to test.
+function decideSyncAction(input) {
+  const {
+    remoteExists,
+    remoteLegacy = false,
+    remoteRevision = 0,
+    remoteFingerprint = "",
+    baseRevision = 0,
+    baseFingerprint = "",
+    localFingerprint = "",
+    localEmpty = false
+  } = input;
+
+  // A browser that has never synced and holds nothing has no opinion to defend;
+  // one that *has* synced and is now empty was emptied by an action, so that
+  // deletion is a real edit and has to pass the accidental-wipe guard instead of
+  // being silently undone.
+  const hasLineage = baseRevision > 0 || baseFingerprint !== "";
+  const unsynced = localEmpty && !hasLineage;
+
+  if (!remoteExists) return unsynced ? "idle" : "push";
+
+  // Edits this browser made that the cloud has never seen.
+  const localDirty = !unsynced && localFingerprint !== baseFingerprint;
+
+  // Identical content needs no transfer; only the revision lineage is adjusted.
+  if (remoteFingerprint === localFingerprint) {
+    // Except when upgrading from a pre-revision document: give it a revision now
+    // so the first later edit is an ordinary push rather than a conflict.
+    if (remoteLegacy) return "push";
+    return remoteRevision === baseRevision ? "idle" : "adopt";
+  }
+
+  // Documents written before revisions existed carry no ordering information,
+  // so guessing which side is newer is exactly the mistake to avoid.
+  if (remoteLegacy) return localDirty ? "conflict" : "pull";
+
+  if (remoteRevision > baseRevision) return localDirty ? "conflict" : "pull";
+  // The cloud moved backwards relative to this browser: never silently accept
+  // it, and never silently overwrite it either.
+  if (remoteRevision < baseRevision) return "conflict";
+  return localDirty ? "push" : "pull";
+}
+
+// Guard against the accidental wipe: a cleared browser profile, a mis-clicked
+// bulk delete, or a restore from a much older file must not quietly shrink the
+// authoritative copy.
+function assessDatasetShrink(remoteDataset, localDataset) {
+  const remoteCount = countDatasetRecords(remoteDataset);
+  const localCount = countDatasetRecords(localDataset);
+  if (remoteCount === 0) return null;
+  if (localCount === 0) {
+    return { reason: "empty", remoteCount, localCount, removed: remoteCount };
+  }
+  const removed = remoteCount - localCount;
+  if (remoteCount >= 5 && removed >= Math.ceil(remoteCount / 2)) {
+    return { reason: "shrink", remoteCount, localCount, removed };
+  }
+  return null;
 }
 
 function formatDueDate(dueDate) {
