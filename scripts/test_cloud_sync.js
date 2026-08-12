@@ -20,7 +20,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "storage.js"), "utf8"
 const {
   decideSyncAction, assessDatasetShrink, createDatasetFingerprint, normalizeDataset,
   loadTodoMemoSyncState, saveTodoMemoSyncState, countDatasetRecords, isDatasetEmpty,
-  validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId
+  validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId, selectExpiredHistory
 } = context;
 
 function check(actual, expected, label) {
@@ -236,6 +236,43 @@ check(
   store.has("todoMemoTasks"),
   false,
   "Sync bookkeeping must not be written into the synced collections"
+);
+
+// --- cloud history retention ------------------------------------------------
+
+const day = 86400000;
+const now = Date.UTC(2026, 7, 12, 9, 0, 0);
+// 40 entries today, then one per day for the previous 40 days.
+const history = [
+  ...Array.from({ length: 40 }, (_, i) => ({ name: `today-${i}`, date: new Date(now - i * 60000) })),
+  ...Array.from({ length: 40 }, (_, i) => ({ name: `day-${i}`, date: new Date(now - (i + 1) * day) }))
+];
+
+check(selectExpiredHistory(history.slice(0, 30)).length, 0, "Nothing expires below the recent limit");
+
+const expired = selectExpiredHistory(history);
+const kept = history.filter((entry) => !expired.includes(entry));
+check(kept.length, 60, "Retention is bounded");
+check(
+  kept.slice(0, 30).every((entry, index) => entry === history[index]),
+  true,
+  "The 30 newest restore points are always kept"
+);
+const keptDays = kept.slice(30).map((entry) => entry.date.toISOString().slice(0, 10));
+check(
+  new Set(keptDays).size,
+  keptDays.length,
+  "Older entries are thinned to one per day"
+);
+check(keptDays.length <= 30, true, "Long-term coverage is capped at 30 days");
+
+check(
+  selectExpiredHistory([
+    ...Array.from({ length: 31 }, (_, i) => ({ name: `n${i}`, date: new Date(now - i * 60000) })),
+    { name: "unreadable", date: null }
+  ]).some((entry) => entry.name === "unreadable"),
+  false,
+  "A restore point with an unreadable timestamp is never deleted"
 );
 
 // --- backup validation is shared with the cloud reader ----------------------

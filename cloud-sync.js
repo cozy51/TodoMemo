@@ -8,9 +8,9 @@
   const BUCKET = "todo-backups";
   const LATEST_FILE = "TodoMemo-latest.json";
   const HISTORY_FOLDER = "history";
-  const HISTORY_KEEP = 40;
+  const HISTORY_RECENT_KEEP = 30;
+  const HISTORY_DAILY_KEEP = 30;
   const HISTORY_LIST_LIMIT = 200;
-  const HISTORY_MIN_INTERVAL_MS = 10 * 60 * 1000;
   const PUSH_DEBOUNCE_MS = 1500;
   const POLL_INTERVAL_MS = 60 * 1000;
   const FOCUS_THROTTLE_MS = 10 * 1000;
@@ -48,7 +48,6 @@
   let paused = false;
   let pausedMessage = "";
   let pendingConflict = null;
-  let lastArchivedAt = 0;
   let lastFocusSyncAt = 0;
   let lastError = "";
 
@@ -229,38 +228,51 @@
     };
   }
 
+  // The timestamp leads the name so a plain descending sort is chronological,
+  // whatever revision each entry carries.
   function historyName(revision, label) {
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
-    return `r${String(revision).padStart(6, "0")}-${stamp}-${label}.json`;
+    return `${stamp}-r${String(revision).padStart(6, "0")}-${label}.json`;
   }
 
-  // Keep the copy that is about to be replaced.  Routine pushes are throttled so
-  // ordinary editing does not fill the bucket, but any write that could lose
-  // data archives unconditionally.
-  async function archiveText(text, revision, label, force) {
-    if (!force && Date.now() - lastArchivedAt < HISTORY_MIN_INTERVAL_MS) return;
+  // Keep the copy that is about to be replaced.  Every overwrite is archived:
+  // a restore point is only useful if it sits just before the mistake, and
+  // pruneHistory keeps the count bounded.
+  async function archiveText(text, revision, label, required = false) {
     try {
       await uploadObject(objectPath(HISTORY_FOLDER, historyName(revision, label)), text);
-      lastArchivedAt = Date.now();
       await pruneHistory();
     } catch (error) {
-      // Losing a history copy must not block the sync itself.
+      // Losing a routine history copy must not block the sync itself, but an
+      // archive taken to protect data that is about to be replaced must.
       console.warn("TodoMemo cloud history write failed:", error);
-      if (force) throw error;
+      if (required) throw error;
     }
   }
 
-  async function pruneHistory() {
+  async function listHistory() {
     const { data, error } = await client.storage.from(BUCKET).list(
       objectPath(HISTORY_FOLDER),
-      { limit: HISTORY_LIST_LIMIT, sortBy: { column: "name", order: "asc" } }
+      { limit: HISTORY_LIST_LIMIT, sortBy: { column: "name", order: "desc" } }
     );
-    if (error || !Array.isArray(data)) return;
-    const files = data.filter((entry) => entry.name.endsWith(".json"));
-    const excess = files.length - HISTORY_KEEP;
-    if (excess <= 0) return;
+    if (error) throw new Error("クラウド履歴を読み込めませんでした");
+    return (data || [])
+      .filter((entry) => entry.name.endsWith(".json"))
+      .map((entry) => ({ ...entry, ...parseHistoryName(entry.name) }))
+      // Sort here rather than trusting the name order, so entries written under
+      // the earlier naming scheme still land in the right place.
+      .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+  }
+
+  async function pruneHistory() {
+    const entries = await listHistory().catch(() => []);
+    const expired = selectExpiredHistory(entries, {
+      recentKeep: HISTORY_RECENT_KEEP,
+      dailyKeep: HISTORY_DAILY_KEEP
+    });
+    if (expired.length === 0) return;
     await client.storage.from(BUCKET).remove(
-      files.slice(0, excess).map((entry) => objectPath(HISTORY_FOLDER, entry.name))
+      expired.map((entry) => objectPath(HISTORY_FOLDER, entry.name))
     );
   }
 
@@ -438,19 +450,32 @@
   }
 
   function parseHistoryName(name) {
-    const match = /^r(\d+)-(\d{8})T(\d{6})Z-(.+)\.json$/.exec(name);
+    // Current form is timestamp-first; the leading-revision form was written by
+    // the first version of this feature and still has to be readable.
+    const match = /^(\d{8})T(\d{6})Z-r(\d+)-(.+)\.json$/.exec(name)
+      || /^r(\d+)-(\d{8})T(\d{6})Z-(.+)\.json$/.exec(name);
     if (!match) return { revision: null, date: null, label: name };
-    const [, revision, day, time] = match;
+    const [day, time, revision] = /^\d{8}T/.test(name)
+      ? [match[1], match[2], match[3]]
+      : [match[2], match[3], match[1]];
     const iso = `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`
       + `T${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}Z`;
     return { revision: Number(revision), date: new Date(iso), label: match[4] };
   }
 
   const HISTORY_LABELS = {
-    auto: "自動退避",
+    auto: "上書き前の内容",
+    normalized: "整理前の内容",
     "local-conflict": "このPCの未同期分",
     "remote-replaced": "上書き前のクラウド"
   };
+
+  // Revision 0 means the entry predates revision numbering, which is a fact
+  // worth naming rather than reporting as unknown.
+  function describeRevision(revision) {
+    if (revision === null) return "版 不明";
+    return revision > 0 ? `版 ${revision}` : "版番号なし（移行前）";
+  }
 
   async function openHistoryDialog() {
     if (!historyDialog) return;
@@ -459,36 +484,51 @@
     historyEmpty.hidden = false;
     historyDialog.showModal();
 
-    const { data, error } = await client.storage.from(BUCKET).list(
-      objectPath(HISTORY_FOLDER),
-      { limit: HISTORY_LIST_LIMIT, sortBy: { column: "name", order: "desc" } }
-    );
-    if (error) {
+    let entries = [];
+    try {
+      entries = await listHistory();
+    } catch (_error) {
       historyEmpty.textContent = "履歴を読み込めませんでした";
       return;
     }
-    const entries = (data || []).filter((entry) => entry.name.endsWith(".json"));
     if (entries.length === 0) {
-      historyEmpty.textContent = "まだ履歴はありません";
+      historyEmpty.textContent = "まだ履歴はありません（クラウドが上書きされたときに増えます）";
       return;
     }
     historyEmpty.hidden = true;
+
+    // The current cloud version anchors the list: everything below it is a
+    // state the cloud has already moved on from.
+    const current = loadTodoMemoSyncState(user.id);
+    const currentRow = document.createElement("li");
+    currentRow.className = "cloud-history-item cloud-history-current";
+    const currentInfo = document.createElement("div");
+    const currentHeading = document.createElement("strong");
+    currentHeading.textContent = "現在のクラウド";
+    const currentNote = document.createElement("span");
+    currentNote.textContent = [
+      describeRevision(current.revision),
+      current.remoteUpdatedAt ? `更新 ${formatTime(current.remoteUpdatedAt)}` : ""
+    ].filter(Boolean).join(" ・ ");
+    currentInfo.append(currentHeading, currentNote);
+    currentRow.append(currentInfo);
+    historyList.append(currentRow);
+
     entries.forEach((entry) => {
-      const parsed = parseHistoryName(entry.name);
       const item = document.createElement("li");
       item.className = "cloud-history-item";
       const info = document.createElement("div");
       const heading = document.createElement("strong");
-      heading.textContent = parsed.date
+      heading.textContent = entry.date
         ? new Intl.DateTimeFormat("ja-JP", {
             year: "numeric", month: "numeric", day: "numeric",
             hour: "2-digit", minute: "2-digit"
-          }).format(parsed.date)
+          }).format(entry.date)
         : entry.name;
       const note = document.createElement("span");
       note.textContent = [
-        parsed.revision ? `版 ${parsed.revision}` : "版 不明",
-        HISTORY_LABELS[parsed.label] || parsed.label
+        describeRevision(entry.revision),
+        HISTORY_LABELS[entry.label] || entry.label
       ].join(" ・ ");
       info.append(heading, note);
       const button = document.createElement("button");
