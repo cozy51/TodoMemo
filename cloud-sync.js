@@ -106,10 +106,7 @@
       return;
     }
     setStatus("クラウドと同期済み", "saved");
-    setDetail([
-      state.lastSyncedAt ? `最終同期 ${formatTime(state.lastSyncedAt)}` : "",
-      state.revision ? `版 ${state.revision}` : ""
-    ].filter(Boolean).join(" ・ "));
+    setDetail(state.lastSyncedAt ? `最終同期 ${formatTime(state.lastSyncedAt)}` : "");
   }
 
   // Every cloud operation runs one at a time: two overlapping syncs could each
@@ -470,11 +467,13 @@
     "remote-replaced": "上書き前のクラウド"
   };
 
-  // Revision 0 means the entry predates revision numbering, which is a fact
-  // worth naming rather than reporting as unknown.
-  function describeRevision(revision) {
-    if (revision === null) return "版 不明";
-    return revision > 0 ? `版 ${revision}` : "版番号なし（移行前）";
+  // Restore points are told apart by their time, so it carries seconds: several
+  // can land in the same minute during a burst of edits.
+  function formatHistoryTime(date) {
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric", month: "numeric", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).format(date);
   }
 
   async function openHistoryDialog() {
@@ -506,10 +505,9 @@
     const currentHeading = document.createElement("strong");
     currentHeading.textContent = "現在のクラウド";
     const currentNote = document.createElement("span");
-    currentNote.textContent = [
-      describeRevision(current.revision),
-      current.remoteUpdatedAt ? `更新 ${formatTime(current.remoteUpdatedAt)}` : ""
-    ].filter(Boolean).join(" ・ ");
+    currentNote.textContent = current.remoteUpdatedAt
+      ? `更新 ${formatTime(current.remoteUpdatedAt)}`
+      : "同期の記録がありません";
     currentInfo.append(currentHeading, currentNote);
     currentRow.append(currentInfo);
     historyList.append(currentRow);
@@ -519,17 +517,9 @@
       item.className = "cloud-history-item";
       const info = document.createElement("div");
       const heading = document.createElement("strong");
-      heading.textContent = entry.date
-        ? new Intl.DateTimeFormat("ja-JP", {
-            year: "numeric", month: "numeric", day: "numeric",
-            hour: "2-digit", minute: "2-digit"
-          }).format(entry.date)
-        : entry.name;
+      heading.textContent = entry.date ? formatHistoryTime(entry.date) : entry.name;
       const note = document.createElement("span");
-      note.textContent = [
-        describeRevision(entry.revision),
-        HISTORY_LABELS[entry.label] || entry.label
-      ].join(" ・ ");
+      note.textContent = HISTORY_LABELS[entry.label] || entry.label;
       info.append(heading, note);
       const button = document.createElement("button");
       button.type = "button";
@@ -543,12 +533,7 @@
 
   async function restoreFromHistory(name, button) {
     const parsed = parseHistoryName(name);
-    const when = parsed.date
-      ? new Intl.DateTimeFormat("ja-JP", {
-          year: "numeric", month: "numeric", day: "numeric",
-          hour: "2-digit", minute: "2-digit"
-        }).format(parsed.date)
-      : name;
+    const when = parsed.date ? formatHistoryTime(parsed.date) : name;
     if (!window.confirm(
       `${when} の内容に戻します。\n`
       + "現在のクラウドの内容は履歴へ退避してから置き換えます。続けますか？"
