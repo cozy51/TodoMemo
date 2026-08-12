@@ -161,6 +161,11 @@ button {
   border-radius: 10px;
 }
 
+.cloud-history-current {
+  border-style: dashed;
+  background: var(--surface-muted, #f7f8fa);
+}
+
 .cloud-history-item > div {
   display: flex;
   flex-direction: column;

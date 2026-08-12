@@ -1018,6 +1018,26 @@ function assessDatasetShrink(remoteDataset, localDataset) {
   return null;
 }
 
+// Cloud history retention.  Recent restore points are what undo a mis-click and
+// older ones are what undo a mistake noticed days later, so keep every recent
+// entry and thin everything older down to one per day.  `entries` must be newest
+// first; the returned entries are the ones safe to delete.
+function selectExpiredHistory(entries, { recentKeep = 30, dailyKeep = 30 } = {}) {
+  if (!Array.isArray(entries) || entries.length <= recentKeep) return [];
+  const keptDays = new Set();
+  return entries.slice(recentKeep).filter((entry) => {
+    const day = entry?.date instanceof Date && !Number.isNaN(entry.date.getTime())
+      ? entry.date.toISOString().slice(0, 10)
+      : null;
+    // An entry whose timestamp cannot be read is kept: deleting a restore point
+    // we do not understand is the one outcome worth avoiding here.
+    if (!day) return false;
+    if (keptDays.has(day)) return true;
+    keptDays.add(day);
+    return keptDays.size > dailyKeep;
+  });
+}
+
 function formatDueDate(dueDate) {
   if (!dueDate) return "";
 
