@@ -2881,9 +2881,97 @@ button {
 
 .restore-summary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 11px;
   margin-top: 6px;
+}
+
+/* Restoring a file replaces everything, so the two sides are put side by side:
+   the counts and the dates are what tell the user which one is newer. */
+.restore-compare {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.restore-compare th,
+.restore-compare td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.restore-compare thead th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.restore-compare tbody th {
+  width: 5.5em;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.restore-compare tbody td:last-child {
+  font-weight: 700;
+}
+
+.restore-danger {
+  margin: 16px 0 0;
+  padding: 13px 14px;
+  color: #8c1d18;
+  border: 2px solid var(--danger);
+  border-radius: 10px;
+  background: #fdeceb;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.restore-acknowledge {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* The display above would otherwise win over the browser's [hidden] rule and
+   leave the acknowledgement visible for restores that do not need it. */
+.restore-acknowledge[hidden] {
+  display: none;
+}
+
+.restore-acknowledge input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.restore-dialog-danger .restore-warning {
+  display: none;
+}
+
+.danger-button {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.danger-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
 .restore-summary > div {

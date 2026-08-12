@@ -290,7 +290,10 @@
   }
 
   async function applyRemote(remote) {
-    await saveTodoMemoDataset(remote.dataset, { origin: "cloud" });
+    await saveTodoMemoDataset(remote.dataset, {
+      origin: "cloud",
+      updatedAt: remote.updatedAt || new Date().toISOString()
+    });
     // Re-read so the recorded fingerprint describes what is actually stored,
     // including any normalisation the load path applies.
     const stored = await loadTodoMemoDataset();
@@ -549,8 +552,16 @@
 
   async function restoreFromHistory(entry, button) {
     const when = entry.date ? formatHistoryTime(entry.date) : entry.name;
+    const current = loadTodoMemoSyncState(user.id);
+    const behindBy = entry.date && current.remoteUpdatedAt
+      ? Date.parse(current.remoteUpdatedAt) - entry.date.getTime()
+      : 0;
     if (!window.confirm(
       `${when} の内容に戻します。\n`
+      + (behindBy > 0
+        ? `現在のクラウドより${formatElapsedJa(behindBy)}古い内容です。`
+          + "その間の変更は、戻したあとは表示されなくなります。\n"
+        : "")
       + "現在のクラウドの内容は履歴へ退避してから置き換えます。続けますか？"
     )) return;
 

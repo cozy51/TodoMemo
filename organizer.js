@@ -89,6 +89,13 @@ const restoreExportedAt = document.querySelector("#restoreExportedAt");
 const restoreTaskCount = document.querySelector("#restoreTaskCount");
 const restoreTagCount = document.querySelector("#restoreTagCount");
 const restoreParentCaseCount = document.querySelector("#restoreParentCaseCount");
+const restoreCurrentUpdatedAt = document.querySelector("#restoreCurrentUpdatedAt");
+const restoreCurrentTaskCount = document.querySelector("#restoreCurrentTaskCount");
+const restoreCurrentTagCount = document.querySelector("#restoreCurrentTagCount");
+const restoreCurrentParentCaseCount = document.querySelector("#restoreCurrentParentCaseCount");
+const restoreRegressionWarning = document.querySelector("#restoreRegressionWarning");
+const restoreAcknowledgeRow = document.querySelector("#restoreAcknowledgeRow");
+const restoreAcknowledge = document.querySelector("#restoreAcknowledge");
 const confirmRestoreButton = document.querySelector("#confirmRestoreButton");
 
 let tasks = [];
@@ -738,19 +745,29 @@ async function handleRestoreFile(event) {
     }
 
     const backup = validateBackup(JSON.parse(await file.text()));
-    const activeCount = backup.tasks.filter((task) => !task.completed).length;
-    const completedCount = backup.tasks.length - activeCount;
-    pendingRestore = {
-      backup,
-      fileName: file.name
-    };
+    const restored = normalizeDataset(backup);
+    const current = await loadTodoMemoDataset();
+    const regression = assessRestoreRegression({
+      backupExportedAt: backup.exportedAt,
+      backupDataset: restored,
+      currentUpdatedAt: loadTodoMemoDataUpdatedAt(),
+      currentDataset: current
+    });
+    pendingRestore = { backup, fileName: file.name, regression };
 
     restoreFileName.textContent = file.name;
-    restoreExportedAt.textContent = formatRestoreDate(backup.exportedAt);
-    restoreTaskCount.textContent =
-      `${backup.tasks.length}件（未完了${activeCount}・完了${completedCount}）`;
-    restoreTagCount.textContent = `${backup.tags.length}件`;
-    restoreParentCaseCount.textContent = `${backup.parentCases.length}件`;
+    restoreExportedAt.textContent = formatRestoreDate(regression.backupAt || backup.exportedAt);
+    restoreCurrentUpdatedAt.textContent = regression.currentAt
+      ? formatRestoreDate(regression.currentAt)
+      : "不明";
+    describeTaskCountInto(restoreTaskCount, restored.tasks);
+    describeTaskCountInto(restoreCurrentTaskCount, current.tasks);
+    restoreTagCount.textContent = `${restored.tags.length}件`;
+    restoreCurrentTagCount.textContent = `${current.tags.length}件`;
+    restoreParentCaseCount.textContent = `${restored.parentCases.length}件`;
+    restoreCurrentParentCaseCount.textContent = `${current.parentCases.length}件`;
+
+    applyRestoreRegressionWarning(regression);
     restoreDialog.showModal();
   } catch (error) {
     pendingRestore = null;
@@ -760,13 +777,52 @@ async function handleRestoreFile(event) {
   }
 }
 
+function describeTaskCountInto(element, taskList) {
+  const active = taskList.filter((task) => !task.completed).length;
+  element.textContent = `${taskList.length}件（未完了${active}・完了${taskList.length - active}）`;
+}
+
+// Restoring a file is the one action that can walk the data backwards on
+// purpose, so an older file has to be acknowledged before it can be applied.
+function applyRestoreRegressionWarning(regression) {
+  const stale = regression.level === "danger";
+  restoreAcknowledge.checked = false;
+  restoreAcknowledgeRow.hidden = !stale;
+  confirmRestoreButton.disabled = stale;
+  confirmRestoreButton.classList.toggle("danger-button", stale);
+  confirmRestoreButton.textContent = stale ? "古い内容で上書きする" : "この内容で復元";
+  restoreDialog.classList.toggle("restore-dialog-danger", stale);
+
+  if (stale) {
+    restoreRegressionWarning.textContent =
+      `このバックアップは、現在のデータより${formatElapsedJa(regression.staleMs)}古い内容です。`
+      + `復元すると、その間の変更は失われます。`
+      + (regression.shrink
+        ? `件数も${regression.shrink.removed}件減ります。`
+        : "");
+  } else if (regression.level === "caution") {
+    restoreRegressionWarning.textContent = regression.shrink.reason === "empty"
+      ? "このバックアップには記録が1件もありません。復元すると現在の内容がすべて消えます。"
+      : `このバックアップは現在より${regression.shrink.removed}件少ない内容です。`;
+  } else if (!regression.comparable) {
+    restoreRegressionWarning.textContent =
+      "日時を読み取れないため、どちらが新しいか判断できません。件数を確認してください。";
+  }
+  restoreRegressionWarning.hidden = regression.level === "none" && regression.comparable;
+}
+
 function closeRestoreDialog() {
   pendingRestore = null;
+  restoreDialog.classList.remove("restore-dialog-danger");
   restoreDialog.close();
 }
 
 async function confirmRestore() {
   if (!pendingRestore) return;
+  if (pendingRestore.regression.level === "danger" && !restoreAcknowledge.checked) {
+    showToast("古い内容で上書きすることを確認してください", "error");
+    return;
+  }
   confirmRestoreButton.disabled = true;
 
   try {
@@ -778,6 +834,7 @@ async function confirmRestore() {
     ({ tasks, tags, parentCases, holidays } = restored);
     const restoredCount = restored.tasks.length;
     pendingRestore = null;
+    restoreDialog.classList.remove("restore-dialog-danger");
     restoreDialog.close();
     render();
     showToast(`${restoredCount}件のタスクを復元しました`);
@@ -2194,6 +2251,9 @@ restoreFileInput.addEventListener("change", handleRestoreFile);
 document.querySelector("#closeRestoreDialogButton").addEventListener("click", closeRestoreDialog);
 document.querySelector("#cancelRestoreButton").addEventListener("click", closeRestoreDialog);
 confirmRestoreButton.addEventListener("click", confirmRestore);
+restoreAcknowledge.addEventListener("change", () => {
+  confirmRestoreButton.disabled = !restoreAcknowledge.checked;
+});
 dueDateInput.addEventListener("input", updateDueDateClearButton);
 clearDueDateButton.addEventListener("click", () => {
   dueDateInput.value = "";

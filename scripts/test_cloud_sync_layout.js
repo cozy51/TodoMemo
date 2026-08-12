@@ -31,7 +31,11 @@ const requiredIds = [
   "cloudSyncResolve", "cloudConflictDialog", "cloudConflictReason",
   "cloudConflictRemoteSummary", "cloudConflictLocalSummary", "cloudConflictUseRemote",
   "cloudConflictUseLocal", "cloudConflictLater", "cloudHistoryDialog",
-  "cloudHistoryList", "cloudHistoryEmpty", "cloudHistoryClose"
+  "cloudHistoryList", "cloudHistoryEmpty", "cloudHistoryClose",
+  // The restore dialog has to show both sides and gate a step backwards.
+  "restoreCurrentUpdatedAt", "restoreCurrentTaskCount", "restoreCurrentTagCount",
+  "restoreCurrentParentCaseCount", "restoreRegressionWarning",
+  "restoreAcknowledgeRow", "restoreAcknowledge"
 ];
 
 ["index.html", "organizer.html"].forEach((page) => {
