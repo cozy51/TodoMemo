@@ -7,7 +7,10 @@
 (function setupCloudSync() {
   const BUCKET = "todo-backups";
   const LATEST_FILE = "TodoMemo-latest.json";
-  const HISTORY_FOLDER = "history";
+  // Named after the app so one bucket can hold several apps' histories.
+  const HISTORY_FOLDER = "TodoMemo-history";
+  // Written by earlier versions; still read so existing restore points survive.
+  const LEGACY_HISTORY_FOLDERS = ["history"];
   const HISTORY_RECENT_KEEP = 30;
   const HISTORY_DAILY_KEEP = 30;
   const HISTORY_LIST_LIMIT = 200;
@@ -106,10 +109,7 @@
       return;
     }
     setStatus("クラウドと同期済み", "saved");
-    setDetail([
-      state.lastSyncedAt ? `最終同期 ${formatTime(state.lastSyncedAt)}` : "",
-      state.revision ? `版 ${state.revision}` : ""
-    ].filter(Boolean).join(" ・ "));
+    setDetail(state.lastSyncedAt ? `最終同期 ${formatTime(state.lastSyncedAt)}` : "");
   }
 
   // Every cloud operation runs one at a time: two overlapping syncs could each
@@ -250,17 +250,30 @@
     }
   }
 
-  async function listHistory() {
+  async function listHistoryFolder(folder) {
     const { data, error } = await client.storage.from(BUCKET).list(
-      objectPath(HISTORY_FOLDER),
+      objectPath(folder),
       { limit: HISTORY_LIST_LIMIT, sortBy: { column: "name", order: "desc" } }
     );
     if (error) throw new Error("クラウド履歴を読み込めませんでした");
     return (data || [])
       .filter((entry) => entry.name.endsWith(".json"))
-      .map((entry) => ({ ...entry, ...parseHistoryName(entry.name) }))
-      // Sort here rather than trusting the name order, so entries written under
-      // the earlier naming scheme still land in the right place.
+      .map((entry) => ({
+        ...entry,
+        path: objectPath(folder, entry.name),
+        ...parseHistoryName(entry.name)
+      }));
+  }
+
+  async function listHistory() {
+    const [current, ...legacy] = await Promise.all([
+      listHistoryFolder(HISTORY_FOLDER),
+      // A folder an older version may never have created is not an error.
+      ...LEGACY_HISTORY_FOLDERS.map((folder) => listHistoryFolder(folder).catch(() => []))
+    ]);
+    return [...current, ...legacy.flat()]
+      // Sort here rather than trusting the name order, so entries from the
+      // legacy folder and the earlier naming scheme land in the right place.
       .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
   }
 
@@ -272,7 +285,7 @@
     });
     if (expired.length === 0) return;
     await client.storage.from(BUCKET).remove(
-      expired.map((entry) => objectPath(HISTORY_FOLDER, entry.name))
+      expired.map((entry) => entry.path)
     );
   }
 
@@ -470,11 +483,13 @@
     "remote-replaced": "上書き前のクラウド"
   };
 
-  // Revision 0 means the entry predates revision numbering, which is a fact
-  // worth naming rather than reporting as unknown.
-  function describeRevision(revision) {
-    if (revision === null) return "版 不明";
-    return revision > 0 ? `版 ${revision}` : "版番号なし（移行前）";
+  // Restore points are told apart by their time, so it carries seconds: several
+  // can land in the same minute during a burst of edits.
+  function formatHistoryTime(date) {
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric", month: "numeric", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).format(date);
   }
 
   async function openHistoryDialog() {
@@ -506,10 +521,9 @@
     const currentHeading = document.createElement("strong");
     currentHeading.textContent = "現在のクラウド";
     const currentNote = document.createElement("span");
-    currentNote.textContent = [
-      describeRevision(current.revision),
-      current.remoteUpdatedAt ? `更新 ${formatTime(current.remoteUpdatedAt)}` : ""
-    ].filter(Boolean).join(" ・ ");
+    currentNote.textContent = current.remoteUpdatedAt
+      ? `更新 ${formatTime(current.remoteUpdatedAt)}`
+      : "同期の記録がありません";
     currentInfo.append(currentHeading, currentNote);
     currentRow.append(currentInfo);
     historyList.append(currentRow);
@@ -519,36 +533,22 @@
       item.className = "cloud-history-item";
       const info = document.createElement("div");
       const heading = document.createElement("strong");
-      heading.textContent = entry.date
-        ? new Intl.DateTimeFormat("ja-JP", {
-            year: "numeric", month: "numeric", day: "numeric",
-            hour: "2-digit", minute: "2-digit"
-          }).format(entry.date)
-        : entry.name;
+      heading.textContent = entry.date ? formatHistoryTime(entry.date) : entry.name;
       const note = document.createElement("span");
-      note.textContent = [
-        describeRevision(entry.revision),
-        HISTORY_LABELS[entry.label] || entry.label
-      ].join(" ・ ");
+      note.textContent = HISTORY_LABELS[entry.label] || entry.label;
       info.append(heading, note);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "secondary-button";
       button.textContent = "この時点に戻す";
-      button.addEventListener("click", () => restoreFromHistory(entry.name, button));
+      button.addEventListener("click", () => restoreFromHistory(entry, button));
       item.append(info, button);
       historyList.append(item);
     });
   }
 
-  async function restoreFromHistory(name, button) {
-    const parsed = parseHistoryName(name);
-    const when = parsed.date
-      ? new Intl.DateTimeFormat("ja-JP", {
-          year: "numeric", month: "numeric", day: "numeric",
-          hour: "2-digit", minute: "2-digit"
-        }).format(parsed.date)
-      : name;
+  async function restoreFromHistory(entry, button) {
+    const when = entry.date ? formatHistoryTime(entry.date) : entry.name;
     if (!window.confirm(
       `${when} の内容に戻します。\n`
       + "現在のクラウドの内容は履歴へ退避してから置き換えます。続けますか？"
@@ -556,7 +556,7 @@
 
     button.disabled = true;
     await run(async () => {
-      const text = await downloadObject(objectPath(HISTORY_FOLDER, name));
+      const text = await downloadObject(entry.path);
       if (!text) throw new Error("クラウドの履歴を読み取れませんでした");
       const snapshot = readDocument(text);
       const remote = await readLatest();
