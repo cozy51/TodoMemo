@@ -103,7 +103,7 @@ let tags = [];
 let parentCases = [];
 let holidays = [];
 let parentCaseViewMode = "group";
-let activeListCollapsed = false;
+let activeListCollapsed = true;
 let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
@@ -1809,11 +1809,13 @@ async function showParentCaseGroups() {
 function setActiveListCollapsed(collapsed) {
   const activeTaskCount = getActiveTasks().length;
   activeListCollapsed = activeTaskCount > 0 && Boolean(collapsed);
-  activeList.hidden = activeListCollapsed;
-  activeEmpty.hidden = activeListCollapsed || activeTaskCount > 0;
+  const hiddenCount = activeListCollapsed ? Math.max(activeTaskCount - 1, 0) : 0;
+  activeList.hidden = false;
+  activeList.classList.toggle("is-collapsed", activeListCollapsed);
+  activeEmpty.hidden = activeTaskCount > 0;
   activeTaskSection.classList.toggle("is-collapsed", activeListCollapsed);
-  activeCollapsedNotice.hidden = !activeListCollapsed;
-  activeCollapsedCount.textContent = `${activeTaskCount}件`;
+  activeCollapsedNotice.hidden = !activeListCollapsed || hiddenCount === 0;
+  activeCollapsedCount.textContent = `${hiddenCount}件`;
   toggleActiveListButton.disabled = activeTaskCount === 0;
   toggleActiveListButton.dataset.state = activeListCollapsed ? "collapsed" : "expanded";
   const toggleLabel = activeListCollapsed ? "表示する" : "折りたたむ";

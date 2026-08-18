@@ -544,6 +544,10 @@ button {
   transform: rotate(180deg);
 }
 
+#activeList.is-collapsed > .task-card:not(:first-child) {
+  display: none;
+}
+
 .active-collapsed-notice {
   display: flex;
   width: 100%;
