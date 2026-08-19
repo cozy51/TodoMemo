@@ -926,6 +926,35 @@ function appendParentCaseActions(container, parentCase) {
   }
   container.append(linkStatus);
 
+  if (!parentCase.url) {
+    const pasteButton = document.createElement("button");
+    pasteButton.className = "parent-case-paste-link-button paste-link-button";
+    pasteButton.type = "button";
+    pasteButton.textContent = "📋 URLを取り込む";
+    pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む`;
+    pasteButton.addEventListener("click", async () => {
+      pasteButton.disabled = true;
+      try {
+        const pastedLinks = extractTaskLinks(await navigator.clipboard.readText())
+          .map(normalizeParentCaseUrl)
+          .filter(Boolean);
+        if (pastedLinks.length === 0) {
+          showToast("クリップボードにURLが見つかりません");
+          return;
+        }
+        parentCase.url = pastedLinks[0];
+        parentCases = await saveParentCases(parentCases);
+        render();
+        showToast("親案件にURLを取り込みました");
+      } catch (_error) {
+        showToast("クリップボードを読み取れませんでした");
+      } finally {
+        pasteButton.disabled = false;
+      }
+    });
+    container.append(pasteButton);
+  }
+
   const copyButton = document.createElement("button");
   copyButton.className = "parent-case-copy-button";
   copyButton.type = "button";
