@@ -898,7 +898,31 @@ function getParentCaseForTask(task) {
   return parentCases.find((parentCase) => parentCase.id === task.parentCaseId) || null;
 }
 
-function appendParentCaseLabel(container, parentCase) {
+async function commitParentCaseNameEdit(input, parentCase) {
+  const nextName = input.value.trim();
+  if (!nextName) {
+    showToast("親案件名を入力してください");
+    input.value = parentCase.name;
+    return;
+  }
+  if (nextName === parentCase.name) return;
+  if (
+    parentCases.some((item) =>
+      item.id !== parentCase.id &&
+      item.name.toLocaleLowerCase("ja") === nextName.toLocaleLowerCase("ja")
+    )
+  ) {
+    showToast("同じ名前の親案件があります");
+    input.value = parentCase.name;
+    return;
+  }
+  parentCase.name = nextName;
+  parentCases = await saveParentCases(parentCases);
+  render();
+  showToast("親案件名を更新しました");
+}
+
+function appendParentCaseLabel(container, parentCase, { editableTitle = false } = {}) {
   const kind = document.createElement("span");
   kind.className = "parent-case-kind";
   kind.textContent = "親案件";
@@ -907,10 +931,30 @@ function appendParentCaseLabel(container, parentCase) {
   number.className = "parent-case-inline-number";
   number.textContent = parentCase.caseNumber;
 
-  const title = document.createElement("strong");
-  title.className = "parent-case-title-text";
-  title.textContent = ensureEmojiPresentation(parentCase.name);
-  container.append(kind, number, title);
+  container.append(kind, number);
+
+  if (editableTitle) {
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.maxLength = 100;
+    titleInput.className = "parent-case-title-input";
+    titleInput.value = parentCase.name;
+    titleInput.title = `${parentCase.caseNumber}の親案件名を編集`;
+    titleInput.setAttribute("aria-label", `${parentCase.caseNumber}の親案件名を編集`);
+    titleInput.addEventListener("click", (event) => event.stopPropagation());
+    titleInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      titleInput.blur();
+    });
+    titleInput.addEventListener("blur", () => commitParentCaseNameEdit(titleInput, parentCase));
+    container.append(titleInput);
+  } else {
+    const title = document.createElement("strong");
+    title.className = "parent-case-title-text";
+    title.textContent = ensureEmojiPresentation(parentCase.name);
+    container.append(title);
+  }
 }
 
 function appendParentCaseActions(container, parentCase) {
@@ -1563,7 +1607,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const identity = document.createElement("div");
   identity.className = "parent-task-group-identity";
   if (parentCase) {
-    appendParentCaseLabel(identity, parentCase);
+    appendParentCaseLabel(identity, parentCase, { editableTitle: true });
     appendParentCaseActions(identity, parentCase);
   } else {
     const number = document.createElement("span");
