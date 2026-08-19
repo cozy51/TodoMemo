@@ -727,6 +727,13 @@ button {
   scroll-margin-top: 24px;
 }
 
+.parent-task-group[id]:target {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 4px rgba(47, 111, 237, .15),
+    0 12px 30px rgba(31, 52, 92, .12);
+}
+
 .calendar-month {
   position: relative;
   min-width: 0;
