@@ -97,6 +97,71 @@ function isMarkdownBlockStart(line) {
   return /^(?:#{1,3}\s+|>\s?|```|(?:[-*+•]\s+)|(?:\d+\.\s+)|(?:-{3,}\s*$))/.test(line);
 }
 
+function matchMarkdownListLine(line) {
+  const ordered = /^([\t ]*)\d+\.\s+(.+)$/.exec(line);
+  if (ordered) return { indent: ordered[1], type: "ol", content: ordered[2] };
+  const unordered = /^([\t ]*)[-*+•]\s+(.+)$/.exec(line);
+  if (unordered) return { indent: unordered[1], type: "ul", content: unordered[2] };
+  return null;
+}
+
+function markdownIndentWidth(indent) {
+  return indent.replace(/\t/g, "    ").length;
+}
+
+function appendMarkdownListItemContent(item, content) {
+  const checkboxMatch = /^\[([ xX])\]\s+(.+)$/.exec(content);
+  if (checkboxMatch) {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = checkboxMatch[1].toLowerCase() === "x";
+    checkbox.disabled = true;
+    item.className = "markdown-task-item";
+    item.append(checkbox);
+    appendMarkdownInline(item, checkboxMatch[2]);
+  } else {
+    appendMarkdownInline(item, content);
+  }
+}
+
+function consumeMarkdownList(lines, startIndex) {
+  const root = document.createDocumentFragment();
+  const stack = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const info = matchMarkdownListLine(lines[index]);
+    if (!info) break;
+
+    const width = markdownIndentWidth(info.indent);
+    while (stack.length && width < stack[stack.length - 1].width) {
+      stack.pop();
+    }
+
+    const top = stack[stack.length - 1];
+    if (!top || width > top.width || info.type !== top.list.tagName.toLowerCase()) {
+      if (top && width === top.width) stack.pop();
+      const list = document.createElement(info.type);
+      const parent = stack[stack.length - 1];
+      if (parent) {
+        parent.item.append(list);
+      } else {
+        root.append(list);
+      }
+      stack.push({ width, list, item: null });
+    }
+
+    const item = document.createElement("li");
+    appendMarkdownListItemContent(item, info.content);
+    stack[stack.length - 1].list.append(item);
+    stack[stack.length - 1].item = item;
+
+    index += 1;
+  }
+
+  return { fragment: root, nextIndex: index };
+}
+
 function renderMarkdown(target, source) {
   target.replaceChildren();
   const text = String(source || "").replace(/\r\n?/g, "\n");
@@ -162,33 +227,10 @@ function renderMarkdown(target, source) {
       continue;
     }
 
-    const unordered = /^\s*[-*+•]\s+/.test(line);
-    const ordered = /^\s*\d+\.\s+/.test(line);
-    if (unordered || ordered) {
-      const list = document.createElement(ordered ? "ol" : "ul");
-      const itemPattern = ordered ? /^\s*\d+\.\s+(.+)$/ : /^\s*[-*+•]\s+(.+)$/;
-
-      while (index < lines.length) {
-        const itemMatch = itemPattern.exec(lines[index]);
-        if (!itemMatch) break;
-        const item = document.createElement("li");
-        const checkboxMatch = /^\[([ xX])\]\s+(.+)$/.exec(itemMatch[1]);
-
-        if (checkboxMatch) {
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = checkboxMatch[1].toLowerCase() === "x";
-          checkbox.disabled = true;
-          item.className = "markdown-task-item";
-          item.append(checkbox);
-          appendMarkdownInline(item, checkboxMatch[2]);
-        } else {
-          appendMarkdownInline(item, itemMatch[1]);
-        }
-        list.append(item);
-        index += 1;
-      }
-      target.append(list);
+    if (matchMarkdownListLine(line)) {
+      const { fragment, nextIndex } = consumeMarkdownList(lines, index);
+      target.append(fragment);
+      index = nextIndex;
       continue;
     }
 
