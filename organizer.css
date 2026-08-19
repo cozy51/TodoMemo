@@ -1718,6 +1718,31 @@ button {
   white-space: nowrap;
 }
 
+.parent-case-title-input {
+  min-width: 80px;
+  width: 20ch;
+  max-width: 100%;
+  padding: 2px 6px;
+  color: #382453;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.parent-case-title-input:hover {
+  border-color: #d8c7f2;
+  background: #fff;
+}
+
+.parent-case-title-input:focus {
+  border-color: var(--accent);
+  background: #fff;
+  outline: none;
+}
+
 .parent-case-link-status {
   flex: 0 0 auto;
   padding: 2px 5px;
@@ -2214,8 +2239,13 @@ button {
   font-size: 14px;
 }
 
-.parent-task-group-identity .parent-case-title-text {
+.parent-task-group-identity .parent-case-title-text,
+.parent-task-group-identity .parent-case-title-input {
   font-size: 15px;
+}
+
+.parent-task-group-identity .parent-case-title-input {
+  width: 26ch;
 }
 
 .parent-task-group-identity .parent-case-link-status,
