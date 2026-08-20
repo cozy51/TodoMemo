@@ -5,6 +5,6 @@
   "description": "Supabaseを正本に複数PCで同期できるTodoメモWebアプリ",
   "scripts": {
     "dev": "vercel dev",
-    "test": "node scripts/test_case_numbers.js && node scripts/test_parent_cases.js && node scripts/test_backup_changes.js && node scripts/test_emoji_presentation.js && node scripts/test_selection_highlight.js && node scripts/test_link_presentation.js && node scripts/test_visual_list_input.js && node scripts/test_organizer_card_actions.js && node scripts/test_cloud_sync_layout.js && node scripts/test_cloud_sync.js"
+    "test": "node scripts/test_case_numbers.js && node scripts/test_parent_cases.js && node scripts/test_backup_changes.js && node scripts/test_emoji_presentation.js && node scripts/test_selection_highlight.js && node scripts/test_link_presentation.js && node scripts/test_visual_list_input.js && node scripts/test_organizer_card_actions.js && node scripts/test_archive_state.js && node scripts/test_cloud_sync_layout.js && node scripts/test_cloud_sync.js"
   }
 }

@@ -5,6 +5,9 @@ const activeEmpty = document.querySelector("#activeEmpty");
 const completedEmpty = document.querySelector("#completedEmpty");
 const activeCount = document.querySelector("#activeCount");
 const completedCount = document.querySelector("#completedCount");
+const archivedList = document.querySelector("#archivedList");
+const archivedEmpty = document.querySelector("#archivedEmpty");
+const archivedCount = document.querySelector("#archivedCount");
 const activeTaskSection = document.querySelector("#activeTaskSection");
 const toggleActiveListButton = document.querySelector("#toggleActiveListButton");
 const activeCollapsedNotice = document.querySelector("#activeCollapsedNotice");
@@ -28,6 +31,7 @@ const navActiveCount = document.querySelector("#navActiveCount");
 const navParentCaseCount = document.querySelector("#navParentCaseCount");
 const navTagCount = document.querySelector("#navTagCount");
 const navCompletedCount = document.querySelector("#navCompletedCount");
+const navArchivedCount = document.querySelector("#navArchivedCount");
 const clearCompletedButton = document.querySelector("#clearCompletedButton");
 const taskDialog = document.querySelector("#taskDialog");
 const taskDetailDialog = document.querySelector("#taskDetailDialog");
@@ -162,13 +166,23 @@ function syncContentHighlightScroll() {
 }
 
 function getActiveTasks() {
-  return tasks.filter((task) => !task.completed);
+  return tasks.filter((task) => !task.completed && !task.archived);
 }
 
+// Archived tasks are finished as well, so they are kept out of the completed
+// list: their whole point is that the "delete old completed tasks" action
+// leaves them alone.
 function getCompletedTasks() {
   return tasks
-    .filter((task) => task.completed)
+    .filter((task) => task.completed && !task.archived)
     .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
+}
+
+function getArchivedTasks() {
+  return tasks
+    .filter((task) => task.archived)
+    .sort((a, b) => new Date(b.archivedAt || b.completedAt || 0)
+      - new Date(a.archivedAt || a.completedAt || 0));
 }
 
 function getDeletableCompletedTasks(date = new Date()) {
@@ -199,6 +213,21 @@ function formatCompletedAt(value) {
   return `完了日時：${formatted}`;
 }
 
+function formatArchivedAt(value) {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return "アーカイブ日時：記録なし";
+  const formatted = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).format(date);
+  return `アーカイブ日時：${formatted}`;
+}
+
 function createBackupTimestamp(date) {
   const pad = (value) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -225,7 +254,8 @@ async function downloadBackup() {
       counts: {
         tasks: storedTasks.length,
         active: storedTasks.filter((task) => !task.completed).length,
-        completed: storedTasks.filter((task) => task.completed).length,
+        completed: storedTasks.filter((task) => task.completed && !task.archived).length,
+        archived: storedTasks.filter((task) => task.archived).length,
         tags: storedTags.length,
         parentCases: storedParentCases.length,
         holidays: storedHolidays.length
@@ -278,10 +308,16 @@ function getCompletedTaskAnchorId(task) {
   return `completed-task-${task.id}`;
 }
 
+function getArchivedTaskAnchorId(task) {
+  return `archived-task-${task.id}`;
+}
+
 function getTaskAnchorHref(task) {
-  const id = task.completed
-    ? getCompletedTaskAnchorId(task)
-    : getActiveTaskAnchorId(task);
+  const id = task.archived
+    ? getArchivedTaskAnchorId(task)
+    : task.completed
+      ? getCompletedTaskAnchorId(task)
+      : getActiveTaskAnchorId(task);
   return `#${encodeURIComponent(id)}`;
 }
 
@@ -779,7 +815,10 @@ async function handleRestoreFile(event) {
 
 function describeTaskCountInto(element, taskList) {
   const active = taskList.filter((task) => !task.completed).length;
-  element.textContent = `${taskList.length}件（未完了${active}・完了${taskList.length - active}）`;
+  const archived = taskList.filter((task) => task.archived).length;
+  const completed = taskList.length - active - archived;
+  element.textContent =
+    `${taskList.length}件（未完了${active}・完了${completed}・アーカイブ${archived}）`;
 }
 
 // Restoring a file is the one action that can walk the data backwards on
@@ -1308,6 +1347,14 @@ function attachMenu(card, task) {
     menu.hidden = !shouldOpen;
   });
 
+  const archiveButton = card.querySelector(".archive-button");
+  if (archiveButton) {
+    archiveButton.addEventListener("click", () => {
+      closeAllMenus();
+      setArchived(task.id, true);
+    });
+  }
+
   card.querySelector(".delete-button").addEventListener("click", async () => {
     closeAllMenus();
     if (!confirm(`「${task.title}」を削除しますか？`)) return;
@@ -1493,6 +1540,28 @@ function createCompletedCard(task) {
   attachTaskLinkPaste(card, task);
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, false));
   card.querySelector(".restore-button").addEventListener("click", () => setCompleted(task.id, false));
+  return card;
+}
+
+function createArchivedCard(task) {
+  const card = document.querySelector("#archivedTaskTemplate").content.firstElementChild.cloneNode(true);
+  card.dataset.taskId = task.id;
+  card.id = getArchivedTaskAnchorId(task);
+  fillTaskCopy(card, task);
+  card.querySelector(".card-completed-at").textContent = formatCompletedAt(task.completedAt);
+  card.querySelector(".card-archived-at").textContent = formatArchivedAt(task.archivedAt);
+  attachMenu(card, task);
+  attachCardOpenActions(card, task);
+  attachTaskCopy(card, task);
+  attachTaskLinkPaste(card, task);
+  card.querySelector(".unarchive-button").addEventListener("click", () => {
+    closeAllMenus();
+    setArchived(task.id, false);
+  });
+  card.querySelector(".restore-button").addEventListener("click", () => {
+    closeAllMenus();
+    setCompleted(task.id, false);
+  });
   return card;
 }
 
@@ -1901,25 +1970,30 @@ function setActiveListCollapsed(collapsed) {
 function render() {
   const active = getActiveTasks();
   const completed = getCompletedTasks();
+  const archived = getArchivedTasks();
 
   activeList.replaceChildren(...active.map((task, index) => createActiveCard(task, index, active.length)));
   renderDeadlineCalendar(active);
   renderCaseJumpOptions(active);
   renderCompactTaskTable(active);
   completedList.replaceChildren(...completed.map(createCompletedCard));
+  archivedList.replaceChildren(...archived.map(createArchivedCard));
   updateCardContentEndMarkers();
   renderParentCaseGroups();
 
   activeCount.textContent = `${active.length}件`;
   completedCount.textContent = `${completed.length}件`;
+  archivedCount.textContent = `${archived.length}件`;
   navCompactTaskCount.textContent = `${active.length}件`;
   navActiveCount.textContent = `${active.length}件`;
   navParentCaseCount.textContent = `${parentCases.length}件`;
   navTagCount.textContent = `${tags.length}件`;
   navCompletedCount.textContent = `${completed.length}件`;
+  navArchivedCount.textContent = `${archived.length}件`;
   copyActiveTasksButton.disabled = active.length === 0;
   activeEmpty.hidden = active.length > 0;
   completedEmpty.hidden = completed.length > 0;
+  archivedEmpty.hidden = archived.length > 0;
   clearCompletedButton.hidden = getDeletableCompletedTasks().length === 0;
   renderParentCaseSettings();
   setParentCaseViewMode(parentCaseViewMode);
@@ -1972,12 +2046,40 @@ async function setCompleted(taskId, completed) {
 
   target.completed = completed;
   target.completedAt = completed ? new Date().toISOString() : null;
+  // Sending a task back to the active list also takes it out of the archive:
+  // an unfinished task has nothing to keep for later reference yet.
+  if (!completed) {
+    target.archived = false;
+    target.archivedAt = null;
+  }
 
   const active = tasks.filter((task) => !task.completed);
   const done = tasks.filter((task) => task.completed);
   tasks = await saveTasks([...active, ...done]);
   render();
   showToast(completed ? "完了にしました" : "することに戻しました");
+}
+
+// The archive keeps finished tasks whose materials are still worth looking up,
+// so an archived task stays completed and is never swept away by the
+// "delete completed tasks from earlier months" action.
+async function setArchived(taskId, archived) {
+  const target = tasks.find((task) => task.id === taskId);
+  if (!target) return;
+
+  const now = new Date().toISOString();
+  target.archived = archived;
+  target.archivedAt = archived ? now : null;
+  if (archived) {
+    target.completed = true;
+    target.completedAt = target.completedAt || now;
+  }
+
+  const active = tasks.filter((task) => !task.completed);
+  const done = tasks.filter((task) => task.completed);
+  tasks = await saveTasks([...active, ...done]);
+  render();
+  showToast(archived ? "アーカイブへ移動しました" : "完了に戻しました");
 }
 
 function renderParentCaseOptions(selectedId = "") {
@@ -2129,9 +2231,11 @@ async function persistEditedTask() {
       tagIds: [],
       links: [],
       completed: false,
+      archived: false,
       order: active.length,
       createdAt: new Date().toISOString(),
-      completedAt: null
+      completedAt: null,
+      archivedAt: null
     };
     active.push(task);
     tasks = [...active, ...completed];
@@ -2284,7 +2388,7 @@ async function clearCompleted() {
   if (completed.length === 0) return;
   if (!confirm(
     `先月以前に採番された完了タスク${completed.length}件をすべて削除しますか？`
-    + "\n今月採番された完了タスクは削除されません。"
+    + "\n今月採番された完了タスクと、アーカイブへ移動したタスクは削除されません。"
   )) return;
 
   const deletingIds = new Set(completed.map((task) => task.id));
