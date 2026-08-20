@@ -1014,6 +1014,56 @@ button {
   background: #9a4b00;
 }
 
+.deadline-tooltip {
+  position: fixed;
+  z-index: 90;
+  max-width: 320px;
+  padding: 14px 18px;
+  color: #f3f5fb;
+  border-radius: 12px;
+  background: #263149;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, .4);
+  font-size: 15px;
+  line-height: 1.65;
+  pointer-events: none;
+}
+
+.deadline-tooltip[hidden] {
+  display: none;
+}
+
+.deadline-tooltip-item + .deadline-tooltip-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .16);
+}
+
+.deadline-tooltip-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.deadline-tooltip-case {
+  color: #9db4ff;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+.deadline-tooltip-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.deadline-tooltip-meta {
+  margin-top: 4px;
+  color: #c4cbdc;
+  font-size: 13px;
+}
+
 .calendar-deadlines {
   min-height: 74px;
   max-height: 122px;

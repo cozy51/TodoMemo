@@ -105,6 +105,7 @@ const confirmRestoreButton = document.querySelector("#confirmRestoreButton");
 let tasks = [];
 let tags = [];
 let parentCases = [];
+let deadlineTooltipElement = null;
 let holidays = [];
 let parentCaseViewMode = "group";
 let activeListCollapsed = true;
@@ -468,6 +469,11 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       day.classList.add("has-deadline");
       if (dateKey < todayKey) day.classList.add("is-overdue");
 
+      day.addEventListener("mouseenter", () => showDeadlineTooltip(day, dayTasks));
+      day.addEventListener("mouseleave", hideDeadlineTooltip);
+      day.addEventListener("focus", () => showDeadlineTooltip(day, dayTasks));
+      day.addEventListener("blur", hideDeadlineTooltip);
+
       if (dayTasks.length === 1) {
         const countLink = document.createElement("a");
         countLink.className = "calendar-day-count";
@@ -555,6 +561,87 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
   return monthPanel;
 }
 
+function getDeadlineTooltipElement() {
+  if (deadlineTooltipElement) return deadlineTooltipElement;
+  const tooltip = document.createElement("div");
+  tooltip.className = "deadline-tooltip";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.hidden = true;
+  document.body.append(tooltip);
+  deadlineTooltipElement = tooltip;
+  return tooltip;
+}
+
+function fillDeadlineTooltip(tooltip, dayTasks) {
+  tooltip.replaceChildren(...dayTasks.map((task) => {
+    const item = document.createElement("div");
+    item.className = "deadline-tooltip-item";
+
+    const heading = document.createElement("div");
+    heading.className = "deadline-tooltip-heading";
+    const caseNumber = document.createElement("span");
+    caseNumber.className = "deadline-tooltip-case";
+    caseNumber.textContent = task.caseNumber;
+    const title = document.createElement("span");
+    title.className = "deadline-tooltip-title";
+    title.textContent = ensureEmojiPresentation(task.title);
+    heading.append(caseNumber, title);
+    item.append(heading);
+
+    const parentCase = getParentCaseForTask(task);
+    if (parentCase) {
+      const parentLine = document.createElement("div");
+      parentLine.className = "deadline-tooltip-meta";
+      parentLine.textContent = `親案件：${parentCase.caseNumber} ${parentCase.name}`;
+      item.append(parentLine);
+    }
+
+    const taskTags = task.tagIds
+      .map((tagId) => tags.find((tag) => tag.id === tagId))
+      .filter(Boolean);
+    if (taskTags.length > 0) {
+      const tagLine = document.createElement("div");
+      tagLine.className = "deadline-tooltip-meta";
+      tagLine.textContent = `タグ：${taskTags.map((tag) => tag.name).join("、")}`;
+      item.append(tagLine);
+    }
+
+    return item;
+  }));
+}
+
+// Fixed positioning is viewport-relative, so the anchor's own
+// getBoundingClientRect can be used directly without a scroll offset.
+function positionDeadlineTooltip(tooltip, anchor) {
+  const margin = 10;
+  tooltip.style.left = "0px";
+  tooltip.style.top = "0px";
+  const anchorRect = anchor.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  let left = anchorRect.left + anchorRect.width / 2 - tooltipRect.width / 2;
+  left = Math.min(Math.max(left, margin), window.innerWidth - tooltipRect.width - margin);
+
+  let top = anchorRect.top - tooltipRect.height - margin;
+  const isBelow = top < margin;
+  if (isBelow) top = anchorRect.bottom + margin;
+  tooltip.classList.toggle("is-below", isBelow);
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function showDeadlineTooltip(anchor, dayTasks) {
+  const tooltip = getDeadlineTooltipElement();
+  fillDeadlineTooltip(tooltip, dayTasks);
+  tooltip.hidden = false;
+  positionDeadlineTooltip(tooltip, anchor);
+}
+
+function hideDeadlineTooltip() {
+  if (deadlineTooltipElement) deadlineTooltipElement.hidden = true;
+}
+
 function renderHolidayList() {
   holidayList.replaceChildren(...holidays.map((holiday) => {
     const item = document.createElement("li");
@@ -572,6 +659,7 @@ function renderHolidayList() {
 }
 
 function renderDeadlineCalendar(activeTasks) {
+  hideDeadlineTooltip();
   const now = new Date();
   const firstMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const months = Array.from({ length: 3 }, (_, monthOffset) => {
@@ -2637,6 +2725,8 @@ async function refreshFromStorage() {
 
 window.addEventListener("storage", refreshFromStorage);
 window.addEventListener("todomemo-storage-change", refreshFromStorage);
+window.addEventListener("scroll", hideDeadlineTooltip, true);
+window.addEventListener("resize", hideDeadlineTooltip);
 
 (async function initialize() {
   if (appVersion) {
