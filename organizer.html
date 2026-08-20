@@ -20,6 +20,7 @@
       <a href="#parentCaseSection"><span>親案件</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
       <a href="#tagSettingsSection"><span>分類タグ</span><span id="navTagCount" class="page-jump-count">0件</span></a>
       <a href="#completedSection"><span>完了</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
+      <a href="#archivedSection"><span>アーカイブ</span><span id="navArchivedCount" class="page-jump-count">0件</span></a>
     </nav>
 
     <div id="pageTop" class="app-shell">
@@ -250,13 +251,26 @@
         <section id="completedSection" class="task-section completed-section" aria-labelledby="completedHeading">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">アーカイブ</p>
+              <p class="section-kicker">整理済み</p>
               <h2 id="completedHeading">完了 <span id="completedCount" class="count"></span></h2>
             </div>
             <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>先月以前の完了をすべて削除</button>
           </div>
+          <p class="section-note">終わったタスクの置き場です。あとから見返さないものは、まとめて削除できます。</p>
           <div id="completedList" class="task-list completed-list"></div>
           <p id="completedEmpty" class="completed-empty">完了したタスクはここに移動します。</p>
+        </section>
+
+        <section id="archivedSection" class="task-section archived-section" aria-labelledby="archivedHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">保管</p>
+              <h2 id="archivedHeading">アーカイブ <span id="archivedCount" class="count"></span></h2>
+            </div>
+          </div>
+          <p class="section-note">終わったあとも資料やリンクを見返したいタスクの置き場です。「先月以前の完了をすべて削除」では消えません。</p>
+          <div id="archivedList" class="task-list archived-list"></div>
+          <p id="archivedEmpty" class="completed-empty">アーカイブへ移動したタスクはここに残ります。</p>
         </section>
       </main>
     </div>
@@ -540,6 +554,7 @@
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
             <button class="edit-button" type="button">編集</button>
+            <button class="archive-button" type="button">アーカイブへ移動</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>
         </div>
@@ -574,6 +589,43 @@
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
             <button class="restore-button" type="button">未完了に戻す</button>
+            <button class="archive-button" type="button">アーカイブへ移動</button>
+            <button class="delete-button danger-text" type="button">削除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="archivedTaskTemplate">
+      <article class="task-card archived-card">
+        <span class="archive-mark" aria-hidden="true">📦</span>
+        <div class="task-copy">
+          <div class="card-case-row">
+            <p class="card-case-number case-number"></p>
+            <button class="copy-task-button" type="button">案件COPY</button>
+            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
+          </div>
+          <h3></h3>
+          <p class="card-parent-case" hidden></p>
+          <div class="card-meta-row">
+            <div class="card-tags" hidden></div>
+            <p class="card-due" hidden></p>
+          </div>
+          <p class="card-completed-at"></p>
+          <p class="card-archived-at"></p>
+          <div class="card-links-section">
+            <span class="card-links-label">関連リンク</span>
+            <div class="card-links" aria-label="関連リンク" hidden></div>
+            <button class="card-paste-link-button paste-link-button" type="button">📋 URLを取り込む</button>
+          </div>
+          <div class="card-content markdown-body"></div>
+          <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
+        </div>
+        <div class="task-actions">
+          <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
+          <div class="action-menu" hidden>
+            <button class="unarchive-button" type="button">完了に戻す</button>
+            <button class="restore-button" type="button">することに戻す</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>
         </div>

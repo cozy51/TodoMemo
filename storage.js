@@ -497,7 +497,12 @@ function getTaskLinkPresentation(value) {
   return { icon: "🔗", type: "リンク", label: host || normalized };
 }
 
+// Archived tasks are finished work kept on purpose, so they always satisfy the
+// completed invariant too.  Anything that only knows about `completed` — the
+// popup, backups written by older versions — then keeps them out of the active
+// list instead of resurrecting them.
 function normalizeTask(task, index) {
+  const archived = Boolean(task.archived);
   return {
     id: String(task.id || crypto.randomUUID()),
     caseNumber: String(task.caseNumber || "").trim().toUpperCase(),
@@ -507,10 +512,12 @@ function normalizeTask(task, index) {
     dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
     tagIds: Array.isArray(task.tagIds) ? [...new Set(task.tagIds.map(String))] : [],
     links: normalizeTaskLinks(task.links),
-    completed: Boolean(task.completed),
+    completed: archived || Boolean(task.completed),
+    archived,
     order: Number.isFinite(task.order) ? task.order : index,
     createdAt: task.createdAt || new Date().toISOString(),
-    completedAt: task.completedAt || null
+    completedAt: task.completedAt || null,
+    archivedAt: archived ? (task.archivedAt || task.completedAt || null) : null
   };
 }
 
