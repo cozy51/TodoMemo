@@ -479,6 +479,19 @@ button {
   letter-spacing: -.015em;
 }
 
+.section-heading h2 {
+  background: linear-gradient(160deg, #1c3766 0%, #2f6fed 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.section-heading h2 .count {
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+}
+
 .case-number {
   width: fit-content;
   margin: 5px 0 0;
