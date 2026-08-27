@@ -551,7 +551,10 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       const link = document.createElement("a");
       link.className = "calendar-deadline-link";
       link.href = getActiveTaskAnchorHref(task);
-      link.title = `${task.caseNumber} ${task.title}`;
+      link.addEventListener("mouseenter", () => showDeadlineTooltip(link, [task]));
+      link.addEventListener("mouseleave", hideDeadlineTooltip);
+      link.addEventListener("focus", () => showDeadlineTooltip(link, [task]));
+      link.addEventListener("blur", hideDeadlineTooltip);
       if (task.dueDate < todayKey) link.classList.add("is-overdue");
 
       const date = document.createElement("time");
