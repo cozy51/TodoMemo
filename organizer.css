@@ -2021,6 +2021,22 @@ button {
   font-size: 12px;
 }
 
+.card-due[data-state="done"] {
+  color: #7b879e;
+  padding: 5px 8px;
+  border: 1px dashed var(--line-strong);
+  background: #f6f8fc;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.card-due[data-state="done"]::before {
+  color: #97a2b5;
+  content: "📅";
+  font-size: 12px;
+}
+
 .status-toggle {
   display: inline-flex;
   width: fit-content;

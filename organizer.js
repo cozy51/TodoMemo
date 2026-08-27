@@ -1259,7 +1259,13 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   renderLinks(card.querySelector(".card-links"), task.links);
 
   const due = card.querySelector(".card-due");
-  if (task.dueDate) {
+  if (task.dueDate && task.completed) {
+    // A finished task's due date is just a record, not a warning: no
+    // overdue wording or alarm color, whatever getDueState would say now.
+    due.textContent = `期限 · ${formatDueDate(task.dueDate)}`;
+    due.dataset.state = "done";
+    due.hidden = false;
+  } else if (task.dueDate) {
     const dueState = getDueState(task.dueDate);
     const prefix = dueState === "overdue"
       ? "期限超過"
