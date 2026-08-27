@@ -15,6 +15,7 @@
       <p>ページ内ジャンプ</p>
       <a href="#pageTop">トップ</a>
       <a href="#deadlineCalendarSection">期限カレンダー</a>
+      <a href="#overdueTaskSection"><span>期限超過</span><span id="navOverdueCount" class="page-jump-count">0件</span></a>
       <a href="#compactTaskSection"><span>案件一覧</span><span id="navCompactTaskCount" class="page-jump-count">0件</span></a>
       <a href="#activeTaskSection"><span>すること</span><span id="navActiveCount" class="page-jump-count">0件</span></a>
       <a href="#parentCaseSection"><span>親案件</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
@@ -102,6 +103,17 @@
             <p id="holidayEmpty" class="holiday-empty">登録済みの休みはありません。</p>
           </form>
         </dialog>
+
+        <section id="overdueTaskSection" class="task-section overdue-task-section" aria-labelledby="overdueHeading" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">要対応</p>
+              <h2 id="overdueHeading">期限超過 <span id="overdueCount" class="count"></span></h2>
+            </div>
+          </div>
+          <p class="section-note">期限を過ぎても完了していない案件です。月をまたいでも、完了かアーカイブにするまでここに表示され続けます。</p>
+          <ul id="overdueTaskList" class="overdue-task-list" aria-live="polite"></ul>
+        </section>
 
         <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
           <div class="case-jump-heading">
