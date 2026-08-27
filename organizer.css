@@ -1075,6 +1075,21 @@ button {
   font-size: 13px;
 }
 
+.deadline-tooltip-due {
+  margin-top: 6px;
+  color: #dfe6f5;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.deadline-tooltip-due[data-state="overdue"] {
+  color: #ff9a8f;
+}
+
+.deadline-tooltip-due[data-state="today"] {
+  color: #ffcf7a;
+}
+
 .calendar-deadlines {
   min-height: 74px;
   max-height: 122px;
@@ -2006,6 +2021,44 @@ button {
   font-size: 12px;
 }
 
+.status-toggle {
+  display: inline-flex;
+  width: fit-content;
+  margin: 10px 0 0;
+  padding: 3px;
+  border: 1px solid #d5deec;
+  border-radius: 10px;
+  background: #f0f3f9;
+}
+
+.status-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  color: #5b6b85;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-toggle-option input {
+  margin: 0;
+  accent-color: #2f6fed;
+}
+
+.status-toggle-option:has(input:checked) {
+  color: #17325f;
+  background: white;
+  box-shadow: 0 1px 2px rgba(20, 40, 80, .18);
+}
+
+.status-toggle-option:has(input:focus-visible) {
+  outline: 2px solid #2f6fed;
+  outline-offset: 1px;
+}
+
 .card-completed-at {
   display: inline-flex;
   align-items: center;
@@ -2673,6 +2726,66 @@ button {
   border-top: 1px solid #e2d8f1;
   background: rgba(255, 255, 255, .55);
   font-size: 11px;
+}
+
+.overdue-task-section .section-kicker {
+  color: var(--danger);
+}
+
+.overdue-task-list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid #e8aaa4;
+  border-radius: 13px;
+  background: #fff6f5;
+  box-shadow: 0 3px 14px rgba(180, 72, 61, .06);
+}
+
+.overdue-task-item-wrap + .overdue-task-item-wrap {
+  border-top: 1px solid #f2cfc9;
+}
+
+.overdue-task-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.overdue-task-item:hover {
+  background: white;
+  box-shadow: inset 4px 0 0 var(--danger);
+}
+
+.overdue-task-item-case {
+  overflow: hidden;
+  color: var(--danger);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overdue-task-item-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overdue-task-item-due {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .parent-case-form {
@@ -3753,6 +3866,15 @@ button:focus-visible {
 
   .parent-task-group-list-item {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .overdue-task-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+
+  .overdue-task-item-due {
+    text-align: left;
   }
 
   .parent-task-item-links {

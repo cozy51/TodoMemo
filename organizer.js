@@ -26,6 +26,10 @@ const taskJumpSelect = document.querySelector("#taskJumpSelect");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
+const overdueTaskSection = document.querySelector("#overdueTaskSection");
+const overdueTaskList = document.querySelector("#overdueTaskList");
+const overdueCount = document.querySelector("#overdueCount");
+const navOverdueCount = document.querySelector("#navOverdueCount");
 const navCompactTaskCount = document.querySelector("#navCompactTaskCount");
 const navActiveCount = document.querySelector("#navActiveCount");
 const navParentCaseCount = document.querySelector("#navParentCaseCount");
@@ -168,6 +172,15 @@ function syncContentHighlightScroll() {
 
 function getActiveTasks() {
   return tasks.filter((task) => !task.completed && !task.archived);
+}
+
+// An overdue task stays in this list across month boundaries no matter how
+// far down the priority order it has drifted, so it is never missed just
+// because "今すること" only draws attention to the top of the list.
+function getOverdueTasks(activeTasks) {
+  return activeTasks
+    .filter((task) => getDueState(task.dueDate) === "overdue")
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 
 // Archived tasks are finished as well, so they are kept out of the completed
@@ -588,6 +601,14 @@ function fillDeadlineTooltip(tooltip, dayTasks) {
     heading.append(caseNumber, title);
     item.append(heading);
 
+    if (task.dueDate) {
+      const dueLine = document.createElement("div");
+      dueLine.className = "deadline-tooltip-due";
+      dueLine.dataset.state = getDueState(task.dueDate);
+      dueLine.textContent = `期限：${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+      item.append(dueLine);
+    }
+
     const parentCase = getParentCaseForTask(task);
     if (parentCase) {
       const parentLine = document.createElement("div");
@@ -672,6 +693,35 @@ function renderDeadlineCalendar(activeTasks) {
     );
   });
   deadlineCalendar.replaceChildren(...months);
+}
+
+function createOverdueTaskRow(task) {
+  const item = document.createElement("li");
+  item.className = "overdue-task-item-wrap";
+
+  const link = document.createElement("a");
+  link.className = "overdue-task-item";
+  link.href = getActiveTaskAnchorHref(task);
+  link.title = `${task.caseNumber} ${task.title}の詳細カードへ移動`;
+
+  const caseNumber = document.createElement("span");
+  caseNumber.className = "overdue-task-item-case";
+  caseNumber.textContent = task.caseNumber;
+
+  const title = document.createElement("span");
+  title.className = "overdue-task-item-title";
+  title.textContent = ensureEmojiPresentation(task.title);
+
+  const due = document.createElement("time");
+  due.className = "overdue-task-item-due";
+  due.dateTime = task.dueDate;
+  due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+  due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
+  due.addEventListener("mouseleave", hideDeadlineTooltip);
+
+  link.append(caseNumber, title, due);
+  item.append(link);
+  return item;
 }
 
 function createCompactTaskRow(task, index) {
@@ -802,6 +852,8 @@ function createCompactTaskRow(task, index) {
     const dueState = getDueState(task.dueDate);
     due.dataset.state = dueState;
     due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+    due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
+    due.addEventListener("mouseleave", hideDeadlineTooltip);
   } else {
     due.dataset.state = "none";
     due.textContent = "期限なし";
@@ -1616,6 +1668,27 @@ function createActiveCard(task, index, total) {
   return card;
 }
 
+// A radio pair lets a finished task's card show and switch its 完了/アーカイブ
+// state directly, instead of routing the same choice through the "•••" menu.
+function attachStatusToggle(card, task, currentStatus) {
+  const completedRadio = card.querySelector(".status-radio-completed");
+  const archivedRadio = card.querySelector(".status-radio-archived");
+  if (!completedRadio || !archivedRadio) return;
+
+  const groupName = `task-status-${task.id}`;
+  completedRadio.name = groupName;
+  archivedRadio.name = groupName;
+  completedRadio.checked = currentStatus === "completed";
+  archivedRadio.checked = currentStatus === "archived";
+
+  completedRadio.addEventListener("change", () => {
+    if (completedRadio.checked) setArchived(task.id, false);
+  });
+  archivedRadio.addEventListener("change", () => {
+    if (archivedRadio.checked) setArchived(task.id, true);
+  });
+}
+
 function createCompletedCard(task) {
   const card = document.querySelector("#completedTaskTemplate").content.firstElementChild.cloneNode(true);
   card.dataset.taskId = task.id;
@@ -1626,6 +1699,7 @@ function createCompletedCard(task) {
   attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
+  attachStatusToggle(card, task, "completed");
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, false));
   card.querySelector(".restore-button").addEventListener("click", () => setCompleted(task.id, false));
   return card;
@@ -1642,10 +1716,7 @@ function createArchivedCard(task) {
   attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
-  card.querySelector(".unarchive-button").addEventListener("click", () => {
-    closeAllMenus();
-    setArchived(task.id, false);
-  });
+  attachStatusToggle(card, task, "archived");
   card.querySelector(".restore-button").addEventListener("click", () => {
     closeAllMenus();
     setCompleted(task.id, false);
@@ -1848,7 +1919,8 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
       due.dateTime = task.dueDate;
       due.dataset.state = getDueState(task.dueDate);
       due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
-      due.title = `期限 ${due.textContent}`;
+      due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
+      due.addEventListener("mouseleave", hideDeadlineTooltip);
     } else {
       due.hidden = true;
     }
@@ -2059,6 +2131,7 @@ function render() {
   const active = getActiveTasks();
   const completed = getCompletedTasks();
   const archived = getArchivedTasks();
+  const overdue = getOverdueTasks(active);
 
   activeList.replaceChildren(...active.map((task, index) => createActiveCard(task, index, active.length)));
   renderDeadlineCalendar(active);
@@ -2066,12 +2139,16 @@ function render() {
   renderCompactTaskTable(active);
   completedList.replaceChildren(...completed.map(createCompletedCard));
   archivedList.replaceChildren(...archived.map(createArchivedCard));
+  overdueTaskList.replaceChildren(...overdue.map(createOverdueTaskRow));
   updateCardContentEndMarkers();
   renderParentCaseGroups();
 
   activeCount.textContent = `${active.length}件`;
   completedCount.textContent = `${completed.length}件`;
   archivedCount.textContent = `${archived.length}件`;
+  overdueCount.textContent = `${overdue.length}件`;
+  overdueTaskSection.hidden = overdue.length === 0;
+  navOverdueCount.textContent = `${overdue.length}件`;
   navCompactTaskCount.textContent = `${active.length}件`;
   navActiveCount.textContent = `${active.length}件`;
   navParentCaseCount.textContent = `${parentCases.length}件`;
