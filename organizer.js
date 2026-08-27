@@ -551,7 +551,10 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       const link = document.createElement("a");
       link.className = "calendar-deadline-link";
       link.href = getActiveTaskAnchorHref(task);
-      link.title = `${task.caseNumber} ${task.title}`;
+      link.addEventListener("mouseenter", () => showDeadlineTooltip(link, [task]));
+      link.addEventListener("mouseleave", hideDeadlineTooltip);
+      link.addEventListener("focus", () => showDeadlineTooltip(link, [task]));
+      link.addEventListener("blur", hideDeadlineTooltip);
       if (task.dueDate < todayKey) link.classList.add("is-overdue");
 
       const date = document.createElement("time");
@@ -1256,7 +1259,13 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
   renderLinks(card.querySelector(".card-links"), task.links);
 
   const due = card.querySelector(".card-due");
-  if (task.dueDate) {
+  if (task.dueDate && task.completed) {
+    // A finished task's due date is just a record, not a warning: no
+    // overdue wording or alarm color, whatever getDueState would say now.
+    due.textContent = `期限 · ${formatDueDate(task.dueDate)}`;
+    due.dataset.state = "done";
+    due.hidden = false;
+  } else if (task.dueDate) {
     const dueState = getDueState(task.dueDate);
     const prefix = dueState === "overdue"
       ? "期限超過"
