@@ -13,15 +13,15 @@
   <body>
     <nav class="page-jump-nav" aria-label="ページ内ジャンプ">
       <p>ページ内ジャンプ</p>
-      <a href="#pageTop">トップ</a>
-      <a href="#deadlineCalendarSection">期限カレンダー</a>
-      <a href="#overdueTaskSection"><span>期限超過</span><span id="navOverdueCount" class="page-jump-count">0件</span></a>
-      <a href="#compactTaskSection"><span>案件一覧</span><span id="navCompactTaskCount" class="page-jump-count">0件</span></a>
-      <a href="#activeTaskSection"><span>すること</span><span id="navActiveCount" class="page-jump-count">0件</span></a>
-      <a href="#parentCaseSection"><span>親案件</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
-      <a href="#tagSettingsSection"><span>分類タグ</span><span id="navTagCount" class="page-jump-count">0件</span></a>
-      <a href="#completedSection"><span>完了</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
-      <a href="#archivedSection"><span>アーカイブ</span><span id="navArchivedCount" class="page-jump-count">0件</span></a>
+      <a href="#pageTop">Top</a>
+      <a href="#deadlineCalendarSection">Next 3 Months</a>
+      <a href="#overdueTaskSection"><span>Overdue</span><span id="navOverdueCount" class="page-jump-count">0件</span></a>
+      <a href="#compactTaskSection"><span>Projects</span><span id="navCompactTaskCount" class="page-jump-count">0件</span></a>
+      <a href="#activeTaskSection"><span>Tasks</span><span id="navActiveCount" class="page-jump-count">0件</span></a>
+      <a href="#parentCaseSection"><span>Parent Projects</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
+      <a href="#tagSettingsSection"><span>Category Tags</span><span id="navTagCount" class="page-jump-count">0件</span></a>
+      <a href="#completedSection"><span>Completed</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
+      <a href="#archivedSection"><span>Archived</span><span id="navArchivedCount" class="page-jump-count">0件</span></a>
     </nav>
 
     <div id="pageTop" class="app-shell">
@@ -75,7 +75,7 @@
           <div class="section-heading calendar-section-heading">
             <div>
               <p class="section-kicker">今月から3ヶ月</p>
-              <h2 id="deadlineCalendarHeading">期限カレンダー</h2>
+              <h2 id="deadlineCalendarHeading">Next 3 Months</h2>
             </div>
             <div class="calendar-heading-actions">
               <div class="calendar-legend" aria-label="休みの表示凡例">
@@ -108,7 +108,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">要対応</p>
-              <h2 id="overdueHeading">期限超過 <span id="overdueCount" class="count"></span></h2>
+              <h2 id="overdueHeading">Overdue <span id="overdueCount" class="count"></span></h2>
             </div>
           </div>
           <p class="section-note">期限を過ぎても完了していない案件です。月をまたいでも、完了かアーカイブにするまでここに表示され続けます。</p>
@@ -140,7 +140,7 @@
           <div class="section-heading compact-task-heading">
             <div>
               <p class="section-kicker">コンパクト表示</p>
-              <h2 id="compactTaskHeading">案件一覧 <span id="compactTaskCount" class="count"></span></h2>
+              <h2 id="compactTaskHeading">Projects <span id="compactTaskCount" class="count"></span></h2>
             </div>
             <p class="compact-task-description">行をクリックすると詳細カードへ移動できます</p>
           </div>
@@ -173,7 +173,7 @@
             <div>
               <p class="section-kicker">優先順位</p>
               <div class="active-heading-row">
-                <h2 id="activeHeading">すること <span id="activeCount" class="count"></span></h2>
+                <h2 id="activeHeading">Tasks <span id="activeCount" class="count"></span></h2>
                 <button id="toggleActiveListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="activeList">
                   <svg class="collapse-active-icon" viewBox="0 0 16 16" aria-hidden="true">
                     <path d="m3.5 10 4.5-4.5 4.5 4.5"/>
@@ -205,7 +205,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">案件をまとめる</p>
-              <h2 id="parentCaseHeading">親案件 <span id="parentCaseCount" class="count"></span></h2>
+              <h2 id="parentCaseHeading">Parent Projects <span id="parentCaseCount" class="count"></span></h2>
             </div>
             <div class="parent-case-view-switch" role="tablist" aria-label="親案件の表示切り替え">
               <button id="parentCaseManageModeButton" type="button" role="tab" aria-selected="false" aria-controls="parentCaseManageView">親案件を管理</button>
@@ -241,7 +241,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">分類</p>
-              <h2 id="tagHeading">分類タグ <span id="tagCount" class="count"></span></h2>
+              <h2 id="tagHeading">Category Tags <span id="tagCount" class="count"></span></h2>
             </div>
           </div>
           <div class="tag-settings-card">
@@ -264,7 +264,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">整理済み</p>
-              <h2 id="completedHeading">完了 <span id="completedCount" class="count"></span></h2>
+              <h2 id="completedHeading">Completed <span id="completedCount" class="count"></span></h2>
             </div>
             <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>先月以前の完了をすべて削除</button>
           </div>
@@ -277,7 +277,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">保管</p>
-              <h2 id="archivedHeading">アーカイブ <span id="archivedCount" class="count"></span></h2>
+              <h2 id="archivedHeading">Archived <span id="archivedCount" class="count"></span></h2>
             </div>
           </div>
           <p class="section-note">終わったあとも資料やリンクを見返したいタスクの置き場です。「先月以前の完了をすべて削除」では消えません。</p>
