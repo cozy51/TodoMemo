@@ -2052,8 +2052,9 @@ button {
 
 .status-toggle {
   display: inline-flex;
+  flex: 0 0 auto;
   width: fit-content;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 3px;
   border: 1px solid #d5deec;
   border-radius: 10px;
