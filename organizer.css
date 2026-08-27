@@ -2006,6 +2006,44 @@ button {
   font-size: 12px;
 }
 
+.status-toggle {
+  display: inline-flex;
+  width: fit-content;
+  margin: 10px 0 0;
+  padding: 3px;
+  border: 1px solid #d5deec;
+  border-radius: 10px;
+  background: #f0f3f9;
+}
+
+.status-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  color: #5b6b85;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-toggle-option input {
+  margin: 0;
+  accent-color: #2f6fed;
+}
+
+.status-toggle-option:has(input:checked) {
+  color: #17325f;
+  background: white;
+  box-shadow: 0 1px 2px rgba(20, 40, 80, .18);
+}
+
+.status-toggle-option:has(input:focus-visible) {
+  outline: 2px solid #2f6fed;
+  outline-offset: 1px;
+}
+
 .card-completed-at {
   display: inline-flex;
   align-items: center;

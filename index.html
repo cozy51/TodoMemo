@@ -576,6 +576,16 @@
             <div class="card-tags" hidden></div>
             <p class="card-due" hidden></p>
           </div>
+          <div class="status-toggle" role="radiogroup" aria-label="完了・アーカイブの切り替え">
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-completed">
+              <span>完了</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-archived">
+              <span>アーカイブ</span>
+            </label>
+          </div>
           <p class="card-completed-at"></p>
           <div class="card-links-section">
             <span class="card-links-label">関連リンク</span>
@@ -589,7 +599,6 @@
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
             <button class="restore-button" type="button">未完了に戻す</button>
-            <button class="archive-button" type="button">アーカイブへ移動</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>
         </div>
@@ -611,6 +620,16 @@
             <div class="card-tags" hidden></div>
             <p class="card-due" hidden></p>
           </div>
+          <div class="status-toggle" role="radiogroup" aria-label="完了・アーカイブの切り替え">
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-completed">
+              <span>完了</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-archived">
+              <span>アーカイブ</span>
+            </label>
+          </div>
           <p class="card-completed-at"></p>
           <p class="card-archived-at"></p>
           <div class="card-links-section">
@@ -624,7 +643,6 @@
         <div class="task-actions">
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
-            <button class="unarchive-button" type="button">完了に戻す</button>
             <button class="restore-button" type="button">することに戻す</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>

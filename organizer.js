@@ -1616,6 +1616,27 @@ function createActiveCard(task, index, total) {
   return card;
 }
 
+// A radio pair lets a finished task's card show and switch its 完了/アーカイブ
+// state directly, instead of routing the same choice through the "•••" menu.
+function attachStatusToggle(card, task, currentStatus) {
+  const completedRadio = card.querySelector(".status-radio-completed");
+  const archivedRadio = card.querySelector(".status-radio-archived");
+  if (!completedRadio || !archivedRadio) return;
+
+  const groupName = `task-status-${task.id}`;
+  completedRadio.name = groupName;
+  archivedRadio.name = groupName;
+  completedRadio.checked = currentStatus === "completed";
+  archivedRadio.checked = currentStatus === "archived";
+
+  completedRadio.addEventListener("change", () => {
+    if (completedRadio.checked) setArchived(task.id, false);
+  });
+  archivedRadio.addEventListener("change", () => {
+    if (archivedRadio.checked) setArchived(task.id, true);
+  });
+}
+
 function createCompletedCard(task) {
   const card = document.querySelector("#completedTaskTemplate").content.firstElementChild.cloneNode(true);
   card.dataset.taskId = task.id;
@@ -1626,6 +1647,7 @@ function createCompletedCard(task) {
   attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
+  attachStatusToggle(card, task, "completed");
   card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, false));
   card.querySelector(".restore-button").addEventListener("click", () => setCompleted(task.id, false));
   return card;
@@ -1642,10 +1664,7 @@ function createArchivedCard(task) {
   attachCardOpenActions(card, task);
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
-  card.querySelector(".unarchive-button").addEventListener("click", () => {
-    closeAllMenus();
-    setArchived(task.id, false);
-  });
+  attachStatusToggle(card, task, "archived");
   card.querySelector(".restore-button").addEventListener("click", () => {
     closeAllMenus();
     setCompleted(task.id, false);

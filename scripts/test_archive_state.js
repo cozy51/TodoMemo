@@ -70,14 +70,18 @@ const archivedTaskTemplate = html.match(
   /<template id="archivedTaskTemplate">([\s\S]*?)<\/template>/
 )?.[1] || "";
 
-if (!activeTaskTemplate.includes('class="archive-button"')
-  || !completedTaskTemplate.includes('class="archive-button"')) {
-  throw new Error("Both active and completed cards must offer a move-to-archive action");
+if (!activeTaskTemplate.includes('class="archive-button"')) {
+  throw new Error("Active cards must offer a move-to-archive action");
 }
-if (!archivedTaskTemplate.includes('class="unarchive-button"')
+if (!completedTaskTemplate.includes('class="status-radio-completed"')
+  || !completedTaskTemplate.includes('class="status-radio-archived"')) {
+  throw new Error("Completed cards must offer a 完了/アーカイブ radio toggle");
+}
+if (!archivedTaskTemplate.includes('class="status-radio-completed"')
+  || !archivedTaskTemplate.includes('class="status-radio-archived"')
   || !archivedTaskTemplate.includes('class="restore-button"')
   || !archivedTaskTemplate.includes('class="delete-button')) {
-  throw new Error("Archived cards must be able to go back to completed, back to active, or be deleted");
+  throw new Error("Archived cards must be able to switch back to completed via the radio toggle, go back to active, or be deleted");
 }
 if (!archivedTaskTemplate.includes('class="card-archived-at"')
   || !archivedTaskTemplate.includes('class="card-completed-at"')) {
@@ -91,6 +95,9 @@ if (!source.includes("function getArchivedTasks()")
   || !source.includes("function createArchivedCard(task)")
   || !source.includes("async function setArchived(taskId, archived)")) {
   throw new Error("organizer.js must implement the archived task state");
+}
+if (!source.includes("function attachStatusToggle(card, task, currentStatus)")) {
+  throw new Error("organizer.js must wire up the 完了/アーカイブ radio toggle");
 }
 if (!/function getCompletedTasks\(\)[\s\S]*?task\.completed && !task\.archived/.test(source)) {
   throw new Error("Archived tasks must be kept out of the completed list");
