@@ -3725,8 +3725,14 @@ button {
   margin-top: 30px;
 }
 
-.dialog-actions:has(.delete-task-button:not([hidden])) {
-  justify-content: space-between;
+.dialog-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+
+.dialog-top-actions:has(.delete-task-button[hidden]) {
+  display: none;
 }
 
 .delete-task-button {
