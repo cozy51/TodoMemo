@@ -757,7 +757,7 @@ function enableMarkdownTabInput(textarea) {
         );
       }
     } else {
-      textarea.setRangeText("\t", start, end, "end");
+      textarea.setRangeText("\t", lineStart, lineStart, "preserve");
     }
 
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
