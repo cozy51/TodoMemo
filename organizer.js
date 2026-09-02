@@ -23,6 +23,11 @@ const holidayList = document.querySelector("#holidayList");
 const holidayEmpty = document.querySelector("#holidayEmpty");
 const parentCaseJumpSelect = document.querySelector("#parentCaseJumpSelect");
 const taskJumpSelect = document.querySelector("#taskJumpSelect");
+const searchInput = document.querySelector("#searchInput");
+const clearSearchButton = document.querySelector("#clearSearchButton");
+const searchHint = document.querySelector("#searchHint");
+const searchResultsList = document.querySelector("#searchResultsList");
+const searchEmpty = document.querySelector("#searchEmpty");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
@@ -121,7 +126,10 @@ let parentIdeaSavePromise = Promise.resolve();
 let parentIdeaSaveRevision = 0;
 let detailTaskId = null;
 let ideaMemoParentCaseId = null;
+let searchQuery = "";
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
+const SEARCH_MIN_LENGTH = 2;
+const SEARCH_SNIPPET_RADIUS = 42;
 
 function removeRetiredInlineIdeaMemoEditors(root = parentCaseGroups) {
   if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
@@ -2136,6 +2144,170 @@ function setActiveListCollapsed(collapsed) {
   toggleActiveListButton.setAttribute("aria-expanded", String(!activeListCollapsed));
 }
 
+function getTaskStatusMeta(task) {
+  if (task.archived) return { key: "archived", label: "アーカイブ", order: 2 };
+  if (task.completed) return { key: "completed", label: "完了", order: 1 };
+  return { key: "active", label: "すること", order: 0 };
+}
+
+// Every place a task carries searchable text, gathered as separate fields so
+// title matches can be ranked above matches buried in the content or links.
+function getTaskSearchFields(task) {
+  const parentCase = getParentCaseForTask(task);
+  const tagNames = task.tagIds
+    .map((tagId) => tags.find((tag) => tag.id === tagId)?.name)
+    .filter(Boolean);
+  return {
+    caseNumber: task.caseNumber || "",
+    title: task.title || "",
+    content: task.content || "",
+    parentCase: parentCase ? `${parentCase.caseNumber} ${parentCase.name}` : "",
+    tags: tagNames.join(" "),
+    links: task.links.join(" ")
+  };
+}
+
+function taskMatchesQuery(task, normalizedQuery) {
+  const fields = getTaskSearchFields(task);
+  return Object.values(fields).some((value) => value.toLowerCase().includes(normalizedQuery));
+}
+
+function searchTasks(rawQuery) {
+  const normalizedQuery = rawQuery.trim().toLowerCase();
+  if (normalizedQuery.length < SEARCH_MIN_LENGTH) return [];
+
+  return tasks
+    .filter((task) => taskMatchesQuery(task, normalizedQuery))
+    .map((task) => ({ task, status: getTaskStatusMeta(task) }))
+    .sort((a, b) => {
+      const titleMatchA = a.task.title.toLowerCase().includes(normalizedQuery) ? 0 : 1;
+      const titleMatchB = b.task.title.toLowerCase().includes(normalizedQuery) ? 0 : 1;
+      if (titleMatchA !== titleMatchB) return titleMatchA - titleMatchB;
+      if (a.status.order !== b.status.order) return a.status.order - b.status.order;
+      return String(b.task.caseNumber).localeCompare(String(a.task.caseNumber), "en");
+    });
+}
+
+// Splits `text` on case-insensitive occurrences of `query` and appends each
+// piece as either a plain text node or a <mark>, so matches never pass
+// through innerHTML.
+function appendHighlightedText(container, text, normalizedQuery) {
+  if (!normalizedQuery) {
+    container.append(text);
+    return;
+  }
+  const lowerText = text.toLowerCase();
+  let cursor = 0;
+  let matchIndex = lowerText.indexOf(normalizedQuery, cursor);
+  if (matchIndex < 0) {
+    container.append(text);
+    return;
+  }
+  while (matchIndex >= 0) {
+    if (matchIndex > cursor) container.append(text.slice(cursor, matchIndex));
+    const mark = document.createElement("mark");
+    mark.textContent = text.slice(matchIndex, matchIndex + normalizedQuery.length);
+    container.append(mark);
+    cursor = matchIndex + normalizedQuery.length;
+    matchIndex = lowerText.indexOf(normalizedQuery, cursor);
+  }
+  if (cursor < text.length) container.append(text.slice(cursor));
+}
+
+// Picks whichever field the query actually matched in (falling back to the
+// content) and trims it down to a window around the first match.
+function buildSearchSnippet(task, normalizedQuery) {
+  const title = task.title || "";
+  if (title.toLowerCase().includes(normalizedQuery)) return null;
+
+  const content = (task.content || "").replace(/\s+/g, " ").trim();
+  const lowerContent = content.toLowerCase();
+  const matchIndex = lowerContent.indexOf(normalizedQuery);
+  if (matchIndex < 0) return null;
+
+  const start = Math.max(0, matchIndex - SEARCH_SNIPPET_RADIUS);
+  const end = Math.min(content.length, matchIndex + normalizedQuery.length + SEARCH_SNIPPET_RADIUS);
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < content.length ? "…" : "";
+  return `${prefix}${content.slice(start, end)}${suffix}`;
+}
+
+function navigateToSearchResult(task) {
+  const status = getTaskStatusMeta(task);
+  if (status.key === "active") setActiveListCollapsed(false);
+  const anchorHref = getTaskAnchorHref(task);
+  window.location.hash = anchorHref;
+  document.getElementById(decodeURIComponent(anchorHref.slice(1)))?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function createSearchResultItem({ task, status }, normalizedQuery) {
+  const item = document.createElement("li");
+  item.className = "search-result-item-wrap";
+
+  const link = document.createElement("a");
+  link.className = "search-result-item";
+  link.href = getTaskAnchorHref(task);
+  link.dataset.status = status.key;
+  link.title = `${task.caseNumber} ${task.title}の詳細カードへ移動`;
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    navigateToSearchResult(task);
+  });
+
+  const meta = document.createElement("span");
+  meta.className = "search-result-item-meta";
+  const statusBadge = document.createElement("span");
+  statusBadge.className = "search-result-item-status";
+  statusBadge.dataset.status = status.key;
+  statusBadge.textContent = status.label;
+  const caseNumber = document.createElement("span");
+  caseNumber.className = "search-result-item-case";
+  appendHighlightedText(caseNumber, task.caseNumber, normalizedQuery);
+  meta.append(statusBadge, caseNumber);
+
+  const title = document.createElement("span");
+  title.className = "search-result-item-title";
+  appendHighlightedText(title, ensureEmojiPresentation(task.title), normalizedQuery);
+
+  const body = document.createElement("span");
+  body.className = "search-result-item-body";
+  body.append(meta, title);
+
+  const snippetText = buildSearchSnippet(task, normalizedQuery);
+  if (snippetText) {
+    const snippet = document.createElement("span");
+    snippet.className = "search-result-item-snippet";
+    appendHighlightedText(snippet, snippetText, normalizedQuery);
+    body.append(snippet);
+  }
+
+  link.append(body);
+  item.append(link);
+  return item;
+}
+
+function renderSearchResults() {
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  clearSearchButton.hidden = normalizedQuery.length === 0;
+
+  if (normalizedQuery.length < SEARCH_MIN_LENGTH) {
+    searchResultsList.replaceChildren();
+    searchEmpty.hidden = true;
+    searchHint.hidden = false;
+    return;
+  }
+
+  const results = searchTasks(searchQuery);
+  searchHint.hidden = true;
+  searchEmpty.hidden = results.length > 0;
+  searchResultsList.replaceChildren(
+    ...results.map((result) => createSearchResultItem(result, normalizedQuery))
+  );
+}
+
 function render() {
   const active = getActiveTasks();
   const completed = getCompletedTasks();
@@ -2173,6 +2345,7 @@ function render() {
   setParentCaseViewMode(parentCaseViewMode);
   setActiveListCollapsed(activeListCollapsed);
   renderTagSettings();
+  renderSearchResults();
 }
 
 function clearDropIndicators() {
@@ -2593,6 +2766,16 @@ toggleActiveListButton.addEventListener("click", () => {
 });
 activeCollapsedNotice.addEventListener("click", () => {
   setActiveListCollapsed(false);
+});
+searchInput.addEventListener("input", () => {
+  searchQuery = searchInput.value;
+  renderSearchResults();
+});
+clearSearchButton.addEventListener("click", () => {
+  searchQuery = "";
+  searchInput.value = "";
+  renderSearchResults();
+  searchInput.focus();
 });
 tagForm.addEventListener("submit", addTag);
 parentCaseForm.addEventListener("submit", addParentCase);
