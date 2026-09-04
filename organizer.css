@@ -4157,3 +4157,37 @@ button:focus-visible {
     display: none;
   }
 }
+
+.completion-confetti {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.completion-confetti-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 2px;
+  opacity: 0;
+  animation: completion-confetti-burst 700ms ease-out forwards;
+}
+
+@keyframes completion-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: var(--confetti-end, translate(0, -80px)) rotate(360deg) scale(.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .completion-confetti-piece {
+    animation: none;
+  }
+}
