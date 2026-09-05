@@ -883,6 +883,83 @@ function renderCompactTaskTable(activeTasks) {
   compactTaskEmpty.hidden = activeTasks.length > 0;
 }
 
+const COMPLETION_CONFETTI_COLORS = ["#2f6fed", "#ffb020", "#ff6b6b", "#34c38f", "#7c5cff"];
+
+let completionAudioContext = null;
+
+// Web Audio is used instead of a bundled sound file so the completion chime
+// stays a few lines of code with nothing to download or license.
+function getCompletionAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!completionAudioContext) completionAudioContext = new AudioContextClass();
+  if (completionAudioContext.state === "suspended") completionAudioContext.resume();
+  return completionAudioContext;
+}
+
+function playCompletionChime() {
+  const ctx = getCompletionAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 → E5 → G5 → C6, a short victory arpeggio
+  notes.forEach((frequency, index) => {
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    const startTime = now + index * 0.08;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.18, startTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.35);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.4);
+  });
+}
+
+// Bursts a handful of confetti pieces from the button the user just clicked.
+// Pieces are appended to <body> (not the card) since the card is about to be
+// removed from the active list by the re-render that follows completion.
+function spawnCompletionConfetti(originEl) {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+  const rect = originEl.getBoundingClientRect();
+  const originX = rect.left + rect.width / 2;
+  const originY = rect.top + rect.height / 2;
+
+  const container = document.createElement("div");
+  container.className = "completion-confetti";
+  const pieceCount = 16;
+  for (let i = 0; i < pieceCount; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "completion-confetti-piece";
+    const angle = (Math.PI * 2 * i) / pieceCount + Math.random() * 0.4;
+    const distance = 60 + Math.random() * 50;
+    const endX = Math.cos(angle) * distance;
+    const endY = Math.sin(angle) * distance - 20;
+    const size = 5 + Math.random() * 5;
+    piece.style.left = `${originX}px`;
+    piece.style.top = `${originY}px`;
+    piece.style.width = `${size}px`;
+    piece.style.height = `${size * 0.6}px`;
+    piece.style.background = COMPLETION_CONFETTI_COLORS[i % COMPLETION_CONFETTI_COLORS.length];
+    piece.style.setProperty("--confetti-end", `translate(${endX}px, ${endY}px)`);
+    piece.style.animationDelay = `${Math.random() * 60}ms`;
+    container.append(piece);
+  }
+  document.body.append(container);
+  setTimeout(() => container.remove(), 900);
+}
+
+function celebrateTaskCompletion(originEl) {
+  spawnCompletionConfetti(originEl);
+  try {
+    playCompletionChime();
+  } catch (_error) {
+    // Sound is a nice-to-have on top of completing the task, never a blocker.
+  }
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.hidden = false;
@@ -1642,7 +1719,10 @@ function createActiveCard(task, index, total) {
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
 
-  card.querySelector(".complete-toggle").addEventListener("click", () => setCompleted(task.id, true));
+  card.querySelector(".complete-toggle").addEventListener("click", (event) => {
+    celebrateTaskCompletion(event.currentTarget);
+    setCompleted(task.id, true);
+  });
   card.querySelector(".quick-edit-button").addEventListener("click", () => openTaskDialog(task));
   card.querySelector(".edit-button").addEventListener("click", () => openTaskDialog(task));
 
@@ -2404,7 +2484,7 @@ async function setCompleted(taskId, completed) {
   const done = tasks.filter((task) => task.completed);
   tasks = await saveTasks([...active, ...done]);
   render();
-  showToast(completed ? "完了にしました" : "することに戻しました");
+  showToast(completed ? "🎉 完了にしました！お疲れさまでした" : "することに戻しました");
 }
 
 // The archive keeps finished tasks whose materials are still worth looking up,
