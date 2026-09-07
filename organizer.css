@@ -575,7 +575,9 @@ button {
   transform: rotate(180deg);
 }
 
-#activeList.is-collapsed > .task-card:not(:first-child) {
+#activeList.is-collapsed > .task-card:not(:first-child),
+#completedList.is-collapsed > .task-card:not(:first-child),
+#archivedList.is-collapsed > .task-card:not(:first-child) {
   display: none;
 }
 
