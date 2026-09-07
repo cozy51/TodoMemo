@@ -45,10 +45,10 @@
         <p class="eyebrow">今すること</p>
         <div class="task-case-row">
           <p id="taskCaseNumber" class="case-number"></p>
-          <button id="copyTaskButton" class="copy-task-button" type="button">案件COPY</button>
+          <button id="copyTaskButton" class="copy-task-button" type="button">TaskCOPY</button>
         </div>
         <h1 id="taskTitle" class="task-title"></h1>
-        <p id="taskParentCase" class="parent-case-badge" hidden></p>
+        <p id="taskProject" class="project-badge" hidden></p>
         <div id="taskTags" class="tag-list" hidden></div>
         <p id="taskDue" class="task-due"></p>
         <div class="task-links-section">
@@ -81,11 +81,11 @@
             <small id="editTitleError" class="field-error" aria-live="polite"></small>
           </label>
           <label class="field">
-            <span>親案件 <em>任意</em></span>
-            <select id="editParentCaseSelect">
-              <option value="">親案件なし</option>
+            <span>Project <em>任意</em></span>
+            <select id="editProjectSelect">
+              <option value="">Projectなし</option>
             </select>
-            <small class="field-hint">登録済みの親案件から選択できます。</small>
+            <small class="field-hint">登録済みのProjectから選択できます。</small>
           </label>
           <label class="field">
             <span>優先順位</span>

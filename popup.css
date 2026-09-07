@@ -7,7 +7,7 @@
   --accent: #2f6fed;
   --accent-dark: #2359c4;
   --accent-soft: #eaf1ff;
-  --parent-case-number: #b4233f;
+  --project-number: #b4233f;
   --danger: #b4483d;
   font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
 }
@@ -227,7 +227,7 @@ textarea {
   background: #d7dfec;
 }
 
-.parent-case-badge {
+.project-badge {
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
@@ -244,11 +244,11 @@ textarea {
   white-space: nowrap;
 }
 
-.parent-case-badge[hidden] {
+.project-badge[hidden] {
   display: none !important;
 }
 
-.parent-case-badge a {
+.project-badge a {
   display: inline-flex;
   min-width: 0;
   max-width: 100%;
@@ -258,27 +258,27 @@ textarea {
   text-decoration: none;
 }
 
-.parent-case-badge a:hover {
+.project-badge a:hover {
   color: var(--accent);
   text-decoration: underline;
 }
 
-.parent-case-badge .parent-case-kind {
+.project-badge .project-kind {
   flex: 0 0 auto;
   color: #806aa1;
   font-size: 9px;
   font-weight: 700;
 }
 
-.parent-case-badge .parent-case-inline-number {
+.project-badge .project-inline-number {
   flex: 0 0 auto;
-  color: var(--parent-case-number);
+  color: var(--project-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 800;
 }
 
-.parent-case-badge .parent-case-title-text {
+.project-badge .project-title-text {
   min-width: 0;
   overflow: hidden;
   color: #382453;
@@ -288,7 +288,7 @@ textarea {
   white-space: nowrap;
 }
 
-.parent-case-link-status {
+.project-link-status {
   flex: 0 0 auto;
   padding: 2px 5px;
   border-radius: 999px;
@@ -298,12 +298,12 @@ textarea {
   font-weight: 750;
 }
 
-.parent-case-link-status[data-state="linked"] {
+.project-link-status[data-state="linked"] {
   background: #dce9ff;
   color: #2359c4;
 }
 
-.parent-case-copy-button {
+.project-copy-button {
   flex: 0 0 auto;
   padding: 2px 6px;
   color: #2359c4;
@@ -315,7 +315,7 @@ textarea {
   font-weight: 750;
 }
 
-.parent-case-copy-button:hover {
+.project-copy-button:hover {
   background: #eaf1ff;
 }
 

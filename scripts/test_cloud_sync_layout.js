@@ -34,7 +34,7 @@ const requiredIds = [
   "cloudHistoryList", "cloudHistoryEmpty", "cloudHistoryClose",
   // The restore dialog has to show both sides and gate a step backwards.
   "restoreCurrentUpdatedAt", "restoreCurrentTaskCount", "restoreCurrentTagCount",
-  "restoreCurrentParentCaseCount", "restoreRegressionWarning",
+  "restoreCurrentProjectCount", "restoreRegressionWarning",
   "restoreAcknowledgeRow", "restoreAcknowledge"
 ];
 

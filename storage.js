@@ -125,7 +125,7 @@ function generateCaseNumber(tasks, date = new Date()) {
 
   const suffix = TODO_MEMO_CASE_SEQUENCE.find((candidate) => !usedSuffixes.has(candidate));
   if (!suffix) {
-    throw new RangeError(`${prefix}の案件番号をこれ以上採番できません`);
+    throw new RangeError(`${prefix}のTask番号をこれ以上採番できません`);
   }
   return `${prefix}${suffix}`;
 }
@@ -173,7 +173,7 @@ function generateParentCaseNumber(parentCases, date = new Date()) {
 
   const suffix = TODO_MEMO_PARENT_CASE_SEQUENCE.find((candidate) => !usedSuffixes.has(candidate));
   if (!suffix) {
-    throw new RangeError(`${prefix}の親案件番号をこれ以上採番できません`);
+    throw new RangeError(`${prefix}のProject番号をこれ以上採番できません`);
   }
   return `${prefix}${suffix}`;
 }
@@ -749,7 +749,7 @@ function validateBackup(data) {
   const backupParentCases = data.parentCases === undefined ? [] : data.parentCases;
   const backupHolidays = data.holidays === undefined ? [] : data.holidays;
   if (!Array.isArray(backupParentCases)) {
-    throw new Error("親案件のデータが不正です");
+    throw new Error("Projectのデータが不正です");
   }
   if (!Array.isArray(backupHolidays) || backupHolidays.some((holiday) => !normalizeHoliday(holiday))) {
     throw new Error("休みのデータが不正です");
@@ -799,11 +799,11 @@ function validateBackup(data) {
       typeof parentCase !== "object" ||
       !String(parentCase.name || "").trim()
     ) {
-      throw new Error("名前のない親案件が含まれています");
+      throw new Error("名前のないProjectが含まれています");
     }
     const id = String(parentCase.id || "");
     if (!id || parentCaseIds.has(id)) {
-      throw new Error("親案件IDが不正または重複しています");
+      throw new Error("ProjectIDが不正または重複しています");
     }
     parentCaseIds.add(id);
   });
@@ -1120,7 +1120,7 @@ function readDatasetCounts(source) {
 function formatRecordCounts(counts) {
   if (!counts) return "";
   return `タスク${counts.tasks}件（未完了${counts.active}）`
-    + `・親案件${counts.parentCases}件・タグ${counts.tags}件`;
+    + `・Project${counts.parentCases}件・タグ${counts.tags}件`;
 }
 
 function formatElapsedJa(milliseconds) {

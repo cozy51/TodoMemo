@@ -351,7 +351,7 @@ check(
   formatRecordCounts(readDatasetCounts({
     counts: { tasks: 13, active: 11, completed: 2, parentCases: 12, tags: 3 }
   })),
-  "タスク13件（未完了11）・親案件12件・タグ3件",
+  "タスク13件（未完了11）・Project12件・タグ3件",
   "A document's own counts are used when it carries them"
 );
 check(
@@ -360,12 +360,12 @@ check(
     parentCases: [{ id: "p" }],
     tags: []
   })),
-  "タスク3件（未完了2）・親案件1件・タグ0件",
+  "タスク3件（未完了2）・Project1件・タグ0件",
   "Older documents without a counts block are counted from their records"
 );
 check(
   formatRecordCounts(readDatasetCounts({})),
-  "タスク0件（未完了0）・親案件0件・タグ0件",
+  "タスク0件（未完了0）・Project0件・タグ0件",
   "An empty document reports zeroes rather than blanks"
 );
 check(formatRecordCounts(null), "", "Unknown counts render as nothing to show");
