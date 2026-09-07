@@ -1,10 +1,18 @@
 const appVersion = document.querySelector("#appVersion");
 const activeList = document.querySelector("#activeList");
+const completedSection = document.querySelector("#completedSection");
+const toggleCompletedListButton = document.querySelector("#toggleCompletedListButton");
+const completedCollapsedNotice = document.querySelector("#completedCollapsedNotice");
+const completedCollapsedCount = document.querySelector("#completedCollapsedCount");
 const completedList = document.querySelector("#completedList");
 const activeEmpty = document.querySelector("#activeEmpty");
 const completedEmpty = document.querySelector("#completedEmpty");
 const activeCount = document.querySelector("#activeCount");
 const completedCount = document.querySelector("#completedCount");
+const archivedSection = document.querySelector("#archivedSection");
+const toggleArchivedListButton = document.querySelector("#toggleArchivedListButton");
+const archivedCollapsedNotice = document.querySelector("#archivedCollapsedNotice");
+const archivedCollapsedCount = document.querySelector("#archivedCollapsedCount");
 const archivedList = document.querySelector("#archivedList");
 const archivedEmpty = document.querySelector("#archivedEmpty");
 const archivedCount = document.querySelector("#archivedCount");
@@ -119,6 +127,8 @@ let deadlineTooltipElement = null;
 let holidays = [];
 let projectViewMode = "group";
 let activeListCollapsed = true;
+let completedListCollapsed = true;
+let archivedListCollapsed = true;
 let draggedTaskId = null;
 let toastTimer = null;
 let pendingRestore = null;
@@ -2266,6 +2276,44 @@ function setActiveListCollapsed(collapsed) {
   toggleActiveListButton.setAttribute("aria-expanded", String(!activeListCollapsed));
 }
 
+function setCompletedListCollapsed(collapsed) {
+  const completedTaskCount = getCompletedTasks().length;
+  completedListCollapsed = completedTaskCount > 0 && Boolean(collapsed);
+  const hiddenCount = completedListCollapsed ? Math.max(completedTaskCount - 1, 0) : 0;
+  completedList.hidden = false;
+  completedList.classList.toggle("is-collapsed", completedListCollapsed);
+  completedEmpty.hidden = completedTaskCount > 0;
+  completedSection.classList.toggle("is-collapsed", completedListCollapsed);
+  completedCollapsedNotice.hidden = !completedListCollapsed || hiddenCount === 0;
+  completedCollapsedCount.textContent = `${hiddenCount}件`;
+  toggleCompletedListButton.disabled = completedTaskCount === 0;
+  toggleCompletedListButton.dataset.state = completedListCollapsed ? "collapsed" : "expanded";
+  const toggleLabel = completedListCollapsed ? "表示する" : "折りたたむ";
+  toggleCompletedListButton.querySelector(".collapse-active-label").textContent = toggleLabel;
+  toggleCompletedListButton.setAttribute("aria-label", `完了一覧を${toggleLabel}`);
+  toggleCompletedListButton.title = `完了一覧を${toggleLabel}`;
+  toggleCompletedListButton.setAttribute("aria-expanded", String(!completedListCollapsed));
+}
+
+function setArchivedListCollapsed(collapsed) {
+  const archivedTaskCount = getArchivedTasks().length;
+  archivedListCollapsed = archivedTaskCount > 0 && Boolean(collapsed);
+  const hiddenCount = archivedListCollapsed ? Math.max(archivedTaskCount - 1, 0) : 0;
+  archivedList.hidden = false;
+  archivedList.classList.toggle("is-collapsed", archivedListCollapsed);
+  archivedEmpty.hidden = archivedTaskCount > 0;
+  archivedSection.classList.toggle("is-collapsed", archivedListCollapsed);
+  archivedCollapsedNotice.hidden = !archivedListCollapsed || hiddenCount === 0;
+  archivedCollapsedCount.textContent = `${hiddenCount}件`;
+  toggleArchivedListButton.disabled = archivedTaskCount === 0;
+  toggleArchivedListButton.dataset.state = archivedListCollapsed ? "collapsed" : "expanded";
+  const archivedToggleLabel = archivedListCollapsed ? "表示する" : "折りたたむ";
+  toggleArchivedListButton.querySelector(".collapse-active-label").textContent = archivedToggleLabel;
+  toggleArchivedListButton.setAttribute("aria-label", `アーカイブ一覧を${archivedToggleLabel}`);
+  toggleArchivedListButton.title = `アーカイブ一覧を${archivedToggleLabel}`;
+  toggleArchivedListButton.setAttribute("aria-expanded", String(!archivedListCollapsed));
+}
+
 function getTaskStatusMeta(task) {
   if (task.archived) return { key: "archived", label: "アーカイブ", order: 2 };
   if (task.completed) return { key: "completed", label: "完了", order: 1 };
@@ -2357,6 +2405,8 @@ function buildSearchSnippet(task, normalizedQuery) {
 function navigateToSearchResult(task) {
   const status = getTaskStatusMeta(task);
   if (status.key === "active") setActiveListCollapsed(false);
+  else if (status.key === "completed") setCompletedListCollapsed(false);
+  else if (status.key === "archived") setArchivedListCollapsed(false);
   const anchorHref = getTaskAnchorHref(task);
   window.location.hash = anchorHref;
   document.getElementById(decodeURIComponent(anchorHref.slice(1)))?.scrollIntoView({
@@ -2466,6 +2516,8 @@ function render() {
   renderProjectSettings();
   setProjectViewMode(projectViewMode);
   setActiveListCollapsed(activeListCollapsed);
+  setCompletedListCollapsed(completedListCollapsed);
+  setArchivedListCollapsed(archivedListCollapsed);
   renderTagSettings();
   renderSearchResults();
 }
@@ -2889,6 +2941,18 @@ toggleActiveListButton.addEventListener("click", () => {
 activeCollapsedNotice.addEventListener("click", () => {
   setActiveListCollapsed(false);
 });
+toggleCompletedListButton.addEventListener("click", () => {
+  setCompletedListCollapsed(!completedListCollapsed);
+});
+completedCollapsedNotice.addEventListener("click", () => {
+  setCompletedListCollapsed(false);
+});
+toggleArchivedListButton.addEventListener("click", () => {
+  setArchivedListCollapsed(!archivedListCollapsed);
+});
+archivedCollapsedNotice.addEventListener("click", () => {
+  setArchivedListCollapsed(false);
+});
 searchInput.addEventListener("input", () => {
   searchQuery = searchInput.value;
   renderSearchResults();
@@ -3061,6 +3125,10 @@ restoreDialog.addEventListener("click", (event) => {
 document.addEventListener("click", (event) => {
   if (event.target.closest('a[href^="#active-task-"]')) {
     setActiveListCollapsed(false);
+  } else if (event.target.closest('a[href^="#completed-task-"]')) {
+    setCompletedListCollapsed(false);
+  } else if (event.target.closest('a[href^="#archived-task-"]')) {
+    setArchivedListCollapsed(false);
   }
   closeAllMenus();
 });

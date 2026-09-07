@@ -286,11 +286,25 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">整理済み</p>
-              <h2 id="completedHeading">Completed <span id="completedCount" class="count"></span></h2>
+              <div class="active-heading-row">
+                <h2 id="completedHeading">Completed <span id="completedCount" class="count"></span></h2>
+                <button id="toggleCompletedListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="completedList">
+                  <svg class="collapse-active-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m3.5 10 4.5-4.5 4.5 4.5"/>
+                  </svg>
+                  <span class="collapse-active-label">折りたたむ</span>
+                </button>
+              </div>
             </div>
             <button id="clearCompletedButton" class="quiet-button danger-text" type="button" hidden>先月以前の完了をすべて削除</button>
           </div>
           <p class="section-note">終わったタスクの置き場です。あとから見返さないものは、まとめて削除できます。</p>
+          <button id="completedCollapsedNotice" class="active-collapsed-notice" type="button" aria-controls="completedList" hidden>
+            <span class="active-collapsed-icon" aria-hidden="true">⌄</span>
+            <strong>完了一覧を折りたたんでいます</strong>
+            <span id="completedCollapsedCount"></span>
+            <span class="active-collapsed-action">クリックして表示</span>
+          </button>
           <div id="completedList" class="task-list completed-list"></div>
           <p id="completedEmpty" class="completed-empty">完了したタスクはここに移動します。</p>
         </section>
@@ -299,10 +313,24 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">保管</p>
-              <h2 id="archivedHeading">Archived <span id="archivedCount" class="count"></span></h2>
+              <div class="active-heading-row">
+                <h2 id="archivedHeading">Archived <span id="archivedCount" class="count"></span></h2>
+                <button id="toggleArchivedListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="archivedList">
+                  <svg class="collapse-active-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m3.5 10 4.5-4.5 4.5 4.5"/>
+                  </svg>
+                  <span class="collapse-active-label">折りたたむ</span>
+                </button>
+              </div>
             </div>
           </div>
           <p class="section-note">終わったあとも資料やリンクを見返したいタスクの置き場です。「先月以前の完了をすべて削除」では消えません。</p>
+          <button id="archivedCollapsedNotice" class="active-collapsed-notice" type="button" aria-controls="archivedList" hidden>
+            <span class="active-collapsed-icon" aria-hidden="true">⌄</span>
+            <strong>アーカイブ一覧を折りたたんでいます</strong>
+            <span id="archivedCollapsedCount"></span>
+            <span class="active-collapsed-action">クリックして表示</span>
+          </button>
           <div id="archivedList" class="task-list archived-list"></div>
           <p id="archivedEmpty" class="completed-empty">アーカイブへ移動したタスクはここに残ります。</p>
         </section>
