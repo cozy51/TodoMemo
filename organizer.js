@@ -353,6 +353,35 @@ function jumpToElement(element) {
   element.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function getTaskRegistrationMonthKey(task) {
+  const match = /^TD(\d{2})-(\d{2})/.exec(String(task.caseNumber || "").trim().toUpperCase());
+  if (!match) return null;
+  return { year: 2000 + Number(match[1]), month: Number(match[2]) };
+}
+
+function getTaskRegistrationMonthLabel(monthKey) {
+  return monthKey
+    ? `${monthKey.year}年${String(monthKey.month).padStart(2, "0")}月登録`
+    : "登録月不明";
+}
+
+function groupTasksByRegistrationMonth(tasks) {
+  const groups = [];
+  const groupByKey = new Map();
+  tasks.forEach((task) => {
+    const monthKey = getTaskRegistrationMonthKey(task);
+    const key = monthKey ? `${monthKey.year}-${String(monthKey.month).padStart(2, "0")}` : "unknown";
+    let group = groupByKey.get(key);
+    if (!group) {
+      group = { monthKey, tasks: [] };
+      groupByKey.set(key, group);
+      groups.push(group);
+    }
+    group.tasks.push(task);
+  });
+  return groups;
+}
+
 function renderCaseJumpOptions(activeTasks) {
   const parentPlaceholder = document.createElement("option");
   parentPlaceholder.value = "";
@@ -377,13 +406,19 @@ function renderCaseJumpOptions(activeTasks) {
   taskPlaceholder.selected = true;
   taskPlaceholder.disabled = true;
   taskPlaceholder.hidden = true;
+  const sortedTasks = sortTasksByCaseNumberDescending(activeTasks);
   taskJumpSelect.replaceChildren(
     taskPlaceholder,
-    ...sortTasksByCaseNumberDescending(activeTasks).map((task) => {
-      const option = document.createElement("option");
-      option.value = task.id;
-      option.textContent = `${task.caseNumber}｜${task.title}`;
-      return option;
+    ...groupTasksByRegistrationMonth(sortedTasks).map((group) => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = `${getTaskRegistrationMonthLabel(group.monthKey)} 残件${group.tasks.length}件`;
+      optgroup.append(...group.tasks.map((task) => {
+        const option = document.createElement("option");
+        option.value = task.id;
+        option.textContent = `${task.caseNumber}｜${task.title}`;
+        return option;
+      }));
+      return optgroup;
     })
   );
   taskJumpSelect.disabled = activeTasks.length === 0;
