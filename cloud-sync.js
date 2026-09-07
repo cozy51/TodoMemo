@@ -79,7 +79,7 @@
   function describeDataset(dataset) {
     const tasks = dataset?.tasks?.length || 0;
     const active = (dataset?.tasks || []).filter((task) => !task.completed).length;
-    return `タスク${tasks}件（未完了${active}）・親案件${dataset?.parentCases?.length || 0}件`
+    return `タスク${tasks}件（未完了${active}）・Project${dataset?.parentCases?.length || 0}件`
       + `・タグ${dataset?.tags?.length || 0}件`;
   }
 

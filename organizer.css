@@ -9,7 +9,7 @@
   --accent: #2f6fed;
   --accent-dark: #2359c4;
   --accent-soft: #eaf1ff;
-  --parent-case-number: #b4233f;
+  --project-number: #b4233f;
   --danger: #b4483d;
   --shadow: 0 14px 45px rgba(31, 52, 92, .09);
   font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
@@ -1760,7 +1760,7 @@ button {
   background: #efb36f;
 }
 
-.card-parent-case {
+.card-project {
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
@@ -1777,11 +1777,11 @@ button {
   white-space: nowrap;
 }
 
-.card-parent-case[hidden] {
+.card-project[hidden] {
   display: none !important;
 }
 
-.card-parent-case a {
+.card-project a {
   display: inline-flex;
   min-width: 0;
   max-width: 100%;
@@ -1791,27 +1791,27 @@ button {
   text-decoration: none;
 }
 
-.card-parent-case a:hover {
+.card-project a:hover {
   color: var(--accent);
   text-decoration: underline;
 }
 
-.parent-case-kind {
+.project-kind {
   flex: 0 0 auto;
   color: #806aa1;
   font-size: 9px;
   font-weight: 700;
 }
 
-.parent-case-inline-number {
+.project-inline-number {
   flex: 0 0 auto;
-  color: var(--parent-case-number);
+  color: var(--project-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 800;
 }
 
-.parent-case-title-text {
+.project-title-text {
   min-width: 0;
   overflow: hidden;
   color: #382453;
@@ -1821,7 +1821,7 @@ button {
   white-space: nowrap;
 }
 
-.parent-case-title-input {
+.project-title-input {
   min-width: 80px;
   width: 20ch;
   max-width: 100%;
@@ -1835,18 +1835,18 @@ button {
   font-weight: 850;
 }
 
-.parent-case-title-input:hover {
+.project-title-input:hover {
   border-color: #d8c7f2;
   background: #fff;
 }
 
-.parent-case-title-input:focus {
+.project-title-input:focus {
   border-color: var(--accent);
   background: #fff;
   outline: none;
 }
 
-.parent-case-link-status {
+.project-link-status {
   flex: 0 0 auto;
   padding: 2px 5px;
   border-radius: 999px;
@@ -1856,13 +1856,13 @@ button {
   font-weight: 750;
 }
 
-.parent-case-link-status[data-state="linked"] {
+.project-link-status[data-state="linked"] {
   background: #dce9ff;
   color: #2359c4;
 }
 
-.parent-case-copy-button,
-.parent-case-paste-link-button {
+.project-copy-button,
+.project-paste-link-button {
   flex: 0 0 auto;
   padding: 2px 6px;
   color: #2359c4;
@@ -1874,12 +1874,12 @@ button {
   font-weight: 750;
 }
 
-.parent-case-copy-button:hover,
-.parent-case-paste-link-button:hover {
+.project-copy-button:hover,
+.project-paste-link-button:hover {
   background: #eaf1ff;
 }
 
-.parent-case-paste-link-button:disabled {
+.project-paste-link-button:disabled {
   cursor: wait;
   opacity: .55;
 }
@@ -2307,7 +2307,7 @@ button {
   margin: 0 0 8px;
 }
 
-.parent-case-settings-card {
+.project-settings-card {
   padding: 24px;
   border: 1px solid #ded4f2;
   border-radius: 16px;
@@ -2315,7 +2315,7 @@ button {
   box-shadow: 0 3px 14px rgba(82, 56, 132, .05);
 }
 
-.parent-case-view-switch {
+.project-view-switch {
   display: inline-flex;
   gap: 3px;
   padding: 3px;
@@ -2324,7 +2324,7 @@ button {
   background: #f2ecfb;
 }
 
-.parent-case-view-switch button {
+.project-view-switch button {
   padding: 7px 12px;
   color: #6f6385;
   cursor: pointer;
@@ -2335,18 +2335,18 @@ button {
   font-weight: 750;
 }
 
-.parent-case-view-switch button:hover {
+.project-view-switch button:hover {
   color: #6842b8;
   background: rgba(255, 255, 255, .68);
 }
 
-.parent-case-view-switch button.is-active {
+.project-view-switch button.is-active {
   color: #6842b8;
   background: white;
   box-shadow: 0 1px 4px rgba(82, 56, 132, .13);
 }
 
-.parent-case-group-view {
+.project-group-view {
   padding: 18px;
   border: 1px solid #ded4f2;
   border-radius: 16px;
@@ -2354,7 +2354,7 @@ button {
   box-shadow: 0 3px 14px rgba(82, 56, 132, .05);
 }
 
-.parent-case-groups {
+.project-groups {
   display: grid;
   gap: 13px;
 }
@@ -2417,7 +2417,7 @@ button {
 
 .parent-task-group-number {
   flex: 0 0 auto;
-  color: var(--parent-case-number);
+  color: var(--project-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 15px;
   font-weight: 850;
@@ -2440,26 +2440,26 @@ button {
   white-space: nowrap;
 }
 
-.parent-task-group-identity .parent-case-kind {
+.parent-task-group-identity .project-kind {
   font-size: 10px;
 }
 
-.parent-task-group-identity .parent-case-inline-number {
+.parent-task-group-identity .project-inline-number {
   font-size: 14px;
 }
 
-.parent-task-group-identity .parent-case-title-text,
-.parent-task-group-identity .parent-case-title-input {
+.parent-task-group-identity .project-title-text,
+.parent-task-group-identity .project-title-input {
   font-size: 15px;
 }
 
-.parent-task-group-identity .parent-case-title-input {
+.parent-task-group-identity .project-title-input {
   width: 26ch;
 }
 
-.parent-task-group-identity .parent-case-link-status,
-.parent-task-group-identity .parent-case-copy-button,
-.parent-task-group-identity .parent-case-paste-link-button {
+.parent-task-group-identity .project-link-status,
+.parent-task-group-identity .project-copy-button,
+.parent-task-group-identity .project-paste-link-button {
   padding: 4px 8px;
   font-size: 10px;
   white-space: nowrap;
@@ -2818,7 +2818,7 @@ button {
   white-space: nowrap;
 }
 
-.parent-case-form {
+.project-form {
   display: grid;
   grid-template-columns: minmax(190px, .85fr) minmax(260px, 1.3fr) minmax(260px, 1.3fr) auto;
   gap: 18px;
@@ -2827,23 +2827,23 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
-.parent-case-form > div {
+.project-form > div {
   align-self: center;
 }
 
-.parent-case-form h3 {
+.project-form h3 {
   margin: 0;
   font-size: 15px;
 }
 
-.parent-case-form > div p {
+.project-form > div p {
   margin: 7px 0 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
 }
 
-.parent-case-form label {
+.project-form label {
   display: grid;
   min-width: 0;
   gap: 8px;
@@ -2852,20 +2852,20 @@ button {
   font-weight: 700;
 }
 
-.parent-case-form label strong {
+.project-form label strong {
   color: var(--danger);
   font-size: 10px;
 }
 
-.parent-case-form label em {
+.project-form label em {
   color: var(--muted);
   font-size: 10px;
   font-style: normal;
   font-weight: 400;
 }
 
-.parent-case-form input,
-.parent-case-row input {
+.project-form input,
+.project-row input {
   width: 100%;
   min-width: 0;
   padding: 11px 12px;
@@ -2877,31 +2877,31 @@ button {
   font-size: 13px;
 }
 
-.parent-case-form input:focus,
-.parent-case-row input:focus {
+.project-form input:focus,
+.project-row input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(47, 111, 237, .12);
 }
 
-.parent-case-form .secondary-button {
+.project-form .secondary-button {
   min-height: 42px;
   padding: 0 17px;
   white-space: nowrap;
 }
 
-.parent-case-form > .field-error {
+.project-form > .field-error {
   grid-column: 2 / -1;
   min-height: 0;
   margin-top: -10px;
 }
 
-.parent-case-list {
+.project-list {
   display: grid;
   gap: 9px;
   margin-top: 18px;
 }
 
-.parent-case-row {
+.project-row {
   display: grid;
   grid-template-columns: minmax(105px, .55fr) minmax(260px, 1.4fr) minmax(280px, 1.6fr) 55px auto;
   gap: 10px;
@@ -2912,8 +2912,8 @@ button {
   background: #f6f1ff;
 }
 
-.parent-case-number {
-  color: var(--parent-case-number);
+.project-number {
+  color: var(--project-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 15px;
   font-weight: 800;
@@ -2922,17 +2922,17 @@ button {
 }
 
 #parentIdeaDialogCaseNumber {
-  color: var(--parent-case-number);
+  color: var(--project-number);
 }
 
-.parent-case-used-count {
+.project-used-count {
   color: var(--muted);
   font-size: 12px;
   text-align: center;
   white-space: nowrap;
 }
 
-.parent-case-remove {
+.project-remove {
   padding: 8px 10px;
   cursor: pointer;
   border: 1px solid #d1c2ed;
@@ -2942,12 +2942,12 @@ button {
   font-weight: 700;
 }
 
-.parent-case-remove:hover {
+.project-remove:hover {
   border-color: #e4b6b0;
   background: #fff2f0;
 }
 
-.parent-case-empty {
+.project-empty {
   margin: 18px 0 0;
   padding: 18px;
   color: var(--muted);
@@ -4008,17 +4008,17 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .parent-case-settings-card {
+  .project-settings-card {
     padding: 18px;
   }
 
-  .parent-case-section > .section-heading {
+  .project-section > .section-heading {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
   }
 
-  .parent-case-group-view {
+  .project-group-view {
     padding: 12px;
   }
 
@@ -4077,26 +4077,26 @@ button:focus-visible {
     padding: 0 12px 9px 56px;
   }
 
-  .parent-case-form {
+  .project-form {
     grid-template-columns: 1fr;
     gap: 14px;
   }
 
-  .parent-case-form > .field-error {
+  .project-form > .field-error {
     grid-column: auto;
     margin-top: -6px;
   }
 
-  .parent-case-row {
+  .project-row {
     grid-template-columns: 1fr auto auto;
   }
 
-  .parent-case-row .parent-case-name-input,
-  .parent-case-row .parent-case-url-input {
+  .project-row .project-name-input,
+  .project-row .project-url-input {
     grid-column: 1 / -1;
   }
 
-  .parent-case-used-count {
+  .project-used-count {
     text-align: left;
   }
 

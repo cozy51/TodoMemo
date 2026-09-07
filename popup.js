@@ -3,7 +3,7 @@ const emptyView = document.querySelector("#emptyView");
 const editView = document.querySelector("#editView");
 const taskTitle = document.querySelector("#taskTitle");
 const taskCaseNumber = document.querySelector("#taskCaseNumber");
-const taskParentCase = document.querySelector("#taskParentCase");
+const taskProject = document.querySelector("#taskProject");
 const editCaseNumber = document.querySelector("#editCaseNumber");
 const editEyebrow = document.querySelector("#editEyebrow");
 const copyTaskButton = document.querySelector("#copyTaskButton");
@@ -16,7 +16,7 @@ const taskPasteLinkButton = document.querySelector("#taskPasteLinkButton");
 const editTaskButton = document.querySelector("#editTaskButton");
 const editTaskForm = document.querySelector("#editTaskForm");
 const editTitleInput = document.querySelector("#editTitleInput");
-const editParentCaseSelect = document.querySelector("#editParentCaseSelect");
+const editProjectSelect = document.querySelector("#editProjectSelect");
 const editPrioritySelect = document.querySelector("#editPrioritySelect");
 const editContentInput = document.querySelector("#editContentInput");
 const editContentHighlightBackdrop = document.querySelector("#editContentHighlightBackdrop");
@@ -124,7 +124,7 @@ async function downloadBackup() {
       await latestSavePromise;
     }
 
-    const [tasks, storedTags, storedParentCases] = await Promise.all([
+    const [tasks, storedTags, storedProjects] = await Promise.all([
       loadTasks(),
       loadTags(),
       loadParentCases()
@@ -145,11 +145,11 @@ async function downloadBackup() {
         active: tasks.filter((task) => !task.completed).length,
         completed: tasks.filter((task) => task.completed).length,
         tags: storedTags.length,
-        parentCases: storedParentCases.length
+        parentCases: storedProjects.length
       },
       tasks,
       tags: storedTags,
-      parentCases: storedParentCases
+      parentCases: storedProjects
     };
 
     const blob = new Blob(
@@ -164,9 +164,9 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    await saveBackupSnapshot(tasks, storedTags, storedParentCases);
-    updateBackupChangeCount(tasks, storedTags, storedParentCases, createBackupSnapshot(
-      tasks, storedTags, storedParentCases
+    await saveBackupSnapshot(tasks, storedTags, storedProjects);
+    updateBackupChangeCount(tasks, storedTags, storedProjects, createBackupSnapshot(
+      tasks, storedTags, storedProjects
     ));
     showPopupToast(`${tasks.length}件をバックアップしました`);
   } catch (_error) {
@@ -176,8 +176,8 @@ async function downloadBackup() {
   }
 }
 
-function updateBackupChangeCount(tasks, storedTags, storedParentCases, snapshot) {
-  const count = countChangesSinceBackup(tasks, storedTags, storedParentCases, snapshot);
+function updateBackupChangeCount(tasks, storedTags, storedProjects, snapshot) {
+  const count = countChangesSinceBackup(tasks, storedTags, storedProjects, snapshot);
   backupChangeCount.textContent = count === null ? "–" : String(count);
   backupChangeCount.hidden = count === null;
   backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
@@ -416,14 +416,14 @@ function updateDueDateClearButton() {
   clearEditDueDateButton.hidden = !editDueDateInput.value;
 }
 
-function renderParentCaseOptions(selectedId = "") {
-  editParentCaseSelect.replaceChildren(
-    new Option("親案件なし", ""),
+function renderProjectOptions(selectedId = "") {
+  editProjectSelect.replaceChildren(
+    new Option("Projectなし", ""),
     ...parentCases.map((parentCase) =>
       new Option(`${parentCase.caseNumber}｜${parentCase.name}`, parentCase.id)
     )
   );
-  editParentCaseSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
+  editProjectSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
     ? selectedId
     : "";
 }
@@ -443,7 +443,7 @@ function renderPriorityOptions(task = null) {
 }
 
 async function render() {
-  const [tasks, storedTags, storedParentCases, backupSnapshot] = await Promise.all([
+  const [tasks, storedTags, storedProjects, backupSnapshot] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases(),
@@ -451,8 +451,8 @@ async function render() {
   ]);
   allTasks = tasks;
   tags = storedTags;
-  parentCases = storedParentCases;
-  updateBackupChangeCount(tasks, storedTags, storedParentCases, backupSnapshot);
+  parentCases = storedProjects;
+  updateBackupChangeCount(tasks, storedTags, storedProjects, backupSnapshot);
   const activeTasks = tasks.filter((task) => !task.completed);
   const editingTask = !editView.hidden
     ? activeTasks.find((task) => task.id === currentTaskId)
@@ -479,23 +479,23 @@ async function render() {
 
 function renderCurrentTaskDetails() {
   if (!currentTask) return;
-  taskCaseNumber.textContent = `案件番号 ${currentTask.caseNumber}`;
+  taskCaseNumber.textContent = `Task番号 ${currentTask.caseNumber}`;
   taskTitle.textContent = ensureEmojiPresentation(currentTask.title);
   const parentCase = parentCases.find((item) => item.id === currentTask.parentCaseId);
-  taskParentCase.replaceChildren();
-  taskParentCase.hidden = !parentCase;
+  taskProject.replaceChildren();
+  taskProject.hidden = !parentCase;
   if (parentCase) {
-    const appendParentCaseLabel = (container) => {
+    const appendProjectLabel = (container) => {
       const kind = document.createElement("span");
-      kind.className = "parent-case-kind";
-      kind.textContent = "親案件";
+      kind.className = "project-kind";
+      kind.textContent = "Project";
 
       const number = document.createElement("span");
-      number.className = "parent-case-inline-number";
+      number.className = "project-inline-number";
       number.textContent = parentCase.caseNumber;
 
       const title = document.createElement("strong");
-      title.className = "parent-case-title-text";
+      title.className = "project-title-text";
       title.textContent = ensureEmojiPresentation(parentCase.name);
       container.append(kind, number, title);
     };
@@ -505,37 +505,37 @@ function renderCurrentTaskDetails() {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.title = parentCase.url;
-      appendParentCaseLabel(link);
-      taskParentCase.append(link);
+      appendProjectLabel(link);
+      taskProject.append(link);
     } else {
-      appendParentCaseLabel(taskParentCase);
+      appendProjectLabel(taskProject);
     }
 
     const linkStatus = document.createElement(parentCase.url ? "a" : "span");
-    linkStatus.className = "parent-case-link-status";
+    linkStatus.className = "project-link-status";
     linkStatus.dataset.state = parentCase.url ? "linked" : "none";
     linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
     if (parentCase.url) {
       linkStatus.href = parentCase.url;
       linkStatus.target = "_blank";
       linkStatus.rel = "noopener noreferrer";
-      linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+      linkStatus.title = `Projectリンクを開く: ${parentCase.url}`;
     }
 
     const copyButton = document.createElement("button");
-    copyButton.className = "parent-case-copy-button";
+    copyButton.className = "project-copy-button";
     copyButton.type = "button";
-    copyButton.textContent = "親案件COPY";
+    copyButton.textContent = "ProjectCOPY";
     copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
     copyButton.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
-        showPopupToast("親案件をコピーしました");
+        showPopupToast("Projectをコピーしました");
       } catch (_error) {
-        showPopupToast("親案件をコピーできませんでした", "error");
+        showPopupToast("Projectをコピーできませんでした", "error");
       }
     });
-    taskParentCase.append(linkStatus, copyButton);
+    taskProject.append(linkStatus, copyButton);
   }
   renderMarkdown(taskContent, currentTask.content);
   taskContentLineCount.textContent = `内容 ${countContentLines(currentTask.content)}行`;
@@ -548,9 +548,9 @@ async function copyCurrentTask() {
   if (!currentTask) return;
   try {
     await navigator.clipboard.writeText(formatTaskForCopy(currentTask));
-    showPopupToast("案件をコピーしました");
+    showPopupToast("Taskをコピーしました");
   } catch (_error) {
-    showPopupToast("案件をコピーできませんでした", "error");
+    showPopupToast("Taskをコピーできませんでした", "error");
   }
 }
 
@@ -559,9 +559,9 @@ function openEditor() {
 
   isCreatingTask = false;
   editEyebrow.textContent = "今することを編集";
-  editCaseNumber.textContent = `案件番号 ${currentTask.caseNumber}`;
+  editCaseNumber.textContent = `Task番号 ${currentTask.caseNumber}`;
   editTitleInput.value = currentTask.title;
-  renderParentCaseOptions(currentTask.parentCaseId);
+  renderProjectOptions(currentTask.parentCaseId);
   renderPriorityOptions(currentTask);
   editContentInput.value = currentTask.content;
   renderEditContentSelectionHighlights();
@@ -586,9 +586,9 @@ function openNewTaskEditor() {
   isCreatingTask = true;
   currentTaskId = null;
   editEyebrow.textContent = "新しいタスク";
-  editCaseNumber.textContent = "案件番号は保存時に自動採番します";
+  editCaseNumber.textContent = "Task番号は保存時に自動採番します";
   editTitleInput.value = "";
-  renderParentCaseOptions();
+  renderProjectOptions();
   renderPriorityOptions();
   editContentInput.value = "";
   renderEditContentSelectionHighlights();
@@ -653,7 +653,7 @@ function persistEditorChanges({ quiet = false } = {}) {
     try {
       caseNumber = generateCaseNumber(allTasks);
     } catch (_error) {
-      autoSaveStatus.textContent = "今月の案件番号はすべて使用されています";
+      autoSaveStatus.textContent = "今月のTask番号はすべて使用されています";
       autoSaveStatus.dataset.state = "error";
       autoSaveStatus.hidden = false;
       return false;
@@ -671,12 +671,12 @@ function persistEditorChanges({ quiet = false } = {}) {
     currentTask = target;
     isCreatingTask = false;
     editEyebrow.textContent = "タスクを編集";
-    editCaseNumber.textContent = `案件番号 ${caseNumber}`;
+    editCaseNumber.textContent = `Task番号 ${caseNumber}`;
   }
   if (!target) return false;
 
   target.title = title;
-  target.parentCaseId = editParentCaseSelect.value;
+  target.parentCaseId = editProjectSelect.value;
   target.content = editContentInput.value;
   target.dueDate = editDueDateInput.value;
   target.tagIds = [...editTagOptions.querySelectorAll("input:checked")]
@@ -739,7 +739,7 @@ editTitleInput.addEventListener("input", () => {
   if (editTitleInput.value.trim()) editTitleError.textContent = "";
   markEditorDirty();
 });
-editParentCaseSelect.addEventListener("change", markEditorDirty);
+editProjectSelect.addEventListener("change", markEditorDirty);
 editPrioritySelect.addEventListener("change", markEditorDirty);
 editContentInput.addEventListener("input", () => {
   renderEditContentSelectionHighlights();

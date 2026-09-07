@@ -20,7 +20,7 @@
       <a href="#overdueTaskSection"><span>Overdue</span><span id="navOverdueCount" class="page-jump-count">0件</span></a>
       <a href="#compactTaskSection"><span>Task List</span><span id="navCompactTaskCount" class="page-jump-count">0件</span></a>
       <a href="#activeTaskSection"><span>Tasks</span><span id="navActiveCount" class="page-jump-count">0件</span></a>
-      <a href="#parentCaseSection"><span>Projects</span><span id="navParentCaseCount" class="page-jump-count">0件</span></a>
+      <a href="#projectSection"><span>Projects</span><span id="navProjectCount" class="page-jump-count">0件</span></a>
       <a href="#tagSettingsSection"><span>Category Tags</span><span id="navTagCount" class="page-jump-count">0件</span></a>
       <a href="#completedSection"><span>Completed</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
       <a href="#archivedSection"><span>Archived</span><span id="navArchivedCount" class="page-jump-count">0件</span></a>
@@ -85,7 +85,7 @@
               <circle cx="11" cy="11" r="7"/>
               <path d="m20 20-3.5-3.5"/>
             </svg>
-            <input id="searchInput" type="search" autocomplete="off" placeholder="タイトル・内容・案件番号・タグ・親案件名で検索" aria-label="タスクを全文検索">
+            <input id="searchInput" type="search" autocomplete="off" placeholder="タイトル・内容・Task番号・タグ・Project名で検索" aria-label="タスクを全文検索">
             <button id="clearSearchButton" class="icon-button" type="button" aria-label="検索条件をクリア" hidden>×</button>
           </div>
           <p id="searchHint" class="search-hint">2文字以上入力すると、すること・完了・アーカイブのすべてのタスクから検索します。</p>
@@ -133,26 +133,26 @@
               <h2 id="overdueHeading">Overdue <span id="overdueCount" class="count"></span></h2>
             </div>
           </div>
-          <p class="section-note">期限を過ぎても完了していない案件です。月をまたいでも、完了かアーカイブにするまでここに表示され続けます。</p>
+          <p class="section-note">期限を過ぎても完了していないTaskです。月をまたいでも、完了かアーカイブにするまでここに表示され続けます。</p>
           <ul id="overdueTaskList" class="overdue-task-list" aria-live="polite"></ul>
         </section>
 
         <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
           <div class="case-jump-heading">
-            <p class="section-kicker">案件へジャンプ</p>
-            <h2 id="caseJumpHeading">目的の案件を選択</h2>
+            <p class="section-kicker">Taskへジャンプ</p>
+            <h2 id="caseJumpHeading">目的のTaskを選択</h2>
           </div>
           <div class="case-jump-fields">
-            <label for="parentCaseJumpSelect">
-              <span>親案件</span>
-              <select id="parentCaseJumpSelect">
-                <option value="" selected disabled hidden>親案件コード・親案件名から選択</option>
+            <label for="projectJumpSelect">
+              <span>Project</span>
+              <select id="projectJumpSelect">
+                <option value="" selected disabled hidden>Projectコード・Project名から選択</option>
               </select>
             </label>
             <label for="taskJumpSelect">
-              <span>案件</span>
+              <span>Task</span>
               <select id="taskJumpSelect">
-                <option value="" selected disabled hidden>案件コード・案件名から選択</option>
+                <option value="" selected disabled hidden>Taskコード・Task名から選択</option>
               </select>
             </label>
           </div>
@@ -178,7 +178,7 @@
               <thead>
                 <tr>
                   <th scope="col">優先順位</th>
-                  <th scope="col">案件番号</th>
+                  <th scope="col">Task番号</th>
                   <th scope="col">タイトル</th>
                   <th scope="col">関連リンク</th>
                   <th scope="col">期限</th>
@@ -186,7 +186,7 @@
               </thead>
               <tbody id="compactTaskTableBody"></tbody>
             </table>
-            <p id="compactTaskEmpty" class="compact-task-empty" hidden>表示する案件はありません。</p>
+            <p id="compactTaskEmpty" class="compact-task-empty" hidden>表示するTaskはありません。</p>
           </div>
         </section>
 
@@ -205,7 +205,7 @@
               </div>
             </div>
             <div class="priority-tools">
-              <button id="copyActiveTasksButton" class="bulk-copy-button" type="button">すること案件COPY</button>
+              <button id="copyActiveTasksButton" class="bulk-copy-button" type="button">することTaskCOPY</button>
               <span class="current-legend">1番目が「今すること」</span>
               <span class="reorder-hint">つかんで並び替え</span>
             </div>
@@ -223,39 +223,39 @@
           </div>
         </section>
 
-        <section id="parentCaseSection" class="task-section parent-case-section" aria-labelledby="parentCaseHeading">
+        <section id="projectSection" class="task-section project-section" aria-labelledby="projectHeading">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">案件をまとめる</p>
-              <h2 id="parentCaseHeading">Projects <span id="parentCaseCount" class="count"></span></h2>
+              <p class="section-kicker">Taskをまとめる</p>
+              <h2 id="projectHeading">Projects <span id="projectCount" class="count"></span></h2>
             </div>
-            <div class="parent-case-view-switch" role="tablist" aria-label="親案件の表示切り替え">
-              <button id="parentCaseManageModeButton" type="button" role="tab" aria-selected="false" aria-controls="parentCaseManageView">親案件を管理</button>
-              <button id="parentCaseGroupModeButton" class="is-active" type="button" role="tab" aria-selected="true" aria-controls="parentCaseGroupView">案件を表示</button>
+            <div class="project-view-switch" role="tablist" aria-label="Projectの表示切り替え">
+              <button id="projectManageModeButton" type="button" role="tab" aria-selected="false" aria-controls="projectManageView">Projectを管理</button>
+              <button id="projectGroupModeButton" class="is-active" type="button" role="tab" aria-selected="true" aria-controls="projectGroupView">Taskを表示</button>
             </div>
           </div>
-          <div id="parentCaseManageView" class="parent-case-settings-card" role="tabpanel" aria-labelledby="parentCaseManageModeButton" hidden>
-            <form id="parentCaseForm" class="parent-case-form" novalidate>
+          <div id="projectManageView" class="project-settings-card" role="tabpanel" aria-labelledby="projectManageModeButton" hidden>
+            <form id="projectForm" class="project-form" novalidate>
               <div>
-                <h3>親案件を追加</h3>
-                <p>親案件番号は保存時に自動採番します。</p>
+                <h3>Projectを追加</h3>
+                <p>Project番号は保存時に自動採番します。</p>
               </div>
               <label>
-                <span>親案件名 <strong>必須</strong></span>
-                <input id="parentCaseNameInput" type="text" maxlength="100" autocomplete="off" placeholder="例：新製品A 設計プロジェクト" required>
+                <span>Project名 <strong>必須</strong></span>
+                <input id="projectNameInput" type="text" maxlength="100" autocomplete="off" placeholder="例：新製品A 設計プロジェクト" required>
               </label>
               <label>
-                <span>親案件URL <em>任意・1件</em></span>
-                <input id="parentCaseUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://…">
+                <span>ProjectURL <em>任意・1件</em></span>
+                <input id="projectUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://…">
               </label>
-              <button class="secondary-button" type="submit">親案件を追加</button>
-              <small id="parentCaseError" class="field-error" aria-live="polite"></small>
+              <button class="secondary-button" type="submit">Projectを追加</button>
+              <small id="projectError" class="field-error" aria-live="polite"></small>
             </form>
-            <div id="parentCaseList" class="parent-case-list"></div>
-            <p id="parentCaseEmpty" class="parent-case-empty">親案件はまだありません。</p>
+            <div id="projectList" class="project-list"></div>
+            <p id="projectEmpty" class="project-empty">Projectはまだありません。</p>
           </div>
-          <div id="parentCaseGroupView" class="parent-case-group-view" role="tabpanel" aria-labelledby="parentCaseGroupModeButton">
-            <div id="parentCaseGroups" class="parent-case-groups" aria-live="polite"></div>
+          <div id="projectGroupView" class="project-group-view" role="tabpanel" aria-labelledby="projectGroupModeButton">
+            <div id="projectGroups" class="project-groups" aria-live="polite"></div>
           </div>
         </section>
 
@@ -404,9 +404,9 @@
               <td id="restoreTagCount"></td>
             </tr>
             <tr>
-              <th scope="row">親案件</th>
-              <td id="restoreCurrentParentCaseCount"></td>
-              <td id="restoreParentCaseCount"></td>
+              <th scope="row">Project</th>
+              <td id="restoreCurrentProjectCount"></td>
+              <td id="restoreProjectCount"></td>
             </tr>
           </tbody>
         </table>
@@ -414,7 +414,7 @@
         <p id="restoreRegressionWarning" class="restore-danger" role="alert" hidden></p>
 
         <p class="restore-warning">
-          現在のタスク・分類タグ・親案件は、バックアップの内容に置き換わります。この操作を続けますか？
+          現在のタスク・分類タグ・Projectは、バックアップの内容に置き換わります。この操作を続けますか？
         </p>
 
         <label id="restoreAcknowledgeRow" class="restore-acknowledge" hidden>
@@ -456,11 +456,11 @@
         </label>
 
         <label class="field">
-          <span>親案件 <em>任意</em></span>
-          <select id="parentCaseSelect" name="parentCaseId">
-            <option value="">親案件なし</option>
+          <span>Project <em>任意</em></span>
+          <select id="projectSelect" name="parentCaseId">
+            <option value="">Projectなし</option>
           </select>
-          <small class="field-hint">登録済みの親案件から選択できます。</small>
+          <small class="field-hint">登録済みのProjectから選択できます。</small>
         </label>
 
         <label class="field">
@@ -519,7 +519,7 @@
           </div>
         </div>
         <h2 id="detailTaskTitle" class="task-title-text detail-task-title"></h2>
-        <p id="detailParentCase" class="card-parent-case" hidden></p>
+        <p id="detailProject" class="card-project" hidden></p>
         <div id="detailTags" class="card-tags" hidden></div>
         <p id="detailDue" class="card-due" hidden></p>
         <div id="detailLinks" class="card-links" aria-label="関連リンク" hidden></div>
@@ -559,11 +559,11 @@
         <div class="task-copy">
           <div class="card-case-row">
             <p class="card-case-number case-number"></p>
-            <button class="copy-task-button" type="button">案件COPY</button>
-            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
+            <button class="copy-task-button" type="button">TaskCOPY</button>
+            <button class="copy-task-heading-button" type="button">TaskCOPY(番号_タイトル)</button>
           </div>
           <h3></h3>
-          <p class="card-parent-case" hidden></p>
+          <p class="card-project" hidden></p>
           <div class="card-meta-row">
             <div class="card-tags" hidden></div>
             <p class="card-due" hidden></p>
@@ -604,11 +604,11 @@
         <div class="task-copy">
           <div class="card-case-row">
             <p class="card-case-number case-number"></p>
-            <button class="copy-task-button" type="button">案件COPY</button>
-            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
+            <button class="copy-task-button" type="button">TaskCOPY</button>
+            <button class="copy-task-heading-button" type="button">TaskCOPY(番号_タイトル)</button>
           </div>
           <h3></h3>
-          <p class="card-parent-case" hidden></p>
+          <p class="card-project" hidden></p>
           <div class="card-meta-row">
             <div class="card-tags" hidden></div>
             <p class="card-due" hidden></p>
@@ -648,11 +648,11 @@
         <div class="task-copy">
           <div class="card-case-row">
             <p class="card-case-number case-number"></p>
-            <button class="copy-task-button" type="button">案件COPY</button>
-            <button class="copy-task-heading-button" type="button">案件COPY(番号_タイトル)</button>
+            <button class="copy-task-button" type="button">TaskCOPY</button>
+            <button class="copy-task-heading-button" type="button">TaskCOPY(番号_タイトル)</button>
           </div>
           <h3></h3>
-          <p class="card-parent-case" hidden></p>
+          <p class="card-project" hidden></p>
           <div class="card-meta-row">
             <div class="card-tags" hidden></div>
             <p class="card-due" hidden></p>

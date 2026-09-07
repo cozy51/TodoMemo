@@ -49,12 +49,12 @@ if (!source.includes('content.scrollHeight > content.clientHeight + 1')) {
 if (!source.includes('▼ 以下に続きます（クリックで全文表示）')) {
   throw new Error("Clipped task content must clearly explain how to view the remainder");
 }
-if (!source.includes('parentJumpLink.href = `#${encodeURIComponent(getParentCaseAnchorId(parentCase))}`')) {
-  throw new Error("Task-card parent-case names must link to their organizer section");
+if (!source.includes('parentJumpLink.href = `#${encodeURIComponent(getProjectAnchorId(parentCase))}`')) {
+  throw new Error("Task-card project names must link to their organizer section");
 }
 if (!source.includes('parentJumpLink.addEventListener("click"')
-  || !source.includes('setParentCaseViewMode("group")')) {
-  throw new Error("Parent-case name links must reveal and jump to the parent case");
+  || !source.includes('setProjectViewMode("group")')) {
+  throw new Error("Project name links must reveal and jump to the project");
 }
 if (source.includes("parentJumpLink.target")) {
   throw new Error("Parent-case name links must stay in the organizer tab");
@@ -72,9 +72,9 @@ if (!completedCardFunction?.[1].includes("attachCardOpenActions(card, task)")) {
 }
 
 const parentGroupFunction = source.match(
-  /function createParentCaseTaskGroup\(parentCase, groupedTasks, priorityByTaskId\) \{([\s\S]*?)\n\}/
+  /function createProjectTaskGroup\(parentCase, groupedTasks, priorityByTaskId\) \{([\s\S]*?)\n\}/
 )?.[1] || "";
-if (!parentGroupFunction.includes('appendParentCaseActions(identity, parentCase)')) {
+if (!parentGroupFunction.includes('appendProjectActions(identity, parentCase)')) {
   throw new Error("Parent-case groups must expose the shared link-status and copy actions");
 }
 if (parentGroupFunction.includes('document.createElement(parentCase?.url ? "a" : "div")')) {
@@ -147,7 +147,7 @@ if (!source.includes("function persistOpenParentIdeaEdits()")) {
   throw new Error("Edited idea memos must be persisted automatically");
 }
 if (!source.includes("function reorderParentIdeaMemo(memoId, direction)")
-  || !source.includes("moveParentIdeaMemo(parentCases, ideaMemoParentCaseId, memoId, direction)")) {
+  || !source.includes("moveParentIdeaMemo(parentCases, ideaMemoProjectId, memoId, direction)")) {
   throw new Error("Idea memos must provide persisted ordering controls");
 }
 if (!source.includes('moveUp.textContent = "↑"') || !source.includes('moveDown.textContent = "↓"')) {

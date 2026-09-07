@@ -21,7 +21,7 @@ const holidayDateInput = document.querySelector("#holidayDateInput");
 const holidayTypeInput = document.querySelector("#holidayTypeInput");
 const holidayList = document.querySelector("#holidayList");
 const holidayEmpty = document.querySelector("#holidayEmpty");
-const parentCaseJumpSelect = document.querySelector("#parentCaseJumpSelect");
+const projectJumpSelect = document.querySelector("#projectJumpSelect");
 const taskJumpSelect = document.querySelector("#taskJumpSelect");
 const searchInput = document.querySelector("#searchInput");
 const clearSearchButton = document.querySelector("#clearSearchButton");
@@ -37,7 +37,7 @@ const overdueCount = document.querySelector("#overdueCount");
 const navOverdueCount = document.querySelector("#navOverdueCount");
 const navCompactTaskCount = document.querySelector("#navCompactTaskCount");
 const navActiveCount = document.querySelector("#navActiveCount");
-const navParentCaseCount = document.querySelector("#navParentCaseCount");
+const navProjectCount = document.querySelector("#navProjectCount");
 const navTagCount = document.querySelector("#navTagCount");
 const navCompletedCount = document.querySelector("#navCompletedCount");
 const navArchivedCount = document.querySelector("#navArchivedCount");
@@ -49,7 +49,7 @@ const taskForm = document.querySelector("#taskForm");
 const taskIdInput = document.querySelector("#taskId");
 const titleInput = document.querySelector("#titleInput");
 const dialogCaseNumber = document.querySelector("#dialogCaseNumber");
-const parentCaseSelect = document.querySelector("#parentCaseSelect");
+const projectSelect = document.querySelector("#projectSelect");
 const prioritySelect = document.querySelector("#prioritySelect");
 const contentInput = document.querySelector("#contentInput");
 const contentHighlightBackdrop = document.querySelector("#contentHighlightBackdrop");
@@ -73,18 +73,18 @@ const tagList = document.querySelector("#tagList");
 const tagEmpty = document.querySelector("#tagEmpty");
 const tagCount = document.querySelector("#tagCount");
 const tagError = document.querySelector("#tagError");
-const parentCaseForm = document.querySelector("#parentCaseForm");
-const parentCaseNameInput = document.querySelector("#parentCaseNameInput");
-const parentCaseUrlInput = document.querySelector("#parentCaseUrlInput");
-const parentCaseError = document.querySelector("#parentCaseError");
-const parentCaseList = document.querySelector("#parentCaseList");
-const parentCaseEmpty = document.querySelector("#parentCaseEmpty");
-const parentCaseCount = document.querySelector("#parentCaseCount");
-const parentCaseManageModeButton = document.querySelector("#parentCaseManageModeButton");
-const parentCaseGroupModeButton = document.querySelector("#parentCaseGroupModeButton");
-const parentCaseManageView = document.querySelector("#parentCaseManageView");
-const parentCaseGroupView = document.querySelector("#parentCaseGroupView");
-const parentCaseGroups = document.querySelector("#parentCaseGroups");
+const projectForm = document.querySelector("#projectForm");
+const projectNameInput = document.querySelector("#projectNameInput");
+const projectUrlInput = document.querySelector("#projectUrlInput");
+const projectError = document.querySelector("#projectError");
+const projectList = document.querySelector("#projectList");
+const projectEmpty = document.querySelector("#projectEmpty");
+const projectCount = document.querySelector("#projectCount");
+const projectManageModeButton = document.querySelector("#projectManageModeButton");
+const projectGroupModeButton = document.querySelector("#projectGroupModeButton");
+const projectManageView = document.querySelector("#projectManageView");
+const projectGroupView = document.querySelector("#projectGroupView");
+const projectGroups = document.querySelector("#projectGroups");
 const parentIdeaDialog = document.querySelector("#parentIdeaDialog");
 const parentIdeaDialogCaseNumber = document.querySelector("#parentIdeaDialogCaseNumber");
 const parentIdeaDialogTitle = document.querySelector("#parentIdeaDialogTitle");
@@ -102,11 +102,11 @@ const restoreFileName = document.querySelector("#restoreFileName");
 const restoreExportedAt = document.querySelector("#restoreExportedAt");
 const restoreTaskCount = document.querySelector("#restoreTaskCount");
 const restoreTagCount = document.querySelector("#restoreTagCount");
-const restoreParentCaseCount = document.querySelector("#restoreParentCaseCount");
+const restoreProjectCount = document.querySelector("#restoreProjectCount");
 const restoreCurrentUpdatedAt = document.querySelector("#restoreCurrentUpdatedAt");
 const restoreCurrentTaskCount = document.querySelector("#restoreCurrentTaskCount");
 const restoreCurrentTagCount = document.querySelector("#restoreCurrentTagCount");
-const restoreCurrentParentCaseCount = document.querySelector("#restoreCurrentParentCaseCount");
+const restoreCurrentProjectCount = document.querySelector("#restoreCurrentProjectCount");
 const restoreRegressionWarning = document.querySelector("#restoreRegressionWarning");
 const restoreAcknowledgeRow = document.querySelector("#restoreAcknowledgeRow");
 const restoreAcknowledge = document.querySelector("#restoreAcknowledge");
@@ -117,7 +117,7 @@ let tags = [];
 let parentCases = [];
 let deadlineTooltipElement = null;
 let holidays = [];
-let parentCaseViewMode = "group";
+let projectViewMode = "group";
 let activeListCollapsed = true;
 let draggedTaskId = null;
 let toastTimer = null;
@@ -126,13 +126,13 @@ let taskAutoSavePromise = Promise.resolve();
 let parentIdeaSavePromise = Promise.resolve();
 let parentIdeaSaveRevision = 0;
 let detailTaskId = null;
-let ideaMemoParentCaseId = null;
+let ideaMemoProjectId = null;
 let searchQuery = "";
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_SNIPPET_RADIUS = 42;
 
-function removeRetiredInlineIdeaMemoEditors(root = parentCaseGroups) {
+function removeRetiredInlineIdeaMemoEditors(root = projectGroups) {
   if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
   root.querySelectorAll?.(".parent-idea-memos").forEach((element) => element.remove());
 }
@@ -143,7 +143,7 @@ new MutationObserver((mutations) => {
       if (node instanceof Element) removeRetiredInlineIdeaMemoEditors(node);
     });
   });
-}).observe(parentCaseGroups, { childList: true, subtree: true });
+}).observe(projectGroups, { childList: true, subtree: true });
 
 enableMarkdownTabInput(contentInput);
 const resizeContentInput = enableAutoResizeTextarea(contentInput);
@@ -260,7 +260,7 @@ function createBackupTimestamp(date) {
 async function downloadBackup() {
   backupButton.disabled = true;
   try {
-    const [storedTasks, storedTags, storedParentCases, storedHolidays] = await Promise.all([
+    const [storedTasks, storedTags, storedProjects, storedHolidays] = await Promise.all([
       loadTasks(),
       loadTags(),
       loadParentCases(),
@@ -280,12 +280,12 @@ async function downloadBackup() {
         completed: storedTasks.filter((task) => task.completed && !task.archived).length,
         archived: storedTasks.filter((task) => task.archived).length,
         tags: storedTags.length,
-        parentCases: storedParentCases.length,
+        parentCases: storedProjects.length,
         holidays: storedHolidays.length
       },
       tasks: storedTasks,
       tags: storedTags,
-      parentCases: storedParentCases,
+      parentCases: storedProjects,
       holidays: storedHolidays
     };
     const url = URL.createObjectURL(new Blob(
@@ -299,9 +299,9 @@ async function downloadBackup() {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    await saveBackupSnapshot(storedTasks, storedTags, storedParentCases);
-    updateBackupChangeCount(storedTasks, storedTags, storedParentCases, createBackupSnapshot(
-      storedTasks, storedTags, storedParentCases
+    await saveBackupSnapshot(storedTasks, storedTags, storedProjects);
+    updateBackupChangeCount(storedTasks, storedTags, storedProjects, createBackupSnapshot(
+      storedTasks, storedTags, storedProjects
     ));
     showToast(`${storedTasks.length}件をバックアップしました`);
   } catch (_error) {
@@ -311,9 +311,9 @@ async function downloadBackup() {
   }
 }
 
-function updateBackupChangeCount(currentTasks, currentTags, currentParentCases, snapshot) {
+function updateBackupChangeCount(currentTasks, currentTags, currentProjects, snapshot) {
   const count = countChangesSinceBackup(
-    currentTasks, currentTags, currentParentCases, snapshot
+    currentTasks, currentTags, currentProjects, snapshot
   );
   backupChangeCount.textContent = count === null ? "未作成" : `変更 ${count}件`;
   backupChangeCount.dataset.state = count > 0 ? "changed" : "saved";
@@ -344,8 +344,8 @@ function getTaskAnchorHref(task) {
   return `#${encodeURIComponent(id)}`;
 }
 
-function getParentCaseAnchorId(parentCase) {
-  return `parent-case-${parentCase.id}`;
+function getProjectAnchorId(parentCase) {
+  return `project-${parentCase.id}`;
 }
 
 function jumpToElement(element) {
@@ -386,12 +386,12 @@ function groupTasksByRegistrationMonth(tasks) {
 function renderCaseJumpOptions(activeTasks) {
   const parentPlaceholder = document.createElement("option");
   parentPlaceholder.value = "";
-  parentPlaceholder.textContent = "親案件コード・親案件名から選択";
+  parentPlaceholder.textContent = "Projectコード・Project名から選択";
   parentPlaceholder.selected = true;
   parentPlaceholder.disabled = true;
   parentPlaceholder.hidden = true;
   const sortedParentCases = sortParentCasesByNumberDescending(parentCases);
-  parentCaseJumpSelect.replaceChildren(
+  projectJumpSelect.replaceChildren(
     parentPlaceholder,
     ...groupTasksByRegistrationMonth(sortedParentCases).map((group) => {
       const optgroup = document.createElement("optgroup");
@@ -405,11 +405,11 @@ function renderCaseJumpOptions(activeTasks) {
       return optgroup;
     })
   );
-  parentCaseJumpSelect.disabled = parentCases.length === 0;
+  projectJumpSelect.disabled = parentCases.length === 0;
 
   const taskPlaceholder = document.createElement("option");
   taskPlaceholder.value = "";
-  taskPlaceholder.textContent = "案件コード・案件名から選択";
+  taskPlaceholder.textContent = "Taskコード・Task名から選択";
   taskPlaceholder.selected = true;
   taskPlaceholder.disabled = true;
   taskPlaceholder.hidden = true;
@@ -544,7 +544,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
         countLink.textContent = "1件";
         countLink.setAttribute(
           "aria-label",
-          `${month + 1}月${dayNumber}日が期限の案件へ移動`
+          `${month + 1}月${dayNumber}日が期限のTaskへ移動`
         );
         day.append(countLink);
       } else {
@@ -557,7 +557,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
         summary.textContent = `${dayTasks.length}件`;
         summary.setAttribute(
           "aria-label",
-          `${month + 1}月${dayNumber}日が期限の案件 ${dayTasks.length}件から選択`
+          `${month + 1}月${dayNumber}日が期限のTask ${dayTasks.length}件から選択`
         );
 
         const menu = document.createElement("div");
@@ -592,7 +592,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
   if (monthTasks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "calendar-deadlines-empty";
-    empty.textContent = "期限のある案件はありません";
+    empty.textContent = "期限のあるTaskはありません";
     deadlines.append(empty);
   } else {
     const list = document.createElement("ul");
@@ -662,11 +662,11 @@ function fillDeadlineTooltip(tooltip, dayTasks) {
       item.append(dueLine);
     }
 
-    const parentCase = getParentCaseForTask(task);
+    const parentCase = getProjectForTask(task);
     if (parentCase) {
       const parentLine = document.createElement("div");
       parentLine.className = "deadline-tooltip-meta";
-      parentLine.textContent = `親案件：${parentCase.caseNumber} ${parentCase.name}`;
+      parentLine.textContent = `Project：${parentCase.caseNumber} ${parentCase.name}`;
       item.append(parentLine);
     }
 
@@ -877,11 +877,11 @@ function createCompactTaskRow(task, index) {
   title.textContent = ensureEmojiPresentation(task.title);
   title.title = task.title;
   titleCell.append(title);
-  const taskParentCase = getParentCaseForTask(task);
-  if (taskParentCase) {
+  const taskProject = getProjectForTask(task);
+  if (taskProject) {
     const parent = document.createElement("span");
     parent.className = "compact-task-parent";
-    parent.textContent = `${taskParentCase.caseNumber} ${taskParentCase.name}`;
+    parent.textContent = `${taskProject.caseNumber} ${taskProject.name}`;
     titleCell.append(parent);
   }
 
@@ -1014,15 +1014,15 @@ function showToast(message) {
 async function copyActiveTasks() {
   const activeTasks = getActiveTasks();
   if (activeTasks.length === 0) {
-    showToast("コピーする案件がありません");
+    showToast("コピーするTaskがありません");
     return;
   }
 
   try {
     await navigator.clipboard.writeText(formatTasksForCopy(activeTasks));
-    showToast(`${activeTasks.length}件の案件をコピーしました`);
+    showToast(`${activeTasks.length}件のTaskをコピーしました`);
   } catch (_error) {
-    showToast("案件をコピーできませんでした");
+    showToast("Taskをコピーできませんでした");
   }
 }
 
@@ -1070,8 +1070,8 @@ async function handleRestoreFile(event) {
     describeTaskCountInto(restoreCurrentTaskCount, current.tasks);
     restoreTagCount.textContent = `${restored.tags.length}件`;
     restoreCurrentTagCount.textContent = `${current.tags.length}件`;
-    restoreParentCaseCount.textContent = `${restored.parentCases.length}件`;
-    restoreCurrentParentCaseCount.textContent = `${current.parentCases.length}件`;
+    restoreProjectCount.textContent = `${restored.parentCases.length}件`;
+    restoreCurrentProjectCount.textContent = `${current.parentCases.length}件`;
 
     applyRestoreRegressionWarning(regression);
     restoreDialog.showModal();
@@ -1203,14 +1203,14 @@ function renderLinks(container, links) {
   container.hidden = links.length === 0;
 }
 
-function getParentCaseForTask(task) {
+function getProjectForTask(task) {
   return parentCases.find((parentCase) => parentCase.id === task.parentCaseId) || null;
 }
 
-async function commitParentCaseNameEdit(input, parentCase) {
+async function commitProjectNameEdit(input, parentCase) {
   const nextName = input.value.trim();
   if (!nextName) {
-    showToast("親案件名を入力してください");
+    showToast("Project名を入力してください");
     input.value = parentCase.name;
     return;
   }
@@ -1221,23 +1221,23 @@ async function commitParentCaseNameEdit(input, parentCase) {
       item.name.toLocaleLowerCase("ja") === nextName.toLocaleLowerCase("ja")
     )
   ) {
-    showToast("同じ名前の親案件があります");
+    showToast("同じ名前のProjectがあります");
     input.value = parentCase.name;
     return;
   }
   parentCase.name = nextName;
   parentCases = await saveParentCases(parentCases);
   render();
-  showToast("親案件名を更新しました");
+  showToast("Project名を更新しました");
 }
 
-function appendParentCaseLabel(container, parentCase, { editableTitle = false } = {}) {
+function appendProjectLabel(container, parentCase, { editableTitle = false } = {}) {
   const kind = document.createElement("span");
-  kind.className = "parent-case-kind";
-  kind.textContent = "親案件";
+  kind.className = "project-kind";
+  kind.textContent = "Project";
 
   const number = document.createElement("span");
-  number.className = "parent-case-inline-number";
+  number.className = "project-inline-number";
   number.textContent = parentCase.caseNumber;
 
   container.append(kind, number);
@@ -1246,42 +1246,42 @@ function appendParentCaseLabel(container, parentCase, { editableTitle = false } 
     const titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.maxLength = 100;
-    titleInput.className = "parent-case-title-input";
+    titleInput.className = "project-title-input";
     titleInput.value = parentCase.name;
-    titleInput.title = `${parentCase.caseNumber}の親案件名を編集`;
-    titleInput.setAttribute("aria-label", `${parentCase.caseNumber}の親案件名を編集`);
+    titleInput.title = `${parentCase.caseNumber}のProject名を編集`;
+    titleInput.setAttribute("aria-label", `${parentCase.caseNumber}のProject名を編集`);
     titleInput.addEventListener("click", (event) => event.stopPropagation());
     titleInput.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
       event.preventDefault();
       titleInput.blur();
     });
-    titleInput.addEventListener("blur", () => commitParentCaseNameEdit(titleInput, parentCase));
+    titleInput.addEventListener("blur", () => commitProjectNameEdit(titleInput, parentCase));
     container.append(titleInput);
   } else {
     const title = document.createElement("strong");
-    title.className = "parent-case-title-text";
+    title.className = "project-title-text";
     title.textContent = ensureEmojiPresentation(parentCase.name);
     container.append(title);
   }
 }
 
-function appendParentCaseActions(container, parentCase) {
+function appendProjectActions(container, parentCase) {
   const linkStatus = document.createElement(parentCase.url ? "a" : "span");
-  linkStatus.className = "parent-case-link-status";
+  linkStatus.className = "project-link-status";
   linkStatus.dataset.state = parentCase.url ? "linked" : "none";
   linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
   if (parentCase.url) {
     linkStatus.href = parentCase.url;
     linkStatus.target = "_blank";
     linkStatus.rel = "noopener noreferrer";
-    linkStatus.title = `親案件リンクを開く: ${parentCase.url}`;
+    linkStatus.title = `Projectリンクを開く: ${parentCase.url}`;
   }
   container.append(linkStatus);
 
   if (!parentCase.url) {
     const pasteButton = document.createElement("button");
-    pasteButton.className = "parent-case-paste-link-button paste-link-button";
+    pasteButton.className = "project-paste-link-button paste-link-button";
     pasteButton.type = "button";
     pasteButton.textContent = "📋 URLを取り込む";
     pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む`;
@@ -1298,7 +1298,7 @@ function appendParentCaseActions(container, parentCase) {
         parentCase.url = pastedLinks[0];
         parentCases = await saveParentCases(parentCases);
         render();
-        showToast("親案件にURLを取り込みました");
+        showToast("ProjectにURLを取り込みました");
       } catch (_error) {
         showToast("クリップボードを読み取れませんでした");
       } finally {
@@ -1309,23 +1309,23 @@ function appendParentCaseActions(container, parentCase) {
   }
 
   const copyButton = document.createElement("button");
-  copyButton.className = "parent-case-copy-button";
+  copyButton.className = "project-copy-button";
   copyButton.type = "button";
-  copyButton.textContent = "親案件COPY";
+  copyButton.textContent = "ProjectCOPY";
   copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
   copyButton.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(formatParentCaseForCopy(parentCase));
-      showToast("親案件をコピーしました");
+      showToast("Projectをコピーしました");
     } catch (_error) {
-      showToast("親案件をコピーできませんでした");
+      showToast("Projectをコピーできませんでした");
     }
   });
   container.append(copyButton);
 }
 
-function fillParentCaseElement(element, task) {
-  const parentCase = getParentCaseForTask(task);
+function fillProjectElement(element, task) {
+  const parentCase = getProjectForTask(task);
   element.replaceChildren();
   if (!parentCase) {
     element.hidden = true;
@@ -1333,23 +1333,23 @@ function fillParentCaseElement(element, task) {
   }
 
   const parentJumpLink = document.createElement("a");
-  parentJumpLink.href = `#${encodeURIComponent(getParentCaseAnchorId(parentCase))}`;
-  parentJumpLink.title = `親案件「${parentCase.name}」へ移動`;
-  appendParentCaseLabel(parentJumpLink, parentCase);
+  parentJumpLink.href = `#${encodeURIComponent(getProjectAnchorId(parentCase))}`;
+  parentJumpLink.title = `Project「${parentCase.name}」へ移動`;
+  appendProjectLabel(parentJumpLink, parentCase);
   parentJumpLink.addEventListener("click", (event) => {
     event.preventDefault();
     if (taskDetailDialog.open) closeTaskDetail();
-    setParentCaseViewMode("group");
-    jumpToElement(document.getElementById(getParentCaseAnchorId(parentCase)));
+    setProjectViewMode("group");
+    jumpToElement(document.getElementById(getProjectAnchorId(parentCase)));
   });
   element.append(parentJumpLink);
-  appendParentCaseActions(element, parentCase);
+  appendProjectActions(element, parentCase);
   element.hidden = false;
 }
 
 function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
-  card.querySelector(".card-case-number").textContent = `案件番号 ${task.caseNumber}`;
-  fillParentCaseElement(card.querySelector(".card-parent-case"), task);
+  card.querySelector(".card-case-number").textContent = `Task番号 ${task.caseNumber}`;
+  fillProjectElement(card.querySelector(".card-project"), task);
   card.querySelector(".task-title-text, h3").textContent = ensureEmojiPresentation(task.title);
   const cardContent = card.querySelector(".card-content");
   const lineCount = cardContent.previousElementSibling?.classList.contains("content-line-count")
@@ -1683,17 +1683,17 @@ function attachTaskCopy(card, task) {
   card.querySelector(".copy-task-button").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(formatTaskForCopy(task));
-      showToast("案件をコピーしました");
+      showToast("Taskをコピーしました");
     } catch (_error) {
-      showToast("案件をコピーできませんでした");
+      showToast("Taskをコピーできませんでした");
     }
   });
   card.querySelector(".copy-task-heading-button").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(formatTaskHeadingForCopy(task));
-      showToast("案件番号とタイトルをコピーしました");
+      showToast("Task番号とタイトルをコピーしました");
     } catch (_error) {
-      showToast("案件番号とタイトルをコピーできませんでした");
+      showToast("Task番号とタイトルをコピーできませんでした");
     }
   });
 }
@@ -1863,26 +1863,26 @@ function createArchivedCard(task) {
   return card;
 }
 
-function renderParentCaseSettings() {
-  parentCaseCount.textContent = `${parentCases.length}件`;
-  parentCaseEmpty.hidden = parentCases.length > 0;
-  parentCaseList.replaceChildren(...parentCases.map((parentCase) => {
+function renderProjectSettings() {
+  projectCount.textContent = `${parentCases.length}件`;
+  projectEmpty.hidden = parentCases.length > 0;
+  projectList.replaceChildren(...parentCases.map((parentCase) => {
     const row = document.createElement("div");
-    row.className = "parent-case-row";
+    row.className = "project-row";
 
     const number = document.createElement("strong");
-    number.className = "parent-case-number";
+    number.className = "project-number";
     number.textContent = parentCase.caseNumber;
 
     const name = document.createElement("input");
-    name.className = "parent-case-name-input";
+    name.className = "project-name-input";
     name.type = "text";
     name.maxLength = 100;
     name.value = parentCase.name;
-    name.setAttribute("aria-label", `${parentCase.caseNumber}の親案件名`);
+    name.setAttribute("aria-label", `${parentCase.caseNumber}のProject名`);
 
     const url = document.createElement("input");
-    url.className = "parent-case-url-input";
+    url.className = "project-url-input";
     url.type = "url";
     url.inputMode = "url";
     url.value = parentCase.url;
@@ -1890,7 +1890,7 @@ function renderParentCaseSettings() {
     url.setAttribute("aria-label", `${parentCase.caseNumber}のURL`);
 
     const usedCount = document.createElement("span");
-    usedCount.className = "parent-case-used-count";
+    usedCount.className = "project-used-count";
     usedCount.textContent =
       `${tasks.filter((task) => task.parentCaseId === parentCase.id).length}件`;
 
@@ -1899,12 +1899,12 @@ function renderParentCaseSettings() {
       const rawUrl = url.value.trim();
       const nextUrl = normalizeParentCaseUrl(rawUrl);
       if (!nextName) {
-        showToast("親案件名を入力してください");
+        showToast("Project名を入力してください");
         name.focus();
         return false;
       }
       if (rawUrl && !nextUrl) {
-        showToast("親案件URLはhttp://またはhttps://で入力してください");
+        showToast("ProjectURLはhttp://またはhttps://で入力してください");
         url.focus();
         return false;
       }
@@ -1914,7 +1914,7 @@ function renderParentCaseSettings() {
           item.name.toLocaleLowerCase("ja") === nextName.toLocaleLowerCase("ja")
         )
       ) {
-        showToast("同じ名前の親案件があります");
+        showToast("同じ名前のProjectがあります");
         name.focus();
         return false;
       }
@@ -1923,7 +1923,7 @@ function renderParentCaseSettings() {
       parentCase.url = nextUrl;
       parentCases = await saveParentCases(parentCases);
       render();
-      showToast("親案件を更新しました");
+      showToast("Projectを更新しました");
       return true;
     };
 
@@ -1936,13 +1936,13 @@ function renderParentCaseSettings() {
     row.saveEdits = saveParentCaseEdits;
 
     const remove = document.createElement("button");
-    remove.className = "parent-case-remove danger-text";
+    remove.className = "project-remove danger-text";
     remove.type = "button";
     remove.textContent = "削除";
     remove.addEventListener("click", async () => {
       const used = tasks.filter((task) => task.parentCaseId === parentCase.id).length;
       const message = used > 0
-        ? `${parentCase.caseNumber}は${used}件の案件で使用中です。親案件を削除し、関連付けを解除しますか？`
+        ? `${parentCase.caseNumber}は${used}件のTaskで使用中です。Projectを削除し、関連付けを解除しますか？`
         : `${parentCase.caseNumber} ${parentCase.name}を削除しますか？`;
       if (!confirm(message)) return;
       parentCases = parentCases.filter((item) => item.id !== parentCase.id);
@@ -1954,7 +1954,7 @@ function renderParentCaseSettings() {
         saveTasks(tasks)
       ]);
       render();
-      showToast("親案件を削除しました");
+      showToast("Projectを削除しました");
     });
 
     row.append(number, name, url, usedCount, remove);
@@ -1962,10 +1962,10 @@ function renderParentCaseSettings() {
   }));
 }
 
-function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
+function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const group = document.createElement("article");
   group.className = "parent-task-group";
-  if (parentCase) group.id = getParentCaseAnchorId(parentCase);
+  if (parentCase) group.id = getProjectAnchorId(parentCase);
   if (!parentCase) group.classList.add("is-unassigned");
 
   const header = document.createElement("div");
@@ -1974,15 +1974,15 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   const identity = document.createElement("div");
   identity.className = "parent-task-group-identity";
   if (parentCase) {
-    appendParentCaseLabel(identity, parentCase, { editableTitle: true });
-    appendParentCaseActions(identity, parentCase);
+    appendProjectLabel(identity, parentCase, { editableTitle: true });
+    appendProjectActions(identity, parentCase);
   } else {
     const number = document.createElement("span");
     number.className = "parent-task-group-number";
-    number.textContent = "親案件未設定";
+    number.textContent = "Project未設定";
 
     const name = document.createElement("h3");
-    name.textContent = "親案件なし";
+    name.textContent = "Projectなし";
     identity.append(number, name);
   }
 
@@ -2014,7 +2014,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     addTaskButton.className = "parent-task-group-add-task";
     addTaskButton.type = "button";
     addTaskButton.textContent = "＋ タスク追加";
-    addTaskButton.title = `${parentCase.caseNumber}を親案件にして新しいタスクを追加`;
+    addTaskButton.title = `${parentCase.caseNumber}をProjectにして新しいタスクを追加`;
     addTaskButton.addEventListener("click", () => openTaskDialog(null, parentCase.id));
     header.append(addTaskButton);
   }
@@ -2023,7 +2023,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   if (groupedTasks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "parent-task-group-empty";
-    empty.textContent = "この親案件に紐づく案件はありません。";
+    empty.textContent = "このProjectに紐づくTaskはありません。";
     group.append(empty);
     return group;
   }
@@ -2097,7 +2097,7 @@ function createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 }
 
 function renderParentIdeaDialog() {
-  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  const parentCase = parentCases.find((item) => item.id === ideaMemoProjectId);
   if (!parentCase) {
     if (parentIdeaDialog.open) parentIdeaDialog.close();
     return;
@@ -2160,7 +2160,7 @@ function renderParentIdeaDialog() {
 }
 
 function applyOpenParentIdeaEdits() {
-  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  const parentCase = parentCases.find((item) => item.id === ideaMemoProjectId);
   if (!parentCase) return false;
   let changed = false;
   parentIdeaDialogList.querySelectorAll(".parent-idea-dialog-edit-input").forEach((input) => {
@@ -2197,14 +2197,14 @@ function persistOpenParentIdeaEdits() {
 
 function reorderParentIdeaMemo(memoId, direction) {
   applyOpenParentIdeaEdits();
-  parentCases = moveParentIdeaMemo(parentCases, ideaMemoParentCaseId, memoId, direction);
+  parentCases = moveParentIdeaMemo(parentCases, ideaMemoProjectId, memoId, direction);
   render();
   renderParentIdeaDialog();
   queueParentIdeaSave("アイデアメモの順番を変更しました");
 }
 
 function openParentIdeaDialog(parentCaseId) {
-  ideaMemoParentCaseId = parentCaseId;
+  ideaMemoProjectId = parentCaseId;
   parentIdeaDialogInput.value = "";
   renderParentIdeaDialog();
   parentIdeaDialog.showModal();
@@ -2213,38 +2213,38 @@ function openParentIdeaDialog(parentCaseId) {
 
 function closeParentIdeaDialog() {
   persistOpenParentIdeaEdits();
-  ideaMemoParentCaseId = null;
+  ideaMemoProjectId = null;
   parentIdeaDialog.close();
 }
 
-function renderParentCaseGroups() {
+function renderProjectGroups() {
   const activeTasks = tasks.filter((task) => !task.completed);
   const priorityByTaskId = new Map(
     activeTasks.map((task, index) => [task.id, index + 1])
   );
-  parentCaseGroups.replaceChildren(
+  projectGroups.replaceChildren(
     ...groupTasksByParentCase(parentCases, activeTasks).map(({ parentCase, tasks: groupedTasks }) =>
-      createParentCaseTaskGroup(parentCase, groupedTasks, priorityByTaskId)
+      createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId)
     )
   );
   removeRetiredInlineIdeaMemoEditors();
 }
 
-function setParentCaseViewMode(mode) {
-  parentCaseViewMode = mode === "group" ? "group" : "manage";
-  const showGroups = parentCaseViewMode === "group";
-  parentCaseManageView.hidden = showGroups;
-  parentCaseGroupView.hidden = !showGroups;
-  parentCaseManageModeButton.classList.toggle("is-active", !showGroups);
-  parentCaseGroupModeButton.classList.toggle("is-active", showGroups);
-  parentCaseManageModeButton.setAttribute("aria-selected", String(!showGroups));
-  parentCaseGroupModeButton.setAttribute("aria-selected", String(showGroups));
+function setProjectViewMode(mode) {
+  projectViewMode = mode === "group" ? "group" : "manage";
+  const showGroups = projectViewMode === "group";
+  projectManageView.hidden = showGroups;
+  projectGroupView.hidden = !showGroups;
+  projectManageModeButton.classList.toggle("is-active", !showGroups);
+  projectGroupModeButton.classList.toggle("is-active", showGroups);
+  projectManageModeButton.setAttribute("aria-selected", String(!showGroups));
+  projectGroupModeButton.setAttribute("aria-selected", String(showGroups));
 }
 
-async function showParentCaseGroups() {
-  const dirtyRow = parentCaseList.querySelector('.parent-case-row[data-dirty="true"]');
+async function showProjectGroups() {
+  const dirtyRow = projectList.querySelector('.project-row[data-dirty="true"]');
   if (dirtyRow && !(await dirtyRow.saveEdits())) return;
-  setParentCaseViewMode("group");
+  setProjectViewMode("group");
 }
 
 function setActiveListCollapsed(collapsed) {
@@ -2275,7 +2275,7 @@ function getTaskStatusMeta(task) {
 // Every place a task carries searchable text, gathered as separate fields so
 // title matches can be ranked above matches buried in the content or links.
 function getTaskSearchFields(task) {
-  const parentCase = getParentCaseForTask(task);
+  const parentCase = getProjectForTask(task);
   const tagNames = task.tagIds
     .map((tagId) => tags.find((tag) => tag.id === tagId)?.name)
     .filter(Boolean);
@@ -2444,7 +2444,7 @@ function render() {
   archivedList.replaceChildren(...archived.map(createArchivedCard));
   overdueTaskList.replaceChildren(...overdue.map(createOverdueTaskRow));
   updateCardContentEndMarkers();
-  renderParentCaseGroups();
+  renderProjectGroups();
 
   activeCount.textContent = `${active.length}件`;
   completedCount.textContent = `${completed.length}件`;
@@ -2454,7 +2454,7 @@ function render() {
   navOverdueCount.textContent = `${overdue.length}件`;
   navCompactTaskCount.textContent = `${active.length}件`;
   navActiveCount.textContent = `${active.length}件`;
-  navParentCaseCount.textContent = `${parentCases.length}件`;
+  navProjectCount.textContent = `${parentCases.length}件`;
   navTagCount.textContent = `${tags.length}件`;
   navCompletedCount.textContent = `${completed.length}件`;
   navArchivedCount.textContent = `${archived.length}件`;
@@ -2463,8 +2463,8 @@ function render() {
   completedEmpty.hidden = completed.length > 0;
   archivedEmpty.hidden = archived.length > 0;
   clearCompletedButton.hidden = getDeletableCompletedTasks().length === 0;
-  renderParentCaseSettings();
-  setParentCaseViewMode(parentCaseViewMode);
+  renderProjectSettings();
+  setProjectViewMode(projectViewMode);
   setActiveListCollapsed(activeListCollapsed);
   renderTagSettings();
   renderSearchResults();
@@ -2551,11 +2551,11 @@ async function setArchived(taskId, archived) {
   showToast(archived ? "アーカイブへ移動しました" : "完了に戻しました");
 }
 
-function renderParentCaseOptions(selectedId = "") {
+function renderProjectOptions(selectedId = "") {
   const emptyOption = document.createElement("option");
   emptyOption.value = "";
-  emptyOption.textContent = "親案件なし";
-  parentCaseSelect.replaceChildren(
+  emptyOption.textContent = "Projectなし";
+  projectSelect.replaceChildren(
     emptyOption,
     ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
       const option = document.createElement("option");
@@ -2564,7 +2564,7 @@ function renderParentCaseOptions(selectedId = "") {
       return option;
     })
   );
-  parentCaseSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
+  projectSelect.value = parentCases.some((parentCase) => parentCase.id === selectedId)
     ? selectedId
     : "";
 }
@@ -2585,7 +2585,7 @@ function renderPriorityOptions(task = null) {
   prioritySelect.disabled = Boolean(task?.completed);
 }
 
-function openTaskDialog(task = null, initialParentCaseId = "") {
+function openTaskDialog(task = null, initialProjectId = "") {
   closeAllMenus();
   taskForm.reset();
   titleError.textContent = "";
@@ -2593,13 +2593,13 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
 
   if (task) {
     dialogTitle.textContent = "タスクを編集";
-    dialogCaseNumber.textContent = `案件番号 ${task.caseNumber}`;
+    dialogCaseNumber.textContent = `Task番号 ${task.caseNumber}`;
     dialogCaseNumber.hidden = false;
     taskIdInput.value = task.id;
     titleInput.value = task.title;
     contentInput.value = task.content;
     dueDateInput.value = task.dueDate;
-    renderParentCaseOptions(task.parentCaseId);
+    renderProjectOptions(task.parentCaseId);
     renderPriorityOptions(task);
     renderTaskTagOptions(task.tagIds);
     renderLinkInputs(task.links);
@@ -2610,10 +2610,10 @@ function openTaskDialog(task = null, initialParentCaseId = "") {
     deleteTaskButton.hidden = false;
   } else {
     dialogTitle.textContent = "新しいタスク";
-    dialogCaseNumber.textContent = "案件番号は保存時に自動採番します";
+    dialogCaseNumber.textContent = "Task番号は保存時に自動採番します";
     dialogCaseNumber.hidden = false;
     taskIdInput.value = "";
-    renderParentCaseOptions(initialParentCaseId);
+    renderProjectOptions(initialProjectId);
     renderPriorityOptions();
     renderTaskTagOptions();
     renderLinkInputs();
@@ -2659,7 +2659,7 @@ function collectTaskFormValues(task) {
   task.title = titleInput.value.trim();
   task.content = contentInput.value;
   task.dueDate = dueDateInput.value;
-  task.parentCaseId = parentCaseSelect.value;
+  task.parentCaseId = projectSelect.value;
   task.tagIds = [...taskTagOptions.querySelectorAll("input:checked")]
     .map((input) => input.value);
   task.links = collectLinkInputValues();
@@ -2686,7 +2686,7 @@ async function persistEditedTask() {
       caseNumber = generateCaseNumber(tasks);
     } catch (error) {
       if (!(error instanceof RangeError)) throw error;
-      taskAutoSaveStatus.textContent = "今月の案件番号はすべて使用されています";
+      taskAutoSaveStatus.textContent = "今月のTask番号はすべて使用されています";
       taskAutoSaveStatus.dataset.state = "error";
       return false;
     }
@@ -2711,7 +2711,7 @@ async function persistEditedTask() {
     taskId = task.id;
     taskIdInput.value = taskId;
     dialogTitle.textContent = "タスクを編集";
-    dialogCaseNumber.textContent = `案件番号 ${task.caseNumber}`;
+    dialogCaseNumber.textContent = `Task番号 ${task.caseNumber}`;
   }
   collectTaskFormValues(task);
   if (!task.completed) {
@@ -2781,21 +2781,21 @@ async function addTag(event) {
   showToast("分類タグを追加しました");
 }
 
-async function addParentCase(event) {
+async function addProject(event) {
   event.preventDefault();
-  const name = parentCaseNameInput.value.trim();
-  const rawUrl = parentCaseUrlInput.value.trim();
+  const name = projectNameInput.value.trim();
+  const rawUrl = projectUrlInput.value.trim();
   const url = normalizeParentCaseUrl(rawUrl);
-  parentCaseError.textContent = "";
+  projectError.textContent = "";
 
   if (!name) {
-    parentCaseError.textContent = "親案件名を入力してください";
-    parentCaseNameInput.focus();
+    projectError.textContent = "Project名を入力してください";
+    projectNameInput.focus();
     return;
   }
   if (rawUrl && !url) {
-    parentCaseError.textContent = "URLはhttp://またはhttps://で入力してください";
-    parentCaseUrlInput.focus();
+    projectError.textContent = "URLはhttp://またはhttps://で入力してください";
+    projectUrlInput.focus();
     return;
   }
   if (
@@ -2803,12 +2803,12 @@ async function addParentCase(event) {
       parentCase.name.toLocaleLowerCase("ja") === name.toLocaleLowerCase("ja")
     )
   ) {
-    parentCaseError.textContent = "同じ名前の親案件があります";
-    parentCaseNameInput.focus();
+    projectError.textContent = "同じ名前のProjectがあります";
+    projectNameInput.focus();
     return;
   }
   if (parentCases.length >= 1000) {
-    parentCaseError.textContent = "親案件は1000件まで登録できます";
+    projectError.textContent = "Projectは1000件まで登録できます";
     return;
   }
 
@@ -2817,7 +2817,7 @@ async function addParentCase(event) {
     caseNumber = generateParentCaseNumber(parentCases);
   } catch (error) {
     if (!(error instanceof RangeError)) throw error;
-    parentCaseError.textContent = "今月の親案件番号はすべて使用されています";
+    projectError.textContent = "今月のProject番号はすべて使用されています";
     return;
   }
 
@@ -2830,7 +2830,7 @@ async function addParentCase(event) {
     createdAt: new Date().toISOString()
   };
   parentCases = await saveParentCases([...parentCases, parentCase]);
-  parentCaseForm.reset();
+  projectForm.reset();
   render();
   showToast(`${parentCase.caseNumber}を追加しました`);
 }
@@ -2900,9 +2900,9 @@ clearSearchButton.addEventListener("click", () => {
   searchInput.focus();
 });
 tagForm.addEventListener("submit", addTag);
-parentCaseForm.addEventListener("submit", addParentCase);
-parentCaseManageModeButton.addEventListener("click", () => setParentCaseViewMode("manage"));
-parentCaseGroupModeButton.addEventListener("click", showParentCaseGroups);
+projectForm.addEventListener("submit", addProject);
+projectManageModeButton.addEventListener("click", () => setProjectViewMode("manage"));
+projectGroupModeButton.addEventListener("click", showProjectGroups);
 backupButton.addEventListener("click", downloadBackup);
 restoreBackupButton.addEventListener("click", () => restoreFileInput.click());
 restoreFileInput.addEventListener("change", handleRestoreFile);
@@ -2944,13 +2944,13 @@ contentInput.addEventListener("dblclick", () => {
 contentInput.addEventListener("scroll", syncContentHighlightScroll);
 dueDateInput.addEventListener("input", markTaskEditorDirty);
 taskTagOptions.addEventListener("change", markTaskEditorDirty);
-parentCaseSelect.addEventListener("change", markTaskEditorDirty);
+projectSelect.addEventListener("change", markTaskEditorDirty);
 prioritySelect.addEventListener("change", markTaskEditorDirty);
-parentCaseJumpSelect.addEventListener("change", () => {
-  const parentCase = parentCases.find((item) => item.id === parentCaseJumpSelect.value);
+projectJumpSelect.addEventListener("change", () => {
+  const parentCase = parentCases.find((item) => item.id === projectJumpSelect.value);
   if (!parentCase) return;
-  setParentCaseViewMode("group");
-  jumpToElement(document.getElementById(getParentCaseAnchorId(parentCase)));
+  setProjectViewMode("group");
+  jumpToElement(document.getElementById(getProjectAnchorId(parentCase)));
 });
 taskJumpSelect.addEventListener("change", () => {
   const task = getActiveTasks().find((item) => item.id === taskJumpSelect.value);
@@ -2983,7 +2983,7 @@ pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
 
 parentIdeaDialogForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const parentCase = parentCases.find((item) => item.id === ideaMemoParentCaseId);
+  const parentCase = parentCases.find((item) => item.id === ideaMemoProjectId);
   const text = parentIdeaDialogInput.value.trim();
   if (!parentCase || !text) return;
   if (parentCase.ideaMemos.length >= TODO_MEMO_MAX_PARENT_IDEA_MEMOS) {
@@ -3011,7 +3011,7 @@ function deleteParentIdeaMemoFromEvent(event) {
   applyOpenParentIdeaEdits();
   parentCases = removeParentIdeaMemo(
     parentCases,
-    ideaMemoParentCaseId,
+    ideaMemoProjectId,
     remove.dataset.memoId
   );
   render();
@@ -3031,7 +3031,7 @@ parentIdeaDialog.addEventListener("click", (event) => {
 });
 parentIdeaDialog.addEventListener("close", () => {
   persistOpenParentIdeaEdits();
-  ideaMemoParentCaseId = null;
+  ideaMemoProjectId = null;
 });
 
 taskDialog.addEventListener("click", (event) => {

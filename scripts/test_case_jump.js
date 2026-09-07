@@ -4,7 +4,7 @@ const source = fs.readFileSync("organizer.js", "utf8");
 const html = fs.readFileSync("organizer.html", "utf8");
 const css = fs.readFileSync("organizer.css", "utf8");
 
-for (const id of ["parentCaseJumpSelect", "taskJumpSelect"]) {
+for (const id of ["projectJumpSelect", "taskJumpSelect"]) {
   if (!html.includes(`id="${id}"`)) throw new Error(`${id} is missing`);
   if (!source.includes(`${id}.addEventListener("change"`)) {
     throw new Error(`${id} must navigate as soon as its selection changes`);
@@ -12,8 +12,8 @@ for (const id of ["parentCaseJumpSelect", "taskJumpSelect"]) {
 }
 
 for (const placeholder of [
-  "親案件コード・親案件名から選択",
-  "案件コード・案件名から選択"
+  "Projectコード・Project名から選択",
+  "Taskコード・Task名から選択"
 ]) {
   if (!html.includes(`<option value="" selected disabled hidden>${placeholder}</option>`)) {
     throw new Error(`${placeholder} must be a hidden, non-selectable placeholder`);
@@ -56,8 +56,8 @@ if (!source.includes('document.createElement("optgroup")')) {
 if (!source.includes("setActiveListCollapsed(false)")) {
   throw new Error("Task navigation must reveal the active task list");
 }
-if (!source.includes('setParentCaseViewMode("group")')) {
-  throw new Error("Parent-case navigation must reveal the grouped parent-case view");
+if (!source.includes('setProjectViewMode("group")')) {
+  throw new Error("Project navigation must reveal the grouped project view");
 }
 if (!css.includes(".case-jump-panel")) {
   throw new Error("The case jump controls must have dedicated layout styling");
