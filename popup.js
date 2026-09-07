@@ -22,6 +22,7 @@ const editContentInput = document.querySelector("#editContentInput");
 const editContentHighlightBackdrop = document.querySelector("#editContentHighlightBackdrop");
 const editDueDateInput = document.querySelector("#editDueDateInput");
 const clearEditDueDateButton = document.querySelector("#clearEditDueDate");
+attachCustomDatePicker(editDueDateInput);
 const editTagsField = document.querySelector("#editTagsField");
 const editTagOptions = document.querySelector("#editTagOptions");
 const editLinkInputs = document.querySelector("#editLinkInputs");

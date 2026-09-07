@@ -55,6 +55,7 @@ const contentInput = document.querySelector("#contentInput");
 const contentHighlightBackdrop = document.querySelector("#contentHighlightBackdrop");
 const dueDateInput = document.querySelector("#dueDateInput");
 const clearDueDateButton = document.querySelector("#clearDueDateButton");
+attachCustomDatePicker(dueDateInput);
 const taskTagsField = document.querySelector("#taskTagsField");
 const taskTagOptions = document.querySelector("#taskTagOptions");
 const linkInputs = document.querySelector("#linkInputs");
