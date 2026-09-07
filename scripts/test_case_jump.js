@@ -38,11 +38,17 @@ if (!source.includes("`${task.caseNumber}｜${task.title}`")) {
 if (!source.includes("sortTasksByCaseNumberDescending(activeTasks)")) {
   throw new Error("Task jump options must be sorted by case number descending");
 }
+if (!source.includes("sortParentCasesByNumberDescending(parentCases)")) {
+  throw new Error("Parent-case jump options must be sorted by case number descending");
+}
 if (!source.includes("function groupTasksByRegistrationMonth(tasks)")) {
-  throw new Error("Task jump options must be grouped by registration month");
+  throw new Error("Jump options must be grouped by registration month");
 }
 if (!source.includes("`${getTaskRegistrationMonthLabel(group.monthKey)} 残件${group.tasks.length}件`")) {
-  throw new Error("Each registration-month group must show a non-selectable remaining-count header");
+  throw new Error("Each task registration-month group must show a non-selectable remaining-count header");
+}
+if (!source.includes("`${getTaskRegistrationMonthLabel(group.monthKey)} ${group.tasks.length}件`")) {
+  throw new Error("Each parent-case registration-month group must show a non-selectable count header");
 }
 if (!source.includes('document.createElement("optgroup")')) {
   throw new Error("Registration-month headers must use a native, unselectable optgroup");

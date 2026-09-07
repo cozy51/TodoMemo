@@ -390,13 +390,19 @@ function renderCaseJumpOptions(activeTasks) {
   parentPlaceholder.selected = true;
   parentPlaceholder.disabled = true;
   parentPlaceholder.hidden = true;
+  const sortedParentCases = sortParentCasesByNumberDescending(parentCases);
   parentCaseJumpSelect.replaceChildren(
     parentPlaceholder,
-    ...sortParentCasesByNumberDescending(parentCases).map((parentCase) => {
-      const option = document.createElement("option");
-      option.value = parentCase.id;
-      option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
-      return option;
+    ...groupTasksByRegistrationMonth(sortedParentCases).map((group) => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = `${getTaskRegistrationMonthLabel(group.monthKey)} ${group.tasks.length}件`;
+      optgroup.append(...group.tasks.map((parentCase) => {
+        const option = document.createElement("option");
+        option.value = parentCase.id;
+        option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
+        return option;
+      }));
+      return optgroup;
     })
   );
   parentCaseJumpSelect.disabled = parentCases.length === 0;
