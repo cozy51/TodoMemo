@@ -760,7 +760,8 @@ textarea {
   align-items: center;
 }
 
-.date-input-row input {
+.date-input-row input,
+.date-input-row .custom-date-field {
   min-width: 0;
   flex: 0 1 210px;
 }
