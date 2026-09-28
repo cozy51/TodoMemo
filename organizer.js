@@ -2384,22 +2384,32 @@ function appendHighlightedText(container, text, normalizedQuery) {
   if (cursor < text.length) container.append(text.slice(cursor));
 }
 
-// Picks whichever field the query actually matched in (falling back to the
-// content) and trims it down to a window around the first match.
-function buildSearchSnippet(task, normalizedQuery) {
-  const title = task.title || "";
-  if (title.toLowerCase().includes(normalizedQuery)) return null;
-
-  const content = (task.content || "").replace(/\s+/g, " ").trim();
-  const lowerContent = content.toLowerCase();
-  const matchIndex = lowerContent.indexOf(normalizedQuery);
+// Trims `text` down to a window around the first match of the query so the
+// matched part is always visible in the one-line snippet.
+function buildSnippetWindow(text, normalizedQuery) {
+  const flattened = String(text || "").replace(/\s+/g, " ").trim();
+  const matchIndex = flattened.toLowerCase().indexOf(normalizedQuery);
   if (matchIndex < 0) return null;
 
   const start = Math.max(0, matchIndex - SEARCH_SNIPPET_RADIUS);
-  const end = Math.min(content.length, matchIndex + normalizedQuery.length + SEARCH_SNIPPET_RADIUS);
+  const end = Math.min(flattened.length, matchIndex + normalizedQuery.length + SEARCH_SNIPPET_RADIUS);
   const prefix = start > 0 ? "…" : "";
-  const suffix = end < content.length ? "…" : "";
-  return `${prefix}${content.slice(start, end)}${suffix}`;
+  const suffix = end < flattened.length ? "…" : "";
+  return `${prefix}${flattened.slice(start, end)}${suffix}`;
+}
+
+// Lists every field (other than the title and Task番号, which are always shown)
+// the query matched in, labelled so it is clear where the hit came from.
+function buildSearchSnippets(task, normalizedQuery) {
+  const fields = getTaskSearchFields(task);
+  return [
+    { label: "内容", text: fields.content },
+    { label: "Project", text: fields.parentCase },
+    { label: "タグ", text: fields.tags },
+    { label: "リンク", text: fields.links }
+  ]
+    .map(({ label, text }) => ({ label, text: buildSnippetWindow(text, normalizedQuery) }))
+    .filter(({ text }) => text);
 }
 
 function navigateToSearchResult(task) {
@@ -2448,13 +2458,18 @@ function createSearchResultItem({ task, status }, normalizedQuery) {
   body.className = "search-result-item-body";
   body.append(meta, title);
 
-  const snippetText = buildSearchSnippet(task, normalizedQuery);
-  if (snippetText) {
+  buildSearchSnippets(task, normalizedQuery).forEach(({ label, text }) => {
     const snippet = document.createElement("span");
     snippet.className = "search-result-item-snippet";
-    appendHighlightedText(snippet, snippetText, normalizedQuery);
+    const fieldLabel = document.createElement("span");
+    fieldLabel.className = "search-result-item-field";
+    fieldLabel.textContent = label;
+    const snippetText = document.createElement("span");
+    snippetText.className = "search-result-item-snippet-text";
+    appendHighlightedText(snippetText, text, normalizedQuery);
+    snippet.append(fieldLabel, snippetText);
     body.append(snippet);
-  }
+  });
 
   link.append(body);
   item.append(link);
