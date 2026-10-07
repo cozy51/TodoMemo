@@ -616,6 +616,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       link.addEventListener("focus", () => showDeadlineTooltip(link, [task]));
       link.addEventListener("blur", hideDeadlineTooltip);
       if (task.dueDate < todayKey) link.classList.add("is-overdue");
+      if (task.dueDate === todayKey) link.classList.add("is-today");
 
       const date = document.createElement("time");
       date.dateTime = task.dueDate;

@@ -1107,7 +1107,7 @@ button {
 
 .calendar-deadlines {
   min-height: 74px;
-  max-height: 122px;
+  max-height: 150px;
   margin-top: 12px;
   overflow-y: auto;
   border-top: 1px solid var(--line);
@@ -1123,13 +1123,13 @@ button {
 
 .calendar-deadline-link {
   display: grid;
-  grid-template-columns: 29px 70px minmax(0, 1fr);
-  gap: 5px;
+  grid-template-columns: 38px 82px minmax(0, 1fr);
+  gap: 6px;
   align-items: center;
-  padding: 5px 4px;
+  padding: 6px 6px;
   color: #3d4c64;
   border-radius: 6px;
-  font-size: 9px;
+  font-size: 13px;
   text-decoration: none;
 }
 
@@ -1140,6 +1140,18 @@ button {
 
 .calendar-deadline-link.is-overdue {
   color: var(--danger);
+}
+
+.calendar-deadline-link.is-today {
+  color: #d92d20;
+  background: #fdecea;
+  box-shadow: inset 3px 0 0 #d92d20;
+  font-weight: 700;
+}
+
+.calendar-deadline-link.is-today:hover {
+  color: #b42318;
+  background: #fbd9d5;
 }
 
 .calendar-deadline-link time {
@@ -1163,7 +1175,7 @@ button {
 .calendar-deadlines-empty {
   margin: 14px 0 0;
   color: #8a95a8;
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 
