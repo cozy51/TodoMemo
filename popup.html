@@ -50,7 +50,10 @@
         <h1 id="taskTitle" class="task-title"></h1>
         <p id="taskProject" class="project-badge" hidden></p>
         <div id="taskTags" class="tag-list" hidden></div>
-        <p id="taskDue" class="task-due"></p>
+        <div class="task-date-row">
+          <p id="taskDue" class="task-due"></p>
+          <p id="taskGoal" class="task-goal" hidden></p>
+        </div>
         <div class="task-links-section">
           <div class="task-links-heading">
             <span>関連リンク</span>
@@ -93,11 +96,20 @@
             <small class="field-hint">未完了タスク内での表示順を指定できます。</small>
           </label>
           <div class="field due-field">
-            <label for="editDueDateInput">期限 <em>任意</em></label>
+            <label for="editDueDateInput"><span class="date-kind-badge is-due">📅 期限</span> <em>任意</em></label>
             <div class="date-input-row">
               <input id="editDueDateInput" type="date">
               <button id="clearEditDueDate" class="clear-date-button" type="button" hidden>期限を削除</button>
             </div>
+            <small class="field-hint">他の人から決められた締め切り</small>
+          </div>
+          <div class="field goal-field">
+            <label for="editGoalDateInput"><span class="date-kind-badge is-goal">🎯 目標</span> <em>任意</em></label>
+            <div class="date-input-row">
+              <input id="editGoalDateInput" type="date">
+              <button id="clearEditGoalDate" class="clear-date-button" type="button" hidden>目標を削除</button>
+            </div>
+            <small class="field-hint">自分で決めた「この日までに」</small>
           </div>
           <fieldset id="editTagsField" class="tags-field" hidden>
             <legend>分類タグ</legend>

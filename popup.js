@@ -10,6 +10,7 @@ const copyTaskButton = document.querySelector("#copyTaskButton");
 const taskContent = document.querySelector("#taskContent");
 const taskContentLineCount = document.querySelector("#taskContentLineCount");
 const taskDue = document.querySelector("#taskDue");
+const taskGoal = document.querySelector("#taskGoal");
 const taskTags = document.querySelector("#taskTags");
 const taskLinks = document.querySelector("#taskLinks");
 const taskPasteLinkButton = document.querySelector("#taskPasteLinkButton");
@@ -23,6 +24,9 @@ const editContentHighlightBackdrop = document.querySelector("#editContentHighlig
 const editDueDateInput = document.querySelector("#editDueDateInput");
 const clearEditDueDateButton = document.querySelector("#clearEditDueDate");
 attachCustomDatePicker(editDueDateInput);
+const editGoalDateInput = document.querySelector("#editGoalDateInput");
+const clearEditGoalDateButton = document.querySelector("#clearEditGoalDate");
+attachCustomDatePicker(editGoalDateInput);
 const editTagsField = document.querySelector("#editTagsField");
 const editTagOptions = document.querySelector("#editTagOptions");
 const editLinkInputs = document.querySelector("#editLinkInputs");
@@ -203,6 +207,28 @@ function renderDue(dueDate) {
 
   taskDue.textContent = `${prefix} · ${formatDueDate(dueDate)} · ${formatDueDistance(dueDate)}`;
   taskDue.dataset.state = dueState;
+}
+
+// A task without a self-set goal is easy to forget, so the missing goal is
+// shown as a nudge instead of being left out.
+function renderGoal(goalDate) {
+  taskGoal.hidden = false;
+  if (!goalDate) {
+    taskGoal.textContent = "目標未設定";
+    taskGoal.dataset.state = "unset";
+    taskGoal.title = "自分で「この日までに」と決めた目標日を設定すると忘れにくくなります";
+    return;
+  }
+
+  const goalState = getDueState(goalDate);
+  const prefix = goalState === "overdue"
+    ? "目標経過"
+    : goalState === "today"
+      ? "今日が目標"
+      : "目標";
+  taskGoal.removeAttribute("title");
+  taskGoal.textContent = `${prefix} · ${formatDueDate(goalDate)} · ${formatGoalDistance(goalDate)}`;
+  taskGoal.dataset.state = goalState;
 }
 
 function renderTags(tagIds) {
@@ -414,6 +440,7 @@ function renderTagOptions(selectedIds) {
 
 function updateDueDateClearButton() {
   clearEditDueDateButton.hidden = !editDueDateInput.value;
+  clearEditGoalDateButton.hidden = !editGoalDateInput.value;
 }
 
 function renderProjectOptions(selectedId = "") {
@@ -540,6 +567,7 @@ function renderCurrentTaskDetails() {
   renderMarkdown(taskContent, currentTask.content);
   taskContentLineCount.textContent = `内容 ${countContentLines(currentTask.content)}行`;
   renderDue(currentTask.dueDate);
+  renderGoal(currentTask.goalDate);
   renderTags(currentTask.tagIds);
   renderLinks(taskLinks, currentTask.links);
 }
@@ -566,6 +594,7 @@ function openEditor() {
   editContentInput.value = currentTask.content;
   renderEditContentSelectionHighlights();
   editDueDateInput.value = currentTask.dueDate;
+  editGoalDateInput.value = currentTask.goalDate;
   updateDueDateClearButton();
   editTitleError.textContent = "";
   autoSaveStatus.hidden = true;
@@ -593,6 +622,7 @@ function openNewTaskEditor() {
   editContentInput.value = "";
   renderEditContentSelectionHighlights();
   editDueDateInput.value = "";
+  editGoalDateInput.value = "";
   updateDueDateClearButton();
   editTitleError.textContent = "";
   autoSaveStatus.hidden = true;
@@ -659,7 +689,7 @@ function persistEditorChanges({ quiet = false } = {}) {
       return false;
     }
     target = {
-      id: crypto.randomUUID(), caseNumber, title: "", content: "", dueDate: "",
+      id: crypto.randomUUID(), caseNumber, title: "", content: "", dueDate: "", goalDate: "",
       parentCaseId: "", tagIds: [], links: [], completed: false,
       order: 1, createdAt: new Date().toISOString(), completedAt: null
     };
@@ -679,6 +709,7 @@ function persistEditorChanges({ quiet = false } = {}) {
   target.parentCaseId = editProjectSelect.value;
   target.content = editContentInput.value;
   target.dueDate = editDueDateInput.value;
+  target.goalDate = editGoalDateInput.value;
   target.tagIds = [...editTagOptions.querySelectorAll("input:checked")]
     .map((input) => input.value);
   target.links = collectLinkInputValues();
@@ -764,6 +795,16 @@ clearEditDueDateButton.addEventListener("click", () => {
   updateDueDateClearButton();
   markEditorDirty();
   editDueDateInput.focus();
+});
+editGoalDateInput.addEventListener("input", () => {
+  updateDueDateClearButton();
+  markEditorDirty();
+});
+clearEditGoalDateButton.addEventListener("click", () => {
+  editGoalDateInput.value = "";
+  updateDueDateClearButton();
+  markEditorDirty();
+  editGoalDateInput.focus();
 });
 editTagOptions.addEventListener("change", markEditorDirty);
 editLinkInputs.addEventListener("input", (event) => {
