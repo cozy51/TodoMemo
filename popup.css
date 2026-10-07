@@ -489,6 +489,60 @@ textarea {
   content: "⚠️";
 }
 
+.task-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.task-date-row .task-due {
+  margin: 0;
+}
+
+.task-goal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 9px 12px;
+  color: #1d6b45;
+  border: 1px solid #a8d9bd;
+  border-radius: 9px;
+  background: #e9f8ef;
+  box-shadow: 0 2px 8px rgba(29, 107, 69, .08);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.task-goal::before {
+  flex: 0 0 auto;
+  content: "🎯";
+  font-size: 15px;
+}
+
+.task-goal[data-state="today"] {
+  color: #155c38;
+  border-color: #3fae6e;
+  background: #d3f3df;
+}
+
+.task-goal[data-state="overdue"] {
+  color: #8b4a06;
+  border-color: #efc27c;
+  background: #fff7e7;
+}
+
+.task-goal[data-state="unset"] {
+  color: #9a5b00;
+  padding: 7px 10px;
+  border: 1px dashed #e0a84f;
+  background: #fffaf0;
+  box-shadow: none;
+  font-size: 12px;
+}
+
 .edit-view {
   padding-top: 25px;
 }
@@ -750,8 +804,38 @@ textarea {
   line-height: 1.5;
 }
 
-.due-field {
+.due-field,
+.goal-field {
   max-width: 100%;
+}
+
+.date-kind-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.date-kind-badge.is-due {
+  color: #24569a;
+  border-color: #b7cdf2;
+  background: #edf4ff;
+}
+
+.date-kind-badge.is-goal {
+  color: #1d6b45;
+  border-color: #a8d9bd;
+  background: #e9f8ef;
+}
+
+.goal-field input[type="date"],
+.goal-field .custom-date-field {
+  border-color: #a8d9bd;
 }
 
 .date-input-row {

@@ -181,7 +181,7 @@
                   <th scope="col">Task番号</th>
                   <th scope="col">タイトル</th>
                   <th scope="col">関連リンク</th>
-                  <th scope="col">期限</th>
+                  <th scope="col">期限 / 目標</th>
                 </tr>
               </thead>
               <tbody id="compactTaskTableBody"></tbody>
@@ -497,11 +497,23 @@
           <small class="field-hint">未完了タスク内での表示順を変更できます。</small>
         </label>
 
-        <div class="field due-field">
-          <label for="dueDateInput">期限 <em>任意</em></label>
-          <div class="date-input-row">
-            <input id="dueDateInput" name="dueDate" type="date">
-            <button id="clearDueDateButton" class="clear-date-button" type="button" hidden>期限を削除</button>
+        <div class="date-fields">
+          <div class="field due-field">
+            <label for="dueDateInput"><span class="date-kind-badge is-due">📅 期限</span> <em>任意</em></label>
+            <div class="date-input-row">
+              <input id="dueDateInput" name="dueDate" type="date">
+              <button id="clearDueDateButton" class="clear-date-button" type="button" hidden>期限を削除</button>
+            </div>
+            <small class="field-hint">他の人から決められた締め切り</small>
+          </div>
+
+          <div class="field goal-field">
+            <label for="goalDateInput"><span class="date-kind-badge is-goal">🎯 目標</span> <em>任意</em></label>
+            <div class="date-input-row">
+              <input id="goalDateInput" name="goalDate" type="date">
+              <button id="clearGoalDateButton" class="clear-date-button" type="button" hidden>目標を削除</button>
+            </div>
+            <small class="field-hint">自分で決めた「この日までに」</small>
           </div>
         </div>
 

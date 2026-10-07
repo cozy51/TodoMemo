@@ -64,6 +64,9 @@ const contentHighlightBackdrop = document.querySelector("#contentHighlightBackdr
 const dueDateInput = document.querySelector("#dueDateInput");
 const clearDueDateButton = document.querySelector("#clearDueDateButton");
 attachCustomDatePicker(dueDateInput);
+const goalDateInput = document.querySelector("#goalDateInput");
+const clearGoalDateButton = document.querySelector("#clearGoalDateButton");
+attachCustomDatePicker(goalDateInput);
 const taskTagsField = document.querySelector("#taskTagsField");
 const taskTagOptions = document.querySelector("#taskTagOptions");
 const linkInputs = document.querySelector("#linkInputs");
@@ -469,16 +472,24 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDateKey = `${monthPrefix}01`;
   const lastDateKey = `${monthPrefix}${String(daysInMonth).padStart(2, "0")}`;
-  const monthTasks = activeTasks
-    .filter((task) => task.dueDate >= firstDateKey && task.dueDate <= lastDateKey)
+  // Deadlines and self-set goals share the calendar; each entry remembers
+  // which kind of date it is so the two can be told apart at a glance.
+  const monthEntries = activeTasks
+    .flatMap((task) => [
+      { task, date: task.dueDate, kind: "due" },
+      { task, date: task.goalDate, kind: "goal" }
+    ])
+    .filter((entry) => entry.date >= firstDateKey && entry.date <= lastDateKey)
     .sort((a, b) => {
-      const dateOrder = a.dueDate.localeCompare(b.dueDate);
-      return dateOrder || activeTasks.indexOf(a) - activeTasks.indexOf(b);
+      const dateOrder = a.date.localeCompare(b.date);
+      if (dateOrder) return dateOrder;
+      if (a.kind !== b.kind) return a.kind === "due" ? -1 : 1;
+      return activeTasks.indexOf(a.task) - activeTasks.indexOf(b.task);
     });
-  const tasksByDate = new Map();
-  monthTasks.forEach((task) => {
-    if (!tasksByDate.has(task.dueDate)) tasksByDate.set(task.dueDate, []);
-    tasksByDate.get(task.dueDate).push(task);
+  const entriesByDate = new Map();
+  monthEntries.forEach((entry) => {
+    if (!entriesByDate.has(entry.date)) entriesByDate.set(entry.date, []);
+    entriesByDate.get(entry.date).push(entry);
   });
 
   const days = document.createElement("div");
@@ -537,10 +548,15 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
     day.addEventListener("keydown", openHolidayForDay);
 
     if (dateKey === todayKey) day.classList.add("is-today");
-    const dayTasks = tasksByDate.get(dateKey) || [];
+    const dayEntries = entriesByDate.get(dateKey) || [];
+    const dayTasks = [...new Set(dayEntries.map((entry) => entry.task))];
+    const hasDue = dayEntries.some((entry) => entry.kind === "due");
+    const hasGoal = dayEntries.some((entry) => entry.kind === "goal");
     if (dayTasks.length > 0) {
-      day.classList.add("has-deadline");
-      if (dateKey < todayKey) day.classList.add("is-overdue");
+      day.classList.add(hasDue ? "has-deadline" : "has-goal");
+      if (hasDue && hasGoal) day.classList.add("has-goal-too");
+      if (hasDue && dateKey < todayKey) day.classList.add("is-overdue");
+      const dayKindLabel = hasDue && hasGoal ? "期限・目標" : hasDue ? "期限" : "目標";
 
       day.addEventListener("mouseenter", () => showDeadlineTooltip(day, dayTasks));
       day.addEventListener("mouseleave", hideDeadlineTooltip);
@@ -554,7 +570,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
         countLink.textContent = "1件";
         countLink.setAttribute(
           "aria-label",
-          `${month + 1}月${dayNumber}日が期限のTaskへ移動`
+          `${month + 1}月${dayNumber}日が${dayKindLabel}のTaskへ移動`
         );
         day.append(countLink);
       } else {
@@ -567,7 +583,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
         summary.textContent = `${dayTasks.length}件`;
         summary.setAttribute(
           "aria-label",
-          `${month + 1}月${dayNumber}日が期限のTask ${dayTasks.length}件から選択`
+          `${month + 1}月${dayNumber}日が${dayKindLabel}のTask ${dayTasks.length}件から選択`
         );
 
         const menu = document.createElement("div");
@@ -599,14 +615,14 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
 
   const deadlines = document.createElement("div");
   deadlines.className = "calendar-deadlines";
-  if (monthTasks.length === 0) {
+  if (monthEntries.length === 0) {
     const empty = document.createElement("p");
     empty.className = "calendar-deadlines-empty";
-    empty.textContent = "期限のあるTaskはありません";
+    empty.textContent = "期限・目標のあるTaskはありません";
     deadlines.append(empty);
   } else {
     const list = document.createElement("ul");
-    monthTasks.forEach((task) => {
+    monthEntries.forEach(({ task, date: entryDate, kind }) => {
       const item = document.createElement("li");
       const link = document.createElement("a");
       link.className = "calendar-deadline-link";
@@ -615,19 +631,23 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       link.addEventListener("mouseleave", hideDeadlineTooltip);
       link.addEventListener("focus", () => showDeadlineTooltip(link, [task]));
       link.addEventListener("blur", hideDeadlineTooltip);
-      if (task.dueDate < todayKey) link.classList.add("is-overdue");
-      if (task.dueDate === todayKey) link.classList.add("is-today");
+      link.classList.add(kind === "goal" ? "is-goal" : "is-due");
+      if (entryDate < todayKey) link.classList.add("is-overdue");
+      if (entryDate === todayKey) link.classList.add("is-today");
 
       const date = document.createElement("time");
-      date.dateTime = task.dueDate;
-      date.textContent = `${Number(task.dueDate.slice(5, 7))}/${Number(task.dueDate.slice(8, 10))}`;
+      date.dateTime = entryDate;
+      date.textContent = `${Number(entryDate.slice(5, 7))}/${Number(entryDate.slice(8, 10))}`;
+      const kindBadge = document.createElement("span");
+      kindBadge.className = `calendar-deadline-kind is-${kind}`;
+      kindBadge.textContent = kind === "goal" ? "目標" : "期限";
       const caseNumber = document.createElement("span");
       caseNumber.className = "calendar-deadline-case";
       caseNumber.textContent = task.caseNumber;
       const taskTitle = document.createElement("span");
       taskTitle.className = "calendar-deadline-title";
       taskTitle.textContent = ensureEmojiPresentation(task.title);
-      link.append(date, caseNumber, taskTitle);
+      link.append(date, kindBadge, caseNumber, taskTitle);
       item.append(link);
       list.append(item);
     });
@@ -669,8 +689,15 @@ function fillDeadlineTooltip(tooltip, dayTasks) {
       const dueLine = document.createElement("div");
       dueLine.className = "deadline-tooltip-due";
       dueLine.dataset.state = getDueState(task.dueDate);
-      dueLine.textContent = `期限：${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+      dueLine.textContent = `📅 期限：${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
       item.append(dueLine);
+    }
+
+    if (task.goalDate) {
+      const goalLine = document.createElement("div");
+      goalLine.className = "deadline-tooltip-goal";
+      goalLine.textContent = `🎯 目標：${formatDueDate(task.goalDate)} · ${formatGoalDistance(task.goalDate)}`;
+      item.append(goalLine);
     }
 
     const parentCase = getProjectForTask(task);
@@ -915,14 +942,21 @@ function createCompactTaskRow(task, index) {
   if (task.dueDate) {
     const dueState = getDueState(task.dueDate);
     due.dataset.state = dueState;
-    due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+    due.textContent = `📅 ${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
     due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
     due.addEventListener("mouseleave", hideDeadlineTooltip);
   } else {
     due.dataset.state = "none";
     due.textContent = "期限なし";
   }
-  dueCell.append(due);
+  const goal = document.createElement("span");
+  goal.className = "compact-task-goal";
+  const goalState = getGoalState(task);
+  goal.dataset.state = goalState;
+  goal.textContent = task.goalDate
+    ? `🎯 ${formatDueDate(task.goalDate)} · ${formatGoalDistance(task.goalDate)}`
+    : "🎯 目標未設定";
+  dueCell.append(due, goal);
 
   row.append(priorityCell, caseCell, titleCell, linksCell, dueCell);
   return row;
@@ -1418,6 +1452,43 @@ function fillTaskCopy(card, task, { showEmptyContent = false } = {}) {
     due.dataset.state = "none";
     due.hidden = false;
   }
+
+  let goal = card.querySelector(".card-goal");
+  if (!goal) {
+    goal = document.createElement("p");
+    goal.className = "card-goal";
+    due.after(goal);
+  }
+  fillGoalBadge(goal, task);
+}
+
+// The goal is the user's own target date, shown next to (and styled apart
+// from) the deadline.  An active task without one gets a visible nudge,
+// because tasks with no self-set date are the ones that get forgotten.
+function getGoalState(task) {
+  if (!task.goalDate) return task.completed ? "none" : "unset";
+  if (task.completed) return "done";
+  return getDueState(task.goalDate);
+}
+
+function fillGoalBadge(goal, task) {
+  const state = getGoalState(task);
+  goal.dataset.state = state;
+  goal.hidden = state === "none";
+  if (state === "unset") {
+    goal.textContent = "目標未設定";
+    goal.title = "自分で「この日までに」と決めた目標日を設定すると忘れにくくなります";
+    return;
+  }
+  goal.removeAttribute("title");
+  if (state === "none") {
+    goal.textContent = "";
+  } else if (state === "done") {
+    goal.textContent = `目標 · ${formatDueDate(task.goalDate)}`;
+  } else {
+    const prefix = state === "today" ? "今日が目標" : state === "overdue" ? "目標経過" : "目標";
+    goal.textContent = `${prefix} · ${formatDueDate(task.goalDate)} · ${formatGoalDistance(task.goalDate)}`;
+  }
 }
 
 function updateCardContentEndMarkers() {
@@ -1549,6 +1620,7 @@ async function pasteLinksFromClipboard() {
 
 function updateDueDateClearButton() {
   clearDueDateButton.hidden = !dueDateInput.value;
+  clearGoalDateButton.hidden = !goalDateInput.value;
 }
 
 function renderTagSettings() {
@@ -2069,6 +2141,14 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
       due.dateTime = task.dueDate;
       due.dataset.state = getDueState(task.dueDate);
       due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+      due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
+      due.addEventListener("mouseleave", hideDeadlineTooltip);
+    } else if (task.goalDate) {
+      due.dateTime = task.goalDate;
+      const goalLabel = document.createElement("span");
+      goalLabel.className = "is-goal";
+      goalLabel.textContent = `🎯 ${formatDueDate(task.goalDate)} · ${formatGoalDistance(task.goalDate)}`;
+      due.append(goalLabel);
       due.addEventListener("mouseenter", () => showDeadlineTooltip(due, [task]));
       due.addEventListener("mouseleave", hideDeadlineTooltip);
     } else {
@@ -2667,6 +2747,7 @@ function openTaskDialog(task = null, initialProjectId = "") {
     titleInput.value = task.title;
     contentInput.value = task.content;
     dueDateInput.value = task.dueDate;
+    goalDateInput.value = task.goalDate;
     renderProjectOptions(task.parentCaseId);
     renderPriorityOptions(task);
     renderTaskTagOptions(task.tagIds);
@@ -2727,6 +2808,7 @@ function collectTaskFormValues(task) {
   task.title = titleInput.value.trim();
   task.content = contentInput.value;
   task.dueDate = dueDateInput.value;
+  task.goalDate = goalDateInput.value;
   task.parentCaseId = projectSelect.value;
   task.tagIds = [...taskTagOptions.querySelectorAll("input:checked")]
     .map((input) => input.value);
@@ -2764,6 +2846,7 @@ async function persistEditedTask() {
       title,
       content: "",
       dueDate: "",
+      goalDate: "",
       parentCaseId: "",
       tagIds: [],
       links: [],
@@ -2999,6 +3082,13 @@ clearDueDateButton.addEventListener("click", () => {
   markTaskEditorDirty();
   dueDateInput.focus();
 });
+goalDateInput.addEventListener("input", updateDueDateClearButton);
+clearGoalDateButton.addEventListener("click", () => {
+  goalDateInput.value = "";
+  updateDueDateClearButton();
+  markTaskEditorDirty();
+  goalDateInput.focus();
+});
 
 titleInput.addEventListener("input", () => {
   if (titleInput.value.trim()) {
@@ -3023,6 +3113,7 @@ contentInput.addEventListener("dblclick", () => {
 });
 contentInput.addEventListener("scroll", syncContentHighlightScroll);
 dueDateInput.addEventListener("input", markTaskEditorDirty);
+goalDateInput.addEventListener("input", markTaskEditorDirty);
 taskTagOptions.addEventListener("change", markTaskEditorDirty);
 projectSelect.addEventListener("change", markTaskEditorDirty);
 prioritySelect.addEventListener("change", markTaskEditorDirty);

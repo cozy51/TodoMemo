@@ -510,6 +510,7 @@ function normalizeTask(task, index) {
     title: String(task.title || "").trim(),
     content: String(task.content || "").replace(/\r\n?/g, "\n"),
     dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
+    goalDate: typeof task.goalDate === "string" ? task.goalDate : "",
     tagIds: Array.isArray(task.tagIds) ? [...new Set(task.tagIds.map(String))] : [],
     links: normalizeTaskLinks(task.links),
     completed: archived || Boolean(task.completed),
@@ -1203,4 +1204,14 @@ function formatDueDistance(dueDate) {
   if (distance === 0) return "今日が期限";
   if (distance > 0) return `あと${distance}日`;
   return `${Math.abs(distance)}日超過`;
+}
+
+// A goal is a date the user set for themselves, so passing it is reported
+// as elapsed time rather than as an overdue warning.
+function formatGoalDistance(goalDate) {
+  const distance = getDueDistance(goalDate);
+  if (distance === null) return "";
+  if (distance === 0) return "今日が目標";
+  if (distance > 0) return `あと${distance}日`;
+  return `${Math.abs(distance)}日経過`;
 }
