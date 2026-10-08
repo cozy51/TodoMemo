@@ -622,7 +622,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
     deadlines.append(empty);
   } else {
     const list = document.createElement("ul");
-    monthEntries.forEach(({ task, date: entryDate, kind }) => {
+    monthEntries.forEach(({ task, date: entryDate, kind }, index) => {
       const item = document.createElement("li");
       const link = document.createElement("a");
       link.className = "calendar-deadline-link";
@@ -638,6 +638,7 @@ function createCalendarMonth(activeTasks, year, month, monthOffset) {
       const date = document.createElement("time");
       date.dateTime = entryDate;
       date.textContent = `${Number(entryDate.slice(5, 7))}/${Number(entryDate.slice(8, 10))}`;
+      if (index > 0 && monthEntries[index - 1].date === entryDate) date.classList.add("is-repeat");
       const kindBadge = document.createElement("span");
       kindBadge.className = `calendar-deadline-kind is-${kind}`;
       kindBadge.textContent = kind === "goal" ? "目標" : "期限";
