@@ -1203,9 +1203,9 @@ button {
 }
 
 .calendar-deadline-kind.is-due {
-  color: #24569a;
-  border-color: #b7cdf2;
-  background: #edf4ff;
+  color: #b54708;
+  border-color: #f7c89b;
+  background: #fff4e8;
 }
 
 .calendar-deadline-kind.is-goal {
@@ -1237,6 +1237,11 @@ button {
 
 .calendar-deadline-link time {
   font-weight: 800;
+}
+
+/* Same date as the row above: hide the repeated date so each day reads as a group. */
+.calendar-deadline-link time.is-repeat {
+  color: transparent;
 }
 
 .calendar-deadline-case {
@@ -1535,7 +1540,7 @@ button {
 .compact-task-due {
   display: block;
   overflow: hidden;
-  color: #24569a;
+  color: #b54708;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2099,11 +2104,11 @@ button {
   gap: 6px;
   margin: 0;
   padding: 7px 10px;
-  color: #24569a;
-  border: 1px solid #b7cdf2;
+  color: #b54708;
+  border: 1px solid #f7c89b;
   border-radius: 8px;
-  background: #edf4ff;
-  box-shadow: 0 2px 7px rgba(47, 111, 237, .08);
+  background: #fff4e8;
+  box-shadow: 0 2px 7px rgba(220, 104, 3, .08);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
@@ -2907,7 +2912,7 @@ button {
 
 .parent-task-item-due {
   overflow: hidden;
-  color: #24569a;
+  color: #b54708;
   font-size: 11px;
   font-weight: 750;
   text-align: right;
@@ -2916,7 +2921,7 @@ button {
 }
 
 .parent-task-item-due[data-state="today"] {
-  color: #8b4a06;
+  color: #d92d20;
 }
 
 .parent-task-item-due[data-state="overdue"] {
@@ -3827,9 +3832,9 @@ button {
 }
 
 .date-kind-badge.is-due {
-  color: #24569a;
-  border-color: #b7cdf2;
-  background: #edf4ff;
+  color: #b54708;
+  border-color: #f7c89b;
+  background: #fff4e8;
 }
 
 .date-kind-badge.is-goal {

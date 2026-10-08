@@ -435,11 +435,11 @@ textarea {
   gap: 7px;
   margin: 20px 0 0;
   padding: 9px 12px;
-  color: #24569a;
-  border: 1px solid #b7cdf2;
+  color: #b54708;
+  border: 1px solid #f7c89b;
   border-radius: 9px;
-  background: #edf4ff;
-  box-shadow: 0 2px 8px rgba(47, 111, 237, .08);
+  background: #fff4e8;
+  box-shadow: 0 2px 8px rgba(220, 104, 3, .08);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.4;
@@ -822,9 +822,9 @@ textarea {
 }
 
 .date-kind-badge.is-due {
-  color: #24569a;
-  border-color: #b7cdf2;
-  background: #edf4ff;
+  color: #b54708;
+  border-color: #f7c89b;
+  background: #fff4e8;
 }
 
 .date-kind-badge.is-goal {
