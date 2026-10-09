@@ -101,6 +101,9 @@
 .custom-date-day.is-sunday { color: #a93636; background: #fdeaea; }
 .custom-date-day.is-saturday { color: #245ca8; background: #e8f1ff; }
 
+.custom-date-day.is-personal-holiday { color: #9a6214; background: #fff4df; box-shadow: inset 0 0 0 1px #dfaa55; font-weight: 700; }
+.custom-date-day.is-company-holiday { color: #397251; background: #e9f8ef; box-shadow: inset 0 0 0 1px #78bd96; font-weight: 700; }
+
 .custom-date-day.is-today {
   box-shadow: inset 0 0 0 1.5px var(--accent, #2f6fed);
   font-weight: 700;
@@ -114,9 +117,40 @@
 
 .custom-date-popup-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 8px;
 }
+
+.custom-date-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-right: auto;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.custom-date-legend[hidden] { display: none; }
+
+.custom-date-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.custom-date-legend-item::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.custom-date-legend-item.is-personal-holiday { color: #9a6214; }
+.custom-date-legend-item.is-personal-holiday::before { background: #fff4df; box-shadow: inset 0 0 0 1px #dfaa55; }
+.custom-date-legend-item.is-company-holiday { color: #397251; }
+.custom-date-legend-item.is-company-holiday::before { background: #e9f8ef; box-shadow: inset 0 0 0 1px #78bd96; }
 
 .custom-date-today {
   padding: 5px 11px;

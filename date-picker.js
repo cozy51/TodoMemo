@@ -12,7 +12,12 @@ function parseDatePickerKey(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function attachCustomDatePicker(input) {
+const DATE_PICKER_HOLIDAY_LABELS = {
+  personal: "自分の休み",
+  company: "会社の休み"
+};
+
+function attachCustomDatePicker(input, options = {}) {
   if (!input || input.dataset.customDatePickerAttached) return;
   input.dataset.customDatePickerAttached = "true";
   input.readOnly = true;
@@ -61,11 +66,20 @@ function attachCustomDatePicker(input) {
 
   const footer = document.createElement("div");
   footer.className = "custom-date-popup-footer";
+  const legend = document.createElement("div");
+  legend.className = "custom-date-legend";
+  legend.hidden = true;
+  Object.entries(DATE_PICKER_HOLIDAY_LABELS).forEach(([type, label]) => {
+    const item = document.createElement("span");
+    item.className = `custom-date-legend-item is-${type}-holiday`;
+    item.textContent = label;
+    legend.append(item);
+  });
   const todayButton = document.createElement("button");
   todayButton.type = "button";
   todayButton.className = "custom-date-today";
   todayButton.textContent = "今日";
-  footer.append(todayButton);
+  footer.append(legend, todayButton);
 
   popup.append(header, weekdays, days, footer);
   const hostDialog = input.closest("dialog");
@@ -73,6 +87,33 @@ function attachCustomDatePicker(input) {
 
   let viewYear = new Date().getFullYear();
   let viewMonth = new Date().getMonth();
+  let holidayByDate = new Map();
+
+  function setHolidays(list) {
+    holidayByDate = new Map(
+      (Array.isArray(list) ? list : [])
+        .filter((holiday) => holiday && typeof holiday.date === "string")
+        .map((holiday) => [holiday.date, holiday.type === "company" ? "company" : "personal"])
+    );
+  }
+
+  function refreshHolidays() {
+    if (typeof options.getHolidays !== "function") return;
+    let result;
+    try {
+      result = options.getHolidays();
+    } catch (error) {
+      return;
+    }
+    if (result && typeof result.then === "function") {
+      result.then((list) => {
+        setHolidays(list);
+        if (!popup.hidden) renderCalendar();
+      }).catch(() => {});
+    } else {
+      setHolidays(result);
+    }
+  }
 
   function renderCalendar() {
     title.textContent = `${viewYear}年${viewMonth + 1}月`;
@@ -84,6 +125,7 @@ function attachCustomDatePicker(input) {
     const cellCount = Math.ceil((leadingDays + daysInMonth) / 7) * 7;
 
     const cells = [];
+    let hasHolidayInMonth = false;
     for (let cellIndex = 0; cellIndex < cellCount; cellIndex += 1) {
       const dayNumber = cellIndex - leadingDays + 1;
       const cell = document.createElement("button");
@@ -100,11 +142,20 @@ function attachCustomDatePicker(input) {
         cell.textContent = String(dayNumber);
         if (dateKey === todayKey) cell.classList.add("is-today");
         if (dateKey === selectedKey) cell.classList.add("is-selected");
+        const holidayType = holidayByDate.get(dateKey);
+        if (holidayType) {
+          hasHolidayInMonth = true;
+          const holidayLabel = DATE_PICKER_HOLIDAY_LABELS[holidayType];
+          cell.classList.add(`is-${holidayType}-holiday`);
+          cell.title = `${viewMonth + 1}月${dayNumber}日（${holidayLabel}）`;
+          cell.setAttribute("aria-label", `${viewYear}年${viewMonth + 1}月${dayNumber}日（${holidayLabel}）`);
+        }
         cell.addEventListener("click", () => selectDate(dateKey));
       }
       cells.push(cell);
     }
     days.replaceChildren(...cells);
+    legend.hidden = !hasHolidayInMonth;
   }
 
   function selectDate(dateKey) {
@@ -156,6 +207,7 @@ function attachCustomDatePicker(input) {
     const selected = parseDatePickerKey(input.value) || new Date();
     viewYear = selected.getFullYear();
     viewMonth = selected.getMonth();
+    refreshHolidays();
     renderCalendar();
     popup.hidden = false;
     input.setAttribute("aria-expanded", "true");
