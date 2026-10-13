@@ -2507,6 +2507,39 @@ function navigateToSearchResult(task) {
   });
 }
 
+// Shows whether 期限 / 目標 are set (with dates) right in the result row, so
+// a hit can be judged without jumping to its card.  Completed tasks show the
+// dates as plain records, without overdue wording or alarm colors.
+function createSearchResultDateChips(task) {
+  const due = document.createElement("span");
+  due.className = "search-result-item-date";
+  due.dataset.kind = "due";
+  if (!task.dueDate) {
+    due.dataset.state = "none";
+    due.textContent = "📅 期限なし";
+  } else if (task.completed) {
+    due.dataset.state = "done";
+    due.textContent = `📅 期限 ${formatDueDate(task.dueDate)}`;
+  } else {
+    due.dataset.state = getDueState(task.dueDate);
+    due.textContent = `📅 期限 ${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
+  }
+
+  const goal = document.createElement("span");
+  goal.className = "search-result-item-date";
+  goal.dataset.kind = "goal";
+  const goalState = getGoalState(task);
+  goal.dataset.state = goalState;
+  if (!task.goalDate) {
+    goal.textContent = "🎯 目標未設定";
+  } else if (goalState === "done") {
+    goal.textContent = `🎯 目標 ${formatDueDate(task.goalDate)}`;
+  } else {
+    goal.textContent = `🎯 目標 ${formatDueDate(task.goalDate)} · ${formatGoalDistance(task.goalDate)}`;
+  }
+  return [due, goal];
+}
+
 function createSearchResultItem({ task, status }, normalizedQuery) {
   const item = document.createElement("li");
   item.className = "search-result-item-wrap";
@@ -2530,7 +2563,7 @@ function createSearchResultItem({ task, status }, normalizedQuery) {
   const caseNumber = document.createElement("span");
   caseNumber.className = "search-result-item-case";
   appendHighlightedText(caseNumber, task.caseNumber, normalizedQuery);
-  meta.append(statusBadge, caseNumber);
+  meta.append(statusBadge, caseNumber, ...createSearchResultDateChips(task));
 
   const title = document.createElement("span");
   title.className = "search-result-item-title";
