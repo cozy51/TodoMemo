@@ -756,7 +756,9 @@ function hideDeadlineTooltip() {
 }
 
 function renderHolidayList() {
-  holidayList.replaceChildren(...holidays.map((holiday) => {
+  // Newest first in the list; the stored order stays ascending.
+  const newestFirst = [...holidays].sort((a, b) => b.date.localeCompare(a.date));
+  holidayList.replaceChildren(...newestFirst.map((holiday) => {
     const item = document.createElement("li");
     const label = document.createElement("span");
     label.textContent = `${holiday.date.replaceAll("-", "/")}　${holiday.type === "company" ? "会社の休み" : "自分の休み"}`;
