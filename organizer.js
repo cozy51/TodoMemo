@@ -758,7 +758,15 @@ function hideDeadlineTooltip() {
 function renderHolidayList() {
   // Newest first in the list; the stored order stays ascending.
   const newestFirst = [...holidays].sort((a, b) => b.date.localeCompare(a.date));
-  holidayList.replaceChildren(...newestFirst.map((holiday) => {
+  const todayKey = formatLocalDateKey(new Date());
+  const upcoming = newestFirst.filter((holiday) => holiday.date >= todayKey);
+  const past = newestFirst.filter((holiday) => holiday.date < todayKey);
+  // Past holidays start collapsed each time the dialog opens, but keep their
+  // open state while the user adds or deletes entries inside the dialog.
+  const wasPastOpen = holidayDialog.open
+    && Boolean(holidayList.querySelector(".holiday-past-group")?.open);
+
+  const createHolidayItem = (holiday) => {
     const item = document.createElement("li");
     const label = document.createElement("span");
     label.textContent = `${holiday.date.replaceAll("-", "/")}　${holiday.type === "company" ? "会社の休み" : "自分の休み"}`;
@@ -769,7 +777,25 @@ function renderHolidayList() {
     remove.dataset.date = holiday.date;
     item.append(label, remove);
     return item;
-  }));
+  };
+
+  const items = upcoming.map(createHolidayItem);
+  if (past.length) {
+    const pastItem = document.createElement("li");
+    pastItem.className = "holiday-past-item";
+    const group = document.createElement("details");
+    group.className = "holiday-past-group";
+    group.open = wasPastOpen;
+    const summary = document.createElement("summary");
+    summary.textContent = `済んだ休み（${past.length}件）`;
+    const pastList = document.createElement("ul");
+    pastList.className = "holiday-list holiday-past-list";
+    pastList.append(...past.map(createHolidayItem));
+    group.append(summary, pastList);
+    pastItem.append(group);
+    items.push(pastItem);
+  }
+  holidayList.replaceChildren(...items);
   holidayEmpty.hidden = holidays.length > 0;
 }
 
