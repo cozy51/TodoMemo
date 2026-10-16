@@ -759,8 +759,8 @@ function renderHolidayList() {
   // Newest first in the list; the stored order stays ascending.
   const newestFirst = [...holidays].sort((a, b) => b.date.localeCompare(a.date));
   const todayKey = formatLocalDateKey(new Date());
-  const upcoming = newestFirst.filter((holiday) => holiday.date > todayKey);
-  const past = newestFirst.filter((holiday) => holiday.date <= todayKey);
+  const upcoming = newestFirst.filter((holiday) => holiday.date >= todayKey);
+  const past = newestFirst.filter((holiday) => holiday.date < todayKey);
   // Past holidays start collapsed each time the dialog opens, but keep their
   // open state while the user adds or deletes entries inside the dialog.
   const wasPastOpen = holidayDialog.open
