@@ -413,6 +413,14 @@ function renderCaseJumpOptions(activeTasks) {
         const option = document.createElement("option");
         option.value = parentCase.id;
         option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
+        // List the Tasks linked to this Project so the relation is visible
+        // before jumping.
+        const relatedTaskNumbers = sortTasksByCaseNumberDescending(
+          activeTasks.filter((task) => task.parentCaseId === parentCase.id)
+        ).map((task) => task.caseNumber);
+        if (relatedTaskNumbers.length > 0) {
+          option.textContent += `　［Task: ${relatedTaskNumbers.join(", ")}］`;
+        }
         return option;
       }));
       return optgroup;
@@ -436,6 +444,10 @@ function renderCaseJumpOptions(activeTasks) {
         const option = document.createElement("option");
         option.value = task.id;
         option.textContent = `${task.caseNumber}｜${task.title}`;
+        const project = getProjectForTask(task);
+        if (project) {
+          option.textContent += `　［Project: ${project.caseNumber}｜${project.name}］`;
+        }
         return option;
       }));
       return optgroup;
