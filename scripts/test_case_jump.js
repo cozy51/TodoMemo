@@ -35,6 +35,14 @@ if (!source.includes("`${parentCase.caseNumber}｜${parentCase.name}`")) {
 if (!source.includes("`${task.caseNumber}｜${task.title}`")) {
   throw new Error("Task options must contain their code and name");
 }
+if (!source.includes("activeTasks.filter((task) => task.parentCaseId === parentCase.id)")
+  || !source.includes(".map((task) => `${task.caseNumber}｜${task.title}`)")
+  || !source.includes("［Task: ${relatedTaskLabels.join(\" / \")}］")) {
+  throw new Error("Parent-case options must list their related task codes and names");
+}
+if (!source.includes("［Project: ${project.caseNumber}｜${project.name}］")) {
+  throw new Error("Task options must show their related project");
+}
 if (!source.includes("sortTasksByCaseNumberDescending(activeTasks)")) {
   throw new Error("Task jump options must be sorted by case number descending");
 }
