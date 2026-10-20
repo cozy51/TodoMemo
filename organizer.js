@@ -415,11 +415,11 @@ function renderCaseJumpOptions(activeTasks) {
         option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
         // List the Tasks linked to this Project so the relation is visible
         // before jumping.
-        const relatedTaskNumbers = sortTasksByCaseNumberDescending(
+        const relatedTaskLabels = sortTasksByCaseNumberDescending(
           activeTasks.filter((task) => task.parentCaseId === parentCase.id)
-        ).map((task) => task.caseNumber);
-        if (relatedTaskNumbers.length > 0) {
-          option.textContent += `　［Task: ${relatedTaskNumbers.join(", ")}］`;
+        ).map((task) => `${task.caseNumber}｜${task.title}`);
+        if (relatedTaskLabels.length > 0) {
+          option.textContent += `　［Task: ${relatedTaskLabels.join(" / ")}］`;
         }
         return option;
       }));
