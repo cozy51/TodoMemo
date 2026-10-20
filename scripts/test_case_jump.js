@@ -36,12 +36,20 @@ if (!source.includes("`${task.caseNumber}｜${task.title}`")) {
   throw new Error("Task options must contain their code and name");
 }
 if (!source.includes("activeTasks.filter((task) => task.parentCaseId === parentCase.id)")
-  || !source.includes(".map((task) => `${task.caseNumber}｜${task.title}`)")
-  || !source.includes("［Task: ${relatedTaskLabels.join(\" / \")}］")) {
-  throw new Error("Parent-case options must list their related task codes and names");
+  || !source.includes("`Task: ${task.caseNumber}｜${task.title}`")) {
+  throw new Error("Parent-case options must list their related tasks with code and name");
 }
-if (!source.includes("［Project: ${project.caseNumber}｜${project.name}］")) {
+if (!source.includes("`Project: ${project.caseNumber}｜${project.name}`")) {
   throw new Error("Task options must show their related project");
+}
+if (!source.includes("function createRelatedJumpOption(value, label, isLast)")
+  || !source.includes('option.className = "case-jump-related-option"')) {
+  throw new Error("Related items must be rendered as their own indented rows");
+}
+if (!html.includes('id="caseJumpRelatedToggle"')
+  || !source.includes("function setCaseJumpRelatedExpanded(expanded)")
+  || !source.includes("if (!caseJumpRelatedExpanded) return [option];")) {
+  throw new Error("Related rows must be collapsible");
 }
 if (!source.includes("sortTasksByCaseNumberDescending(activeTasks)")) {
   throw new Error("Task jump options must be sorted by case number descending");

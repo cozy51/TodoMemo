@@ -31,6 +31,7 @@ const holidayList = document.querySelector("#holidayList");
 const holidayEmpty = document.querySelector("#holidayEmpty");
 const projectJumpSelect = document.querySelector("#projectJumpSelect");
 const taskJumpSelect = document.querySelector("#taskJumpSelect");
+const caseJumpRelatedToggle = document.querySelector("#caseJumpRelatedToggle");
 const searchInput = document.querySelector("#searchInput");
 const clearSearchButton = document.querySelector("#clearSearchButton");
 const searchHint = document.querySelector("#searchHint");
@@ -396,6 +397,30 @@ function groupTasksByRegistrationMonth(tasks) {
   return groups;
 }
 
+// Related rows sit under each jump option as indented, selectable lines
+// that jump straight to the related Project/Task.
+const RELATED_PROJECT_VALUE_PREFIX = "related-project:";
+const RELATED_TASK_VALUE_PREFIX = "related-task:";
+let caseJumpRelatedExpanded = true;
+
+function createRelatedJumpOption(value, label, isLast) {
+  const option = document.createElement("option");
+  option.value = value;
+  option.className = "case-jump-related-option";
+  option.textContent = `\u3000\u3000${isLast ? "└" : "├"} ${label}`;
+  return option;
+}
+
+function setCaseJumpRelatedExpanded(expanded) {
+  caseJumpRelatedExpanded = Boolean(expanded);
+  const label = caseJumpRelatedExpanded ? "関連を折りたたむ" : "関連を表示";
+  caseJumpRelatedToggle.dataset.state = caseJumpRelatedExpanded ? "expanded" : "collapsed";
+  caseJumpRelatedToggle.setAttribute("aria-expanded", String(caseJumpRelatedExpanded));
+  caseJumpRelatedToggle.querySelector(".case-jump-related-toggle-label").textContent = label;
+  caseJumpRelatedToggle.title = `プルダウン内の関連Project・Taskを${caseJumpRelatedExpanded ? "折りたたみます" : "表示します"}`;
+  renderCaseJumpOptions(getActiveTasks());
+}
+
 function renderCaseJumpOptions(activeTasks) {
   const parentPlaceholder = document.createElement("option");
   parentPlaceholder.value = "";
@@ -409,19 +434,22 @@ function renderCaseJumpOptions(activeTasks) {
     ...groupTasksByRegistrationMonth(sortedParentCases).map((group) => {
       const optgroup = document.createElement("optgroup");
       optgroup.label = `${getTaskRegistrationMonthLabel(group.monthKey)} ${group.tasks.length}件`;
-      optgroup.append(...group.tasks.map((parentCase) => {
+      optgroup.append(...group.tasks.flatMap((parentCase) => {
         const option = document.createElement("option");
         option.value = parentCase.id;
         option.textContent = `${parentCase.caseNumber}｜${parentCase.name}`;
-        // List the Tasks linked to this Project so the relation is visible
-        // before jumping.
-        const relatedTaskLabels = sortTasksByCaseNumberDescending(
+        if (!caseJumpRelatedExpanded) return [option];
+        const relatedTasks = sortTasksByCaseNumberDescending(
           activeTasks.filter((task) => task.parentCaseId === parentCase.id)
-        ).map((task) => `${task.caseNumber}｜${task.title}`);
-        if (relatedTaskLabels.length > 0) {
-          option.textContent += `　［Task: ${relatedTaskLabels.join(" / ")}］`;
-        }
-        return option;
+        );
+        return [
+          option,
+          ...relatedTasks.map((task, index) => createRelatedJumpOption(
+            `${RELATED_TASK_VALUE_PREFIX}${task.id}`,
+            `Task: ${task.caseNumber}｜${task.title}`,
+            index === relatedTasks.length - 1
+          ))
+        ];
       }));
       return optgroup;
     })
@@ -440,15 +468,20 @@ function renderCaseJumpOptions(activeTasks) {
     ...groupTasksByRegistrationMonth(sortedTasks).map((group) => {
       const optgroup = document.createElement("optgroup");
       optgroup.label = `${getTaskRegistrationMonthLabel(group.monthKey)} 残件${group.tasks.length}件`;
-      optgroup.append(...group.tasks.map((task) => {
+      optgroup.append(...group.tasks.flatMap((task) => {
         const option = document.createElement("option");
         option.value = task.id;
         option.textContent = `${task.caseNumber}｜${task.title}`;
-        const project = getProjectForTask(task);
-        if (project) {
-          option.textContent += `　［Project: ${project.caseNumber}｜${project.name}］`;
-        }
-        return option;
+        const project = caseJumpRelatedExpanded ? getProjectForTask(task) : null;
+        if (!project) return [option];
+        return [
+          option,
+          createRelatedJumpOption(
+            `${RELATED_PROJECT_VALUE_PREFIX}${project.id}`,
+            `Project: ${project.caseNumber}｜${project.name}`,
+            true
+          )
+        ];
       }));
       return optgroup;
     })
@@ -3191,17 +3224,46 @@ goalDateInput.addEventListener("input", markTaskEditorDirty);
 taskTagOptions.addEventListener("change", markTaskEditorDirty);
 projectSelect.addEventListener("change", markTaskEditorDirty);
 prioritySelect.addEventListener("change", markTaskEditorDirty);
-projectJumpSelect.addEventListener("change", () => {
-  const parentCase = parentCases.find((item) => item.id === projectJumpSelect.value);
-  if (!parentCase) return;
+function jumpToProject(parentCaseId) {
+  const parentCase = parentCases.find((item) => item.id === parentCaseId);
+  if (!parentCase) return false;
   setProjectViewMode("group");
   jumpToElement(document.getElementById(getProjectAnchorId(parentCase)));
-});
-taskJumpSelect.addEventListener("change", () => {
-  const task = getActiveTasks().find((item) => item.id === taskJumpSelect.value);
-  if (!task) return;
+  return true;
+}
+
+function jumpToActiveTask(taskId) {
+  const task = getActiveTasks().find((item) => item.id === taskId);
+  if (!task) return false;
   setActiveListCollapsed(false);
   jumpToElement(document.getElementById(getActiveTaskAnchorId(task)));
+  return true;
+}
+
+function handleCaseJumpChange(select) {
+  const { value } = select;
+  if (value.startsWith(RELATED_TASK_VALUE_PREFIX)) {
+    const taskId = value.slice(RELATED_TASK_VALUE_PREFIX.length);
+    // Keep the owning Project shown as the selection, not the indented row.
+    select.value = getActiveTasks().find((task) => task.id === taskId)?.parentCaseId || "";
+    jumpToActiveTask(taskId);
+    return;
+  }
+  if (value.startsWith(RELATED_PROJECT_VALUE_PREFIX)) {
+    const option = select.selectedOptions[0];
+    const ownerOption = option?.previousElementSibling;
+    select.value = ownerOption?.value || "";
+    jumpToProject(value.slice(RELATED_PROJECT_VALUE_PREFIX.length));
+    return;
+  }
+  if (select === projectJumpSelect) jumpToProject(value);
+  else jumpToActiveTask(value);
+}
+
+projectJumpSelect.addEventListener("change", () => handleCaseJumpChange(projectJumpSelect));
+taskJumpSelect.addEventListener("change", () => handleCaseJumpChange(taskJumpSelect));
+caseJumpRelatedToggle.addEventListener("click", () => {
+  setCaseJumpRelatedExpanded(!caseJumpRelatedExpanded);
 });
 linkInputs.addEventListener("input", (event) => {
   const input = event.target.closest(".link-url-input");
