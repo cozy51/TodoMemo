@@ -497,12 +497,14 @@ function getTaskLinkPresentation(value) {
   return { icon: "🔗", type: "リンク", label: host || normalized };
 }
 
-// Archived tasks are finished work kept on purpose, so they always satisfy the
-// completed invariant too.  Anything that only knows about `completed` — the
-// popup, backups written by older versions — then keeps them out of the active
-// list instead of resurrecting them.
+// Archived and canceled tasks are finished work as well, so they always
+// satisfy the completed invariant too.  Anything that only knows about
+// `completed` — the popup, backups written by older versions — then keeps them
+// out of the active list instead of resurrecting them.  A task sits in exactly
+// one finished state, so an archived task is never also counted as canceled.
 function normalizeTask(task, index) {
   const archived = Boolean(task.archived);
+  const canceled = !archived && Boolean(task.canceled);
   return {
     id: String(task.id || crypto.randomUUID()),
     caseNumber: String(task.caseNumber || "").trim().toUpperCase(),
@@ -513,12 +515,14 @@ function normalizeTask(task, index) {
     goalDate: typeof task.goalDate === "string" ? task.goalDate : "",
     tagIds: Array.isArray(task.tagIds) ? [...new Set(task.tagIds.map(String))] : [],
     links: normalizeTaskLinks(task.links),
-    completed: archived || Boolean(task.completed),
+    completed: archived || canceled || Boolean(task.completed),
     archived,
+    canceled,
     order: Number.isFinite(task.order) ? task.order : index,
     createdAt: task.createdAt || new Date().toISOString(),
     completedAt: task.completedAt || null,
-    archivedAt: archived ? (task.archivedAt || task.completedAt || null) : null
+    archivedAt: archived ? (task.archivedAt || task.completedAt || null) : null,
+    canceledAt: canceled ? (task.canceledAt || task.completedAt || null) : null
   };
 }
 

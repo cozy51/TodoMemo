@@ -93,7 +93,7 @@ if (!archivedTaskTemplate.includes('class="card-links-section"')) {
 
 if (!source.includes("function getArchivedTasks()")
   || !source.includes("function createArchivedCard(task)")
-  || !source.includes("async function setArchived(taskId, archived)")) {
+  || !source.includes("async function setFinishedStatus(taskId, status)")) {
   throw new Error("organizer.js must implement the archived task state");
 }
 if (!source.includes("function attachStatusToggle(card, task, currentStatus)")) {

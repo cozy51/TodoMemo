@@ -23,6 +23,7 @@
       <a href="#projectSection"><span>Projects</span><span id="navProjectCount" class="page-jump-count">0件</span></a>
       <a href="#tagSettingsSection"><span>Category Tags</span><span id="navTagCount" class="page-jump-count">0件</span></a>
       <a href="#completedSection"><span>Completed</span><span id="navCompletedCount" class="page-jump-count">0件</span></a>
+      <a href="#canceledSection"><span>Canceled</span><span id="navCanceledCount" class="page-jump-count">0件</span></a>
       <a href="#archivedSection"><span>Archived</span><span id="navArchivedCount" class="page-jump-count">0件</span></a>
     </nav>
 
@@ -311,6 +312,32 @@
           </button>
           <div id="completedList" class="task-list completed-list"></div>
           <p id="completedEmpty" class="completed-empty">完了したタスクはここに移動します。</p>
+        </section>
+
+        <section id="canceledSection" class="task-section canceled-section" aria-labelledby="canceledHeading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">取りやめ</p>
+              <div class="active-heading-row">
+                <h2 id="canceledHeading">Canceled <span id="canceledCount" class="count"></span></h2>
+                <button id="toggleCanceledListButton" class="collapse-active-button" type="button" aria-expanded="true" aria-controls="canceledList">
+                  <svg class="collapse-active-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m3.5 10 4.5-4.5 4.5 4.5"/>
+                  </svg>
+                  <span class="collapse-active-label">折りたたむ</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <p class="section-note">やらずに取りやめたタスクの置き場です。完了したタスクとは分けて残ります。「先月以前の完了をすべて削除」では消えません。</p>
+          <button id="canceledCollapsedNotice" class="active-collapsed-notice" type="button" aria-controls="canceledList" hidden>
+            <span class="active-collapsed-icon" aria-hidden="true">⌄</span>
+            <strong>中止一覧を折りたたんでいます</strong>
+            <span id="canceledCollapsedCount"></span>
+            <span class="active-collapsed-action">クリックして表示</span>
+          </button>
+          <div id="canceledList" class="task-list canceled-list"></div>
+          <p id="canceledEmpty" class="completed-empty">中止にしたタスクはここに移動します。</p>
         </section>
 
         <section id="archivedSection" class="task-section archived-section" aria-labelledby="archivedHeading">
@@ -635,6 +662,7 @@
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
             <button class="edit-button" type="button">編集</button>
+            <button class="cancel-task-button" type="button">中止にする</button>
             <button class="archive-button" type="button">アーカイブへ移動</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>
@@ -667,10 +695,14 @@
           <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
         </div>
         <div class="task-actions">
-          <div class="status-toggle" role="radiogroup" aria-label="完了・アーカイブの切り替え">
+          <div class="status-toggle" role="radiogroup" aria-label="完了・中止・アーカイブの切り替え">
             <label class="status-toggle-option">
               <input type="radio" class="status-radio-completed">
               <span>完了</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-canceled">
+              <span>中止</span>
             </label>
             <label class="status-toggle-option">
               <input type="radio" class="status-radio-archived">
@@ -680,6 +712,54 @@
           <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
           <div class="action-menu" hidden>
             <button class="restore-button" type="button">未完了に戻す</button>
+            <button class="delete-button danger-text" type="button">削除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <template id="canceledTaskTemplate">
+      <article class="task-card canceled-card">
+        <span class="cancel-mark" aria-hidden="true">✕</span>
+        <div class="task-copy">
+          <div class="card-case-row">
+            <p class="card-case-number case-number"></p>
+            <button class="copy-task-button" type="button">TaskCOPY</button>
+            <button class="copy-task-heading-button" type="button">TaskCOPY(番号_タイトル)</button>
+          </div>
+          <h3></h3>
+          <p class="card-project" hidden></p>
+          <div class="card-meta-row">
+            <div class="card-tags" hidden></div>
+            <p class="card-due" hidden></p>
+          </div>
+          <p class="card-canceled-at"></p>
+          <div class="card-links-section">
+            <span class="card-links-label">関連リンク</span>
+            <div class="card-links" aria-label="関連リンク" hidden></div>
+            <button class="card-paste-link-button paste-link-button" type="button">📋 URLを取り込む</button>
+          </div>
+          <div class="card-content markdown-body"></div>
+          <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
+        </div>
+        <div class="task-actions">
+          <div class="status-toggle" role="radiogroup" aria-label="完了・中止・アーカイブの切り替え">
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-completed">
+              <span>完了</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-canceled">
+              <span>中止</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-archived">
+              <span>アーカイブ</span>
+            </label>
+          </div>
+          <button class="more-button" type="button" aria-label="編集メニューを開く">•••</button>
+          <div class="action-menu" hidden>
+            <button class="restore-button" type="button">することに戻す</button>
             <button class="delete-button danger-text" type="button">削除</button>
           </div>
         </div>
@@ -712,10 +792,14 @@
           <p class="card-content-end-marker" aria-label="内容はここまでです"><span>END</span></p>
         </div>
         <div class="task-actions">
-          <div class="status-toggle" role="radiogroup" aria-label="完了・アーカイブの切り替え">
+          <div class="status-toggle" role="radiogroup" aria-label="完了・中止・アーカイブの切り替え">
             <label class="status-toggle-option">
               <input type="radio" class="status-radio-completed">
               <span>完了</span>
+            </label>
+            <label class="status-toggle-option">
+              <input type="radio" class="status-radio-canceled">
+              <span>中止</span>
             </label>
             <label class="status-toggle-option">
               <input type="radio" class="status-radio-archived">
