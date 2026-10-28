@@ -625,7 +625,14 @@
         <button class="drag-handle" type="button" aria-label="ドラッグして並び替え" title="ドラッグして並び替え">
           <svg viewBox="0 0 12 20" aria-hidden="true"><path d="M3 3h.01M9 3h.01M3 10h.01M9 10h.01M3 17h.01M9 17h.01"/></svg>
         </button>
-        <button class="complete-toggle" type="button" aria-label="完了にする"></button>
+        <div class="complete-toggle-wrap">
+          <button class="complete-toggle" type="button" aria-label="完了・中止・アーカイブを選ぶ" title="完了・中止・アーカイブを選ぶ" aria-haspopup="menu"></button>
+          <div class="action-menu finish-menu" role="menu" hidden>
+            <button class="finish-complete-button" type="button" role="menuitem">✓ 完了にする</button>
+            <button class="finish-cancel-button" type="button" role="menuitem">⊘ 中止にする</button>
+            <button class="finish-archive-button" type="button" role="menuitem">🗄 アーカイブへ移動</button>
+          </div>
+        </div>
         <span class="parent-task-item-priority card-priority-number"></span>
         <div class="task-copy">
           <div class="card-case-row">
