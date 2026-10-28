@@ -1965,10 +1965,7 @@ function createActiveCard(task, index, total) {
   attachTaskCopy(card, task);
   attachTaskLinkPaste(card, task);
 
-  card.querySelector(".complete-toggle").addEventListener("click", (event) => {
-    celebrateTaskCompletion(event.currentTarget);
-    setCompleted(task.id, true);
-  });
+  attachFinishMenu(card, task);
   card.querySelector(".quick-edit-button").addEventListener("click", () => openTaskDialog(task));
   card.querySelector(".edit-button").addEventListener("click", () => openTaskDialog(task));
 
@@ -2024,6 +2021,36 @@ function attachStatusToggle(card, task, currentStatus) {
     radio.addEventListener("change", () => {
       if (radio.checked) setFinishedStatus(task.id, status);
     });
+  });
+}
+
+// The circle on an active card opens a small menu so the task can be finished
+// as 完了, 中止 or アーカイブ from the start, not only marked 完了 and switched
+// afterwards.
+function attachFinishMenu(card, task) {
+  const toggle = card.querySelector(".complete-toggle");
+  const menu = card.querySelector(".finish-menu");
+
+  toggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const shouldOpen = menu.hidden;
+    closeAllMenus(menu);
+    menu.hidden = !shouldOpen;
+    if (shouldOpen) menu.querySelector("button").focus();
+  });
+
+  menu.querySelector(".finish-complete-button").addEventListener("click", () => {
+    closeAllMenus();
+    celebrateTaskCompletion(toggle);
+    setCompleted(task.id, true);
+  });
+  menu.querySelector(".finish-cancel-button").addEventListener("click", () => {
+    closeAllMenus();
+    setFinishedStatus(task.id, "canceled");
+  });
+  menu.querySelector(".finish-archive-button").addEventListener("click", () => {
+    closeAllMenus();
+    setFinishedStatus(task.id, "archived");
   });
 }
 

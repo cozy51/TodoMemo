@@ -1822,6 +1822,23 @@ button {
   font-weight: 800;
 }
 
+.complete-toggle-wrap {
+  position: relative;
+  width: 25px;
+}
+
+.task-card .finish-menu {
+  top: 30px;
+  right: auto;
+  left: 0;
+  min-width: 170px;
+}
+
+.task-card .finish-menu button {
+  display: block;
+  white-space: nowrap;
+}
+
 .task-copy {
   min-width: 0;
 }
