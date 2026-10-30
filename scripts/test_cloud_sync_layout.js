@@ -57,4 +57,13 @@ const requiredIds = [
   }
 });
 
+// Signed out means edits stay on this PC, so the page must look visibly different.
+if (!/background:[^;]*#fff1e3/.test(rule("body.is-cloud-signed-out"))) {
+  throw new Error("Signed-out pages must switch to the warm background");
+}
+const syncScript = fs.readFileSync(path.join(root, "cloud-sync.js"), "utf8");
+if (!/classList\.toggle\("is-cloud-signed-out"/.test(syncScript)) {
+  throw new Error("cloud-sync.js must toggle the signed-out body class");
+}
+
 console.log("Cloud-sync layout tests: OK");

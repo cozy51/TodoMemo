@@ -85,6 +85,8 @@
 
   function updateAuthControls() {
     const signedIn = Boolean(user);
+    // Tint the whole page while signed out so unsynced, PC-only edits are obvious.
+    document.body.classList.toggle("is-cloud-signed-out", Boolean(client) && !signedIn);
     if (emailInput) emailInput.hidden = signedIn;
     if (passwordInput) passwordInput.hidden = signedIn;
     if (signInButton) signInButton.hidden = signedIn;

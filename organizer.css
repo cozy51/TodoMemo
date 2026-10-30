@@ -32,6 +32,18 @@ body {
     var(--paper);
 }
 
+/* Signed out of cloud sync: warm background so it is clear edits stay on this PC. */
+body.is-cloud-signed-out {
+  background:
+    radial-gradient(circle at 86% -10%, #ffd9b3 0, transparent 32%),
+    #fff1e3;
+}
+
+body.is-cloud-signed-out .cloud-sync-status {
+  color: #b4532a;
+  font-weight: 700;
+}
+
 button,
 input,
 textarea {
