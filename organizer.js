@@ -2599,62 +2599,71 @@ function getTaskSearchFields(task) {
   };
 }
 
-function taskMatchesQuery(task, normalizedQuery) {
-  const fields = getTaskSearchFields(task);
-  return Object.values(fields).some((value) => value.toLowerCase().includes(normalizedQuery));
+// Matching itself lives in search-normalize.js: text is normalized only at
+// search time (NFKC, lower-case, separators removed) so "HU300" also finds
+// "HU-300" / "ＨＵ－３００", and whitespace-separated keywords must all match.
+function taskMatchesQuery(task, query) {
+  return searchTextsMatchQuery(Object.values(getTaskSearchFields(task)), query);
 }
 
 function searchTasks(rawQuery) {
-  const normalizedQuery = rawQuery.trim().toLowerCase();
-  if (normalizedQuery.length < SEARCH_MIN_LENGTH) return [];
+  const trimmedQuery = rawQuery.trim();
+  if (trimmedQuery.length < SEARCH_MIN_LENGTH) return [];
+  const query = parseSearchQuery(trimmedQuery);
 
   return tasks
-    .filter((task) => taskMatchesQuery(task, normalizedQuery))
-    .map((task) => ({ task, status: getTaskStatusMeta(task) }))
+    .filter((task) => taskMatchesQuery(task, query))
+    .map((task) => {
+      const fields = getTaskSearchFields(task);
+      return {
+        task,
+        status: getTaskStatusMeta(task),
+        tier: getSearchMatchTier(Object.values(fields), query),
+        titleRank: searchTextsMatchQuery([fields.title], query) ? 0 : 1
+      };
+    })
     .sort((a, b) => {
-      const titleMatchA = a.task.title.toLowerCase().includes(normalizedQuery) ? 0 : 1;
-      const titleMatchB = b.task.title.toLowerCase().includes(normalizedQuery) ? 0 : 1;
-      if (titleMatchA !== titleMatchB) return titleMatchA - titleMatchB;
+      // 完全一致 → 正規化後の一致 → 部分一致 (タイトル優先, 表記そのまま優先)
+      const exactA = Math.min(a.tier, 2);
+      const exactB = Math.min(b.tier, 2);
+      if (exactA !== exactB) return exactA - exactB;
+      if (a.titleRank !== b.titleRank) return a.titleRank - b.titleRank;
+      if (a.tier !== b.tier) return a.tier - b.tier;
       if (a.status.order !== b.status.order) return a.status.order - b.status.order;
       return String(b.task.caseNumber).localeCompare(String(a.task.caseNumber), "en");
-    });
+    })
+    .map(({ task, status }) => ({ task, status }));
 }
 
-// Splits `text` on case-insensitive occurrences of `query` and appends each
-// piece as either a plain text node or a <mark>, so matches never pass
-// through innerHTML.
-function appendHighlightedText(container, text, normalizedQuery) {
-  if (!normalizedQuery) {
+// Appends `text` with every (normalization-aware) match of the query wrapped
+// in a <mark>, so matches never pass through innerHTML.
+function appendHighlightedText(container, text, query) {
+  const ranges = query ? getSearchHighlightRanges(text, query) : [];
+  if (!ranges.length) {
     container.append(text);
     return;
   }
-  const lowerText = text.toLowerCase();
   let cursor = 0;
-  let matchIndex = lowerText.indexOf(normalizedQuery, cursor);
-  if (matchIndex < 0) {
-    container.append(text);
-    return;
-  }
-  while (matchIndex >= 0) {
-    if (matchIndex > cursor) container.append(text.slice(cursor, matchIndex));
+  ranges.forEach(([start, end]) => {
+    if (start > cursor) container.append(text.slice(cursor, start));
     const mark = document.createElement("mark");
-    mark.textContent = text.slice(matchIndex, matchIndex + normalizedQuery.length);
+    mark.textContent = text.slice(start, end);
     container.append(mark);
-    cursor = matchIndex + normalizedQuery.length;
-    matchIndex = lowerText.indexOf(normalizedQuery, cursor);
-  }
+    cursor = end;
+  });
   if (cursor < text.length) container.append(text.slice(cursor));
 }
 
 // Trims `text` down to a window around the first match of the query so the
 // matched part is always visible in the one-line snippet.
-function buildSnippetWindow(text, normalizedQuery) {
+function buildSnippetWindow(text, query) {
   const flattened = String(text || "").replace(/\s+/g, " ").trim();
-  const matchIndex = flattened.toLowerCase().indexOf(normalizedQuery);
-  if (matchIndex < 0) return null;
+  const [firstMatch] = getSearchHighlightRanges(flattened, query);
+  if (!firstMatch) return null;
+  const [matchStart, matchEnd] = firstMatch;
 
-  const start = Math.max(0, matchIndex - SEARCH_SNIPPET_RADIUS);
-  const end = Math.min(flattened.length, matchIndex + normalizedQuery.length + SEARCH_SNIPPET_RADIUS);
+  const start = Math.max(0, matchStart - SEARCH_SNIPPET_RADIUS);
+  const end = Math.min(flattened.length, matchEnd + SEARCH_SNIPPET_RADIUS);
   const prefix = start > 0 ? "…" : "";
   const suffix = end < flattened.length ? "…" : "";
   return `${prefix}${flattened.slice(start, end)}${suffix}`;
@@ -2662,7 +2671,7 @@ function buildSnippetWindow(text, normalizedQuery) {
 
 // Lists every field (other than the title and Task番号, which are always shown)
 // the query matched in, labelled so it is clear where the hit came from.
-function buildSearchSnippets(task, normalizedQuery) {
+function buildSearchSnippets(task, query) {
   const fields = getTaskSearchFields(task);
   return [
     { label: "内容", text: fields.content },
@@ -2670,7 +2679,7 @@ function buildSearchSnippets(task, normalizedQuery) {
     { label: "タグ", text: fields.tags },
     { label: "リンク", text: fields.links }
   ]
-    .map(({ label, text }) => ({ label, text: buildSnippetWindow(text, normalizedQuery) }))
+    .map(({ label, text }) => ({ label, text: buildSnippetWindow(text, query) }))
     .filter(({ text }) => text);
 }
 
@@ -2721,7 +2730,7 @@ function createSearchResultDateChips(task) {
   return [due, goal];
 }
 
-function createSearchResultItem({ task, status }, normalizedQuery) {
+function createSearchResultItem({ task, status }, query) {
   const item = document.createElement("li");
   item.className = "search-result-item-wrap";
 
@@ -2743,18 +2752,18 @@ function createSearchResultItem({ task, status }, normalizedQuery) {
   statusBadge.textContent = status.label;
   const caseNumber = document.createElement("span");
   caseNumber.className = "search-result-item-case";
-  appendHighlightedText(caseNumber, task.caseNumber, normalizedQuery);
+  appendHighlightedText(caseNumber, task.caseNumber, query);
   meta.append(statusBadge, caseNumber, ...createSearchResultDateChips(task));
 
   const title = document.createElement("span");
   title.className = "search-result-item-title";
-  appendHighlightedText(title, ensureEmojiPresentation(task.title), normalizedQuery);
+  appendHighlightedText(title, ensureEmojiPresentation(task.title), query);
 
   const body = document.createElement("span");
   body.className = "search-result-item-body";
   body.append(meta, title);
 
-  buildSearchSnippets(task, normalizedQuery).forEach(({ label, text }) => {
+  buildSearchSnippets(task, query).forEach(({ label, text }) => {
     const snippet = document.createElement("span");
     snippet.className = "search-result-item-snippet";
     const fieldLabel = document.createElement("span");
@@ -2762,7 +2771,7 @@ function createSearchResultItem({ task, status }, normalizedQuery) {
     fieldLabel.textContent = label;
     const snippetText = document.createElement("span");
     snippetText.className = "search-result-item-snippet-text";
-    appendHighlightedText(snippetText, text, normalizedQuery);
+    appendHighlightedText(snippetText, text, query);
     snippet.append(fieldLabel, snippetText);
     body.append(snippet);
   });
@@ -2784,10 +2793,11 @@ function renderSearchResults() {
   }
 
   const results = searchTasks(searchQuery);
+  const query = parseSearchQuery(searchQuery);
   searchHint.hidden = true;
   searchEmpty.hidden = results.length > 0;
   searchResultsList.replaceChildren(
-    ...results.map((result) => createSearchResultItem(result, normalizedQuery))
+    ...results.map((result) => createSearchResultItem(result, query))
   );
 }
 
