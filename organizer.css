@@ -2056,6 +2056,17 @@ button {
   color: #2359c4;
 }
 
+.project-links {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-links .project-link {
+  padding: 2px 6px;
+}
+
 .project-copy-button,
 .project-paste-link-button {
   flex: 0 0 auto;
@@ -3202,6 +3213,12 @@ button {
   grid-column: 2 / -1;
   min-height: 0;
   margin-top: -10px;
+}
+
+.project-url-inputs {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
 .project-list {
@@ -4499,7 +4516,7 @@ button:focus-visible {
   }
 
   .project-row .project-name-input,
-  .project-row .project-url-input {
+  .project-row .project-url-inputs {
     grid-column: 1 / -1;
   }
 

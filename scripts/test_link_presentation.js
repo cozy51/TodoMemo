@@ -68,4 +68,19 @@ if (
   throw new Error("The Gemini Notebook URL was not recognized");
 }
 
+const sorted = JSON.parse(vm.runInContext(`JSON.stringify(sortLinksForDisplay([
+  "https://example.com/other",
+  "https://loop.cloud.microsoft/p/example",
+  "https://github.com/example",
+  "https://drive.google.com/drive/folders/example"
+]))`, context));
+if (JSON.stringify(sorted) !== JSON.stringify([
+  "https://drive.google.com/drive/folders/example",
+  "https://loop.cloud.microsoft/p/example",
+  "https://example.com/other",
+  "https://github.com/example"
+])) {
+  throw new Error(`Links should be ordered Drive, Loop, then others: ${JSON.stringify(sorted)}`);
+}
+
 console.log("Link-presentation tests: OK");

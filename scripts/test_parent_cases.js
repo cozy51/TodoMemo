@@ -127,6 +127,27 @@ if (rejectedUrl !== "") {
   throw new Error(`Expected mailto URL to be rejected, received ${rejectedUrl}`);
 }
 
+const migratedUrls = run(`
+  JSON.stringify(normalizeParentCase({ url: "https://example.com/a" }))
+`);
+const migratedProject = JSON.parse(migratedUrls);
+if (migratedProject.url !== "https://example.com/a" || JSON.stringify(migratedProject.urls) !== JSON.stringify(["https://example.com/a"])) {
+  throw new Error(`Legacy url was not migrated to urls: ${migratedUrls}`);
+}
+
+const limitedUrls = JSON.parse(run(`
+  JSON.stringify(normalizeParentCase({
+    url: "https://example.com/a",
+    urls: ["https://example.com/a", "mailto:x@example.com", "https://example.com/b", "https://example.com/c"]
+  }))
+`));
+if (
+  JSON.stringify(limitedUrls.urls) !== JSON.stringify(["https://example.com/a", "https://example.com/b"]) ||
+  limitedUrls.url !== "https://example.com/a"
+) {
+  throw new Error(`Project urls should be deduplicated and limited to 2: ${JSON.stringify(limitedUrls)}`);
+}
+
 const normalizedIdeaMemos = run(`
   normalizeParentCase({
     ideaMemos: [

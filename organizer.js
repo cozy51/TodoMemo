@@ -95,7 +95,7 @@ const tagCount = document.querySelector("#tagCount");
 const tagError = document.querySelector("#tagError");
 const projectForm = document.querySelector("#projectForm");
 const projectNameInput = document.querySelector("#projectNameInput");
-const projectUrlInput = document.querySelector("#projectUrlInput");
+const projectUrlInputs = [...document.querySelectorAll(".project-form-url-input")];
 const projectError = document.querySelector("#projectError");
 const projectList = document.querySelector("#projectList");
 const projectEmpty = document.querySelector("#projectEmpty");
@@ -1039,7 +1039,7 @@ function createCompactTaskRow(task, index) {
   const links = document.createElement("div");
   links.className = "compact-task-links";
   if (task.links.length > 0) {
-    links.append(...task.links.map((link) => createTaskLink(link, "table-link")));
+    links.append(...sortLinksForDisplay(task.links).map((link) => createTaskLink(link, "table-link")));
   } else {
     const emptyLinks = document.createElement("span");
     emptyLinks.className = "compact-cell-empty";
@@ -1357,7 +1357,7 @@ function renderTaskLinkIcon(container, presentation) {
 }
 
 function renderLinks(container, links) {
-  container.replaceChildren(...links.map((link) => createTaskLink(link)));
+  container.replaceChildren(...sortLinksForDisplay(links).map((link) => createTaskLink(link)));
   container.hidden = links.length === 0;
 }
 
@@ -1425,24 +1425,28 @@ function appendProjectLabel(container, parentCase, { editableTitle = false } = {
 }
 
 function appendProjectActions(container, parentCase) {
-  const linkStatus = document.createElement(parentCase.url ? "a" : "span");
-  linkStatus.className = "project-link-status";
-  linkStatus.dataset.state = parentCase.url ? "linked" : "none";
-  linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
-  if (parentCase.url) {
-    linkStatus.href = parentCase.url;
-    linkStatus.target = "_blank";
-    linkStatus.rel = "noopener noreferrer";
-    linkStatus.title = `Projectリンクを開く: ${parentCase.url}`;
+  if (parentCase.urls.length > 0) {
+    const projectLinks = document.createElement("span");
+    projectLinks.className = "project-links";
+    projectLinks.setAttribute("aria-label", `${parentCase.caseNumber}のProjectリンク`);
+    projectLinks.append(...sortLinksForDisplay(parentCase.urls).map((link) =>
+      createTaskLink(link, "table-link project-link")
+    ));
+    container.append(projectLinks);
+  } else {
+    const linkStatus = document.createElement("span");
+    linkStatus.className = "project-link-status";
+    linkStatus.dataset.state = "none";
+    linkStatus.textContent = "リンクなし";
+    container.append(linkStatus);
   }
-  container.append(linkStatus);
 
-  if (!parentCase.url) {
+  if (parentCase.urls.length < TODO_MEMO_MAX_PROJECT_LINKS) {
     const pasteButton = document.createElement("button");
     pasteButton.className = "project-paste-link-button paste-link-button";
     pasteButton.type = "button";
     pasteButton.textContent = "📋 URLを取り込む";
-    pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む`;
+    pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む（最大${TODO_MEMO_MAX_PROJECT_LINKS}件）`;
     pasteButton.addEventListener("click", async () => {
       pasteButton.disabled = true;
       try {
@@ -1453,10 +1457,17 @@ function appendProjectActions(container, parentCase) {
           showToast("クリップボードにURLが見つかりません");
           return;
         }
-        parentCase.url = pastedLinks[0];
+        const nextUrls = normalizeParentCaseUrls([...parentCase.urls, ...pastedLinks]);
+        const added = nextUrls.length - parentCase.urls.length;
+        if (added === 0) {
+          showToast("取り込めるURLがありません（登録済み）");
+          return;
+        }
+        parentCase.urls = nextUrls;
+        parentCase.url = nextUrls[0];
         parentCases = await saveParentCases(parentCases);
         render();
-        showToast("ProjectにURLを取り込みました");
+        showToast(`ProjectにURLを${added}件取り込みました`);
       } catch (_error) {
         showToast("クリップボードを読み取れませんでした");
       } finally {
@@ -2125,13 +2136,19 @@ function renderProjectSettings() {
     name.value = parentCase.name;
     name.setAttribute("aria-label", `${parentCase.caseNumber}のProject名`);
 
-    const url = document.createElement("input");
-    url.className = "project-url-input";
-    url.type = "url";
-    url.inputMode = "url";
-    url.value = parentCase.url;
-    url.placeholder = "https://…";
-    url.setAttribute("aria-label", `${parentCase.caseNumber}のURL`);
+    const urlInputs = Array.from({ length: TODO_MEMO_MAX_PROJECT_LINKS }, (_, index) => {
+      const input = document.createElement("input");
+      input.className = "project-url-input";
+      input.type = "url";
+      input.inputMode = "url";
+      input.value = parentCase.urls[index] || "";
+      input.placeholder = index === 0 ? "https://…" : "https://…（2件目）";
+      input.setAttribute("aria-label", `${parentCase.caseNumber}のURL${index + 1}`);
+      return input;
+    });
+    const urls = document.createElement("div");
+    urls.className = "project-url-inputs";
+    urls.append(...urlInputs);
 
     const usedCount = document.createElement("span");
     usedCount.className = "project-used-count";
@@ -2140,18 +2157,20 @@ function renderProjectSettings() {
 
     const saveParentCaseEdits = async () => {
       const nextName = name.value.trim();
-      const rawUrl = url.value.trim();
-      const nextUrl = normalizeParentCaseUrl(rawUrl);
       if (!nextName) {
         showToast("Project名を入力してください");
         name.focus();
         return false;
       }
-      if (rawUrl && !nextUrl) {
+      const invalidUrlInput = urlInputs.find((input) =>
+        input.value.trim() && !normalizeParentCaseUrl(input.value.trim())
+      );
+      if (invalidUrlInput) {
         showToast("ProjectURLはhttp://またはhttps://で入力してください");
-        url.focus();
+        invalidUrlInput.focus();
         return false;
       }
+      const nextUrls = normalizeParentCaseUrls(urlInputs.map((input) => input.value.trim()));
       if (
         parentCases.some((item) =>
           item.id !== parentCase.id &&
@@ -2162,16 +2181,20 @@ function renderProjectSettings() {
         name.focus();
         return false;
       }
-      if (parentCase.name === nextName && parentCase.url === nextUrl) return true;
+      if (
+        parentCase.name === nextName &&
+        parentCase.urls.join("\n") === nextUrls.join("\n")
+      ) return true;
       parentCase.name = nextName;
-      parentCase.url = nextUrl;
+      parentCase.urls = nextUrls;
+      parentCase.url = nextUrls[0] || "";
       parentCases = await saveParentCases(parentCases);
       render();
       showToast("Projectを更新しました");
       return true;
     };
 
-    [name, url].forEach((input) => {
+    [name, ...urlInputs].forEach((input) => {
       input.addEventListener("input", () => {
         row.dataset.dirty = "true";
       });
@@ -2201,7 +2224,7 @@ function renderProjectSettings() {
       showToast("Projectを削除しました");
     });
 
-    row.append(number, name, url, usedCount, remove);
+    row.append(number, name, urls, usedCount, remove);
     return row;
   }));
 }
@@ -2322,7 +2345,7 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
     taskLinks.className = "parent-task-item-links";
     taskLinks.setAttribute("aria-label", `${task.caseNumber}の関連リンク`);
     if (task.links.length > 0) {
-      taskLinks.append(...task.links.map((taskLink) =>
+      taskLinks.append(...sortLinksForDisplay(task.links).map((taskLink) =>
         createTaskLink(taskLink, "table-link parent-task-link")
       ));
     } else {
@@ -3178,8 +3201,10 @@ async function addTag(event) {
 async function addProject(event) {
   event.preventDefault();
   const name = projectNameInput.value.trim();
-  const rawUrl = projectUrlInput.value.trim();
-  const url = normalizeParentCaseUrl(rawUrl);
+  const invalidUrlInput = projectUrlInputs.find((input) =>
+    input.value.trim() && !normalizeParentCaseUrl(input.value.trim())
+  );
+  const urls = normalizeParentCaseUrls(projectUrlInputs.map((input) => input.value.trim()));
   projectError.textContent = "";
 
   if (!name) {
@@ -3187,9 +3212,9 @@ async function addProject(event) {
     projectNameInput.focus();
     return;
   }
-  if (rawUrl && !url) {
+  if (invalidUrlInput) {
     projectError.textContent = "URLはhttp://またはhttps://で入力してください";
-    projectUrlInput.focus();
+    invalidUrlInput.focus();
     return;
   }
   if (
@@ -3219,7 +3244,8 @@ async function addProject(event) {
     id: crypto.randomUUID(),
     caseNumber,
     name,
-    url,
+    url: urls[0] || "",
+    urls,
     ideaMemos: [],
     createdAt: new Date().toISOString()
   };
