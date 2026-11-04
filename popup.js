@@ -292,7 +292,7 @@ function updateLinkInputIcon(row) {
 }
 
 function renderLinkInputs(links = []) {
-  editLinkInputs.replaceChildren(...Array.from({ length: TODO_MEMO_MAX_LINKS }, (_, index) => {
+  editLinkInputs.replaceChildren(...Array.from({ length: Math.max(TODO_MEMO_MAX_LINKS, links.length) }, (_, index) => {
     const row = document.createElement("div");
     row.className = "link-input-row";
 
@@ -357,7 +357,7 @@ async function pasteLinksFromClipboard() {
 
     if (added === 0) {
       setLinkMessage(existing.size >= TODO_MEMO_MAX_LINKS
-        ? "リンクは3件までです。"
+        ? `リンクは${TODO_MEMO_MAX_LINKS}件までです。`
         : "同じリンクがすでに登録されています。", "error");
       return;
     }
@@ -373,7 +373,7 @@ async function pasteLinksFromClipboard() {
 async function pasteLinksToCurrentTask() {
   if (!currentTask) return;
   if (currentTask.links.length >= TODO_MEMO_MAX_LINKS) {
-    showPopupToast("リンクは3件までです", "error");
+    showPopupToast(`リンクは${TODO_MEMO_MAX_LINKS}件までです`, "error");
     return;
   }
 

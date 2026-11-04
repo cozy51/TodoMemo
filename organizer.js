@@ -1663,7 +1663,7 @@ function updateLinkInputIcon(row) {
 }
 
 function renderLinkInputs(links = []) {
-  linkInputs.replaceChildren(...Array.from({ length: TODO_MEMO_MAX_LINKS }, (_, index) => {
+  linkInputs.replaceChildren(...Array.from({ length: Math.max(TODO_MEMO_MAX_LINKS, links.length) }, (_, index) => {
     const row = document.createElement("div");
     row.className = "link-input-row";
 
@@ -1728,7 +1728,7 @@ async function pasteLinksFromClipboard() {
 
     if (added === 0) {
       setLinkMessage(existing.size >= TODO_MEMO_MAX_LINKS
-        ? "リンクは3件までです。"
+        ? `リンクは${TODO_MEMO_MAX_LINKS}件までです。`
         : "同じリンクがすでに登録されています。", "error");
       return;
     }
@@ -1917,7 +1917,7 @@ function attachTaskLinkPaste(card, task) {
   const button = card.querySelector(".card-paste-link-button");
   button.addEventListener("click", async () => {
     if (task.links.length >= TODO_MEMO_MAX_LINKS) {
-      showToast("リンクは3件までです");
+      showToast(`リンクは${TODO_MEMO_MAX_LINKS}件までです`);
       return;
     }
 
