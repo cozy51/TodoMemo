@@ -10,7 +10,10 @@ const TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY = "todoMemoDataUpdatedAt";
 // Clocks between devices drift, so a file has to look meaningfully older than
 // the current data before the restore is treated as a step backwards.
 const TODO_MEMO_STALE_RESTORE_TOLERANCE_MS = 60 * 1000;
-const TODO_MEMO_MAX_LINKS = 3;
+// New task links are limited to 2. Tasks saved while the limit was 3 keep
+// their existing links until the user removes them, so nothing is dropped.
+const TODO_MEMO_MAX_LINKS = 2;
+const TODO_MEMO_STORED_LINKS_LIMIT = 3;
 const TODO_MEMO_MAX_PROJECT_LINKS = 2;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_DATASET_STORAGE_KEYS = [
@@ -402,7 +405,7 @@ function normalizeTaskLinks(values) {
   const normalized = Array.isArray(values)
     ? values.map(normalizeTaskLink).filter(Boolean)
     : [];
-  return [...new Set(normalized)].slice(0, TODO_MEMO_MAX_LINKS);
+  return [...new Set(normalized)].slice(0, TODO_MEMO_STORED_LINKS_LIMIT);
 }
 
 function extractTaskLinks(text) {

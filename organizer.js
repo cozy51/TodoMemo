@@ -1445,7 +1445,7 @@ function appendProjectActions(container, parentCase) {
     const pasteButton = document.createElement("button");
     pasteButton.className = "project-paste-link-button paste-link-button";
     pasteButton.type = "button";
-    pasteButton.textContent = "URL-Paste";
+    pasteButton.textContent = "📥 URL-Paste";
     pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む（最大${TODO_MEMO_MAX_PROJECT_LINKS}件）`;
     pasteButton.addEventListener("click", async () => {
       pasteButton.disabled = true;
@@ -1480,7 +1480,7 @@ function appendProjectActions(container, parentCase) {
   const copyButton = document.createElement("button");
   copyButton.className = "project-copy-button";
   copyButton.type = "button";
-  copyButton.textContent = "Project-Copy";
+  copyButton.textContent = "📋 Project-Copy";
   copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
   copyButton.addEventListener("click", async () => {
     try {
@@ -1662,8 +1662,14 @@ function updateLinkInputIcon(row) {
   renderTaskLinkIcon(icon, presentation);
 }
 
+function updatePasteLinkButtonVisibility() {
+  const filled = [...linkInputs.querySelectorAll(".link-url-input")]
+    .filter((input) => input.value.trim()).length;
+  pasteLinkButton.hidden = filled >= TODO_MEMO_MAX_LINKS;
+}
+
 function renderLinkInputs(links = []) {
-  linkInputs.replaceChildren(...Array.from({ length: TODO_MEMO_MAX_LINKS }, (_, index) => {
+  linkInputs.replaceChildren(...Array.from({ length: Math.max(TODO_MEMO_MAX_LINKS, links.length) }, (_, index) => {
     const row = document.createElement("div");
     row.className = "link-input-row";
 
@@ -1691,6 +1697,7 @@ function renderLinkInputs(links = []) {
     updateLinkInputIcon(row);
     return row;
   }));
+  updatePasteLinkButtonVisibility();
 }
 
 function collectLinkInputValues() {
@@ -1728,12 +1735,13 @@ async function pasteLinksFromClipboard() {
 
     if (added === 0) {
       setLinkMessage(existing.size >= TODO_MEMO_MAX_LINKS
-        ? "リンクは3件までです。"
+        ? `リンクは${TODO_MEMO_MAX_LINKS}件までです。`
         : "同じリンクがすでに登録されています。", "error");
       return;
     }
 
     setLinkMessage(`${added}件のリンクを追加しました。`, "success");
+    updatePasteLinkButtonVisibility();
     markTaskEditorDirty();
   } catch (_error) {
     setLinkMessage("クリップボードを読み取れませんでした。", "error");
@@ -1915,9 +1923,11 @@ function attachTaskCopy(card, task) {
 
 function attachTaskLinkPaste(card, task) {
   const button = card.querySelector(".card-paste-link-button");
+  // Hide the paste button once the task already has the maximum number of links.
+  button.hidden = task.links.length >= TODO_MEMO_MAX_LINKS;
   button.addEventListener("click", async () => {
     if (task.links.length >= TODO_MEMO_MAX_LINKS) {
-      showToast("リンクは3件までです");
+      showToast(`リンクは${TODO_MEMO_MAX_LINKS}件までです`);
       return;
     }
 
@@ -3443,6 +3453,7 @@ linkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
+  updatePasteLinkButtonVisibility();
   markTaskEditorDirty();
 });
 linkInputs.addEventListener("click", (event) => {
@@ -3452,6 +3463,7 @@ linkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
+  updatePasteLinkButtonVisibility();
   markTaskEditorDirty();
 });
 pasteLinkButton.addEventListener("click", pasteLinksFromClipboard);

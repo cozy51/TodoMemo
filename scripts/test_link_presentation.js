@@ -83,4 +83,15 @@ if (JSON.stringify(sorted) !== JSON.stringify([
   throw new Error(`Links should be ordered Drive, Loop, then others: ${JSON.stringify(sorted)}`);
 }
 
+const linkLimits = JSON.parse(vm.runInContext(`JSON.stringify({
+  max: TODO_MEMO_MAX_LINKS,
+  legacy: normalizeTaskLinks(["https://a.example/", "https://b.example/", "https://c.example/", "https://d.example/"])
+})`, context));
+if (linkLimits.max !== 2) {
+  throw new Error(`New task links should be limited to 2: ${linkLimits.max}`);
+}
+if (linkLimits.legacy.length !== 3) {
+  throw new Error(`Existing tasks with 3 links should keep them: ${JSON.stringify(linkLimits.legacy)}`);
+}
+
 console.log("Link-presentation tests: OK");

@@ -1016,3 +1016,8 @@ button:focus-visible,
   outline: 3px solid rgba(47, 111, 237, .25);
   outline-offset: 2px;
 }
+
+/* Paste buttons are hidden once the link limit is reached. */
+.paste-link-button[hidden] {
+  display: none !important;
+}
