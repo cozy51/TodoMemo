@@ -567,7 +567,7 @@ function renderCurrentTaskDetails() {
     const copyButton = document.createElement("button");
     copyButton.className = "project-copy-button";
     copyButton.type = "button";
-    copyButton.textContent = "📋 Project-Copy";
+    copyButton.textContent = "📋 Project";
     copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
     copyButton.addEventListener("click", async () => {
       try {
