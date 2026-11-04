@@ -1021,3 +1021,29 @@ button:focus-visible,
 .paste-link-button[hidden] {
   display: none !important;
 }
+
+/* Copy / Paste command buttons share a light-pink fill so they read as
+   clipboard commands, distinct from blue navigation and edit buttons. */
+:root {
+  --command-ink: #b0306f;
+  --command-border: #f3c2d8;
+  --command-bg: #fff1f7;
+  --command-hover-border: #e693b9;
+  --command-hover-bg: #ffe2ef;
+}
+
+.copy-task-button,
+.project-copy-button,
+.paste-link-button {
+  color: var(--command-ink);
+  border-color: var(--command-border);
+  background: var(--command-bg);
+}
+
+.copy-task-button:hover:not(:disabled),
+.project-copy-button:hover:not(:disabled),
+.paste-link-button:hover:not(:disabled) {
+  color: #94205a;
+  border-color: var(--command-hover-border);
+  background: var(--command-hover-bg);
+}
