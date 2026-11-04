@@ -25,7 +25,7 @@ const activeContentIndex = activeTaskTemplate.indexOf('class="card-content markd
 if (activeLinksIndex < 0 || activeContentIndex < activeLinksIndex) {
   throw new Error("Task-card content must be displayed after the related-links section");
 }
-if (!activeTaskTemplate.includes("📋 URLを取り込む")) {
+if (!activeTaskTemplate.includes("URL-Paste")) {
   throw new Error("Task cards must provide a URL import button");
 }
 const relatedLabelIndex = activeTaskTemplate.indexOf('class="card-links-label"');
