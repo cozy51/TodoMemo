@@ -4616,3 +4616,8 @@ button:focus-visible {
     animation: none;
   }
 }
+
+/* Paste buttons are hidden once the link limit is reached. */
+.paste-link-button[hidden] {
+  display: none !important;
+}

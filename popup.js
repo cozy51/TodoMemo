@@ -280,6 +280,9 @@ function renderTaskLinkIcon(container, presentation) {
 function renderLinks(container, links) {
   container.replaceChildren(...sortLinksForDisplay(links).map((link) => createTaskLink(link)));
   container.hidden = links.length === 0;
+  if (container === taskLinks) {
+    taskPasteLinkButton.hidden = links.length >= TODO_MEMO_MAX_LINKS;
+  }
 }
 
 function updateLinkInputIcon(row) {
@@ -289,6 +292,12 @@ function updateLinkInputIcon(row) {
     ? getTaskLinkPresentation(input.value)
     : { icon: "🔗" };
   renderTaskLinkIcon(icon, presentation);
+}
+
+function updatePasteLinkButtonVisibility() {
+  const filled = [...editLinkInputs.querySelectorAll(".link-url-input")]
+    .filter((input) => input.value.trim()).length;
+  editPasteLinkButton.hidden = filled >= TODO_MEMO_MAX_LINKS;
 }
 
 function renderLinkInputs(links = []) {
@@ -320,6 +329,7 @@ function renderLinkInputs(links = []) {
     updateLinkInputIcon(row);
     return row;
   }));
+  updatePasteLinkButtonVisibility();
 }
 
 function collectLinkInputValues() {
@@ -362,6 +372,7 @@ async function pasteLinksFromClipboard() {
       return;
     }
     setLinkMessage(`${added}件のリンクを追加しました。`, "success");
+    updatePasteLinkButtonVisibility();
     persistEditorChanges();
   } catch (_error) {
     setLinkMessage("クリップボードを読み取れませんでした。", "error");
@@ -821,6 +832,7 @@ editLinkInputs.addEventListener("input", (event) => {
       : "URLまたはメールアドレスを登録できます。",
     input.value.trim() && !normalizeTaskLink(input.value) ? "error" : ""
   );
+  updatePasteLinkButtonVisibility();
   markEditorDirty();
 });
 editLinkInputs.addEventListener("click", (event) => {
@@ -830,6 +842,7 @@ editLinkInputs.addEventListener("click", (event) => {
   row.querySelector(".link-url-input").value = "";
   updateLinkInputIcon(row);
   setLinkMessage("リンクを削除しました。", "success");
+  updatePasteLinkButtonVisibility();
   markEditorDirty();
 });
 editPasteLinkButton.addEventListener("click", pasteLinksFromClipboard);
