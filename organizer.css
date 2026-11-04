@@ -4622,14 +4622,14 @@ button:focus-visible {
   display: none !important;
 }
 
-/* Copy / Paste command buttons share a light-pink fill so they read as
+/* Copy / Paste command buttons share a light-yellow fill so they read as
    clipboard commands, distinct from blue navigation and edit buttons. */
 :root {
-  --command-ink: #b0306f;
-  --command-border: #f3c2d8;
-  --command-bg: #fff1f7;
-  --command-hover-border: #e693b9;
-  --command-hover-bg: #ffe2ef;
+  --command-ink: #7a5600;
+  --command-border: #ecd27a;
+  --command-bg: #fffbe3;
+  --command-hover-border: #dcb53a;
+  --command-hover-bg: #fff2b8;
 }
 
 .bulk-copy-button,
@@ -4649,7 +4649,7 @@ button:focus-visible {
 .project-copy-button:hover:not(:disabled),
 .project-paste-link-button:hover:not(:disabled),
 .paste-link-button:hover:not(:disabled) {
-  color: #94205a;
+  color: #5e4200;
   border-color: var(--command-hover-border);
   background: var(--command-hover-bg);
 }
