@@ -11,6 +11,7 @@ const TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY = "todoMemoDataUpdatedAt";
 // the current data before the restore is treated as a step backwards.
 const TODO_MEMO_STALE_RESTORE_TOLERANCE_MS = 60 * 1000;
 const TODO_MEMO_MAX_LINKS = 3;
+const TODO_MEMO_MAX_PROJECT_LINKS = 2;
 const TODO_MEMO_MAX_PARENT_IDEA_MEMOS = 50;
 const TODO_MEMO_DATASET_STORAGE_KEYS = [
   TODO_MEMO_STORAGE_KEY,
@@ -323,6 +324,30 @@ function normalizeParentCaseUrl(value) {
   return ["http:", "https:"].includes(url.protocol) ? normalized : "";
 }
 
+// Projects keep up to two links. `url` is the legacy single-link field and is
+// merged in first so data written by older clients is never lost.
+function normalizeParentCaseUrls(urls, legacyUrl = "") {
+  const values = [legacyUrl, ...(Array.isArray(urls) ? urls : [])]
+    .map(normalizeParentCaseUrl)
+    .filter(Boolean);
+  return [...new Set(values)].slice(0, TODO_MEMO_MAX_PROJECT_LINKS);
+}
+
+// Display order for link chips: Google Drive first, then Loop, then the rest
+// in their saved order.
+const TODO_MEMO_LINK_DISPLAY_ORDER = ["Google Drive", "Microsoft Loop"];
+
+function sortLinksForDisplay(links) {
+  const rank = (link) => {
+    const index = TODO_MEMO_LINK_DISPLAY_ORDER.indexOf(getTaskLinkPresentation(link).type);
+    return index === -1 ? TODO_MEMO_LINK_DISPLAY_ORDER.length : index;
+  };
+  return (Array.isArray(links) ? links : [])
+    .map((link, index) => ({ link, index, rank: rank(link) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(({ link }) => link);
+}
+
 function normalizeParentIdeaMemos(values) {
   if (!Array.isArray(values)) return [];
   return values
@@ -527,11 +552,13 @@ function normalizeTask(task, index) {
 }
 
 function normalizeParentCase(parentCase) {
+  const urls = normalizeParentCaseUrls(parentCase.urls, parentCase.url);
   return {
     id: String(parentCase.id || crypto.randomUUID()),
     caseNumber: String(parentCase.caseNumber || "").trim().toUpperCase(),
     name: String(parentCase.name || "").trim(),
-    url: normalizeParentCaseUrl(parentCase.url),
+    url: urls[0] || "",
+    urls,
     ideaMemos: normalizeParentIdeaMemos(parentCase.ideaMemos),
     createdAt: parentCase.createdAt || new Date().toISOString()
   };

@@ -278,7 +278,7 @@ function renderTaskLinkIcon(container, presentation) {
 }
 
 function renderLinks(container, links) {
-  container.replaceChildren(...links.map((link) => createTaskLink(link)));
+  container.replaceChildren(...sortLinksForDisplay(links).map((link) => createTaskLink(link)));
   container.hidden = links.length === 0;
 }
 
@@ -526,7 +526,7 @@ function renderCurrentTaskDetails() {
       title.textContent = ensureEmojiPresentation(parentCase.name);
       container.append(kind, number, title);
     };
-    if (parentCase.url) {
+    if (parentCase.urls.length > 0) {
       const link = document.createElement("a");
       link.href = parentCase.url;
       link.target = "_blank";
@@ -538,15 +538,19 @@ function renderCurrentTaskDetails() {
       appendProjectLabel(taskProject);
     }
 
-    const linkStatus = document.createElement(parentCase.url ? "a" : "span");
-    linkStatus.className = "project-link-status";
-    linkStatus.dataset.state = parentCase.url ? "linked" : "none";
-    linkStatus.textContent = parentCase.url ? "🔗 リンクあり" : "リンクなし";
-    if (parentCase.url) {
-      linkStatus.href = parentCase.url;
-      linkStatus.target = "_blank";
-      linkStatus.rel = "noopener noreferrer";
-      linkStatus.title = `Projectリンクを開く: ${parentCase.url}`;
+    let linkStatus;
+    if (parentCase.urls.length > 0) {
+      linkStatus = document.createElement("span");
+      linkStatus.className = "project-links";
+      linkStatus.setAttribute("aria-label", `${parentCase.caseNumber}のProjectリンク`);
+      linkStatus.append(...sortLinksForDisplay(parentCase.urls).map((projectLink) =>
+        createTaskLink(projectLink, "task-link project-link")
+      ));
+    } else {
+      linkStatus = document.createElement("span");
+      linkStatus.className = "project-link-status";
+      linkStatus.dataset.state = "none";
+      linkStatus.textContent = "リンクなし";
     }
 
     const copyButton = document.createElement("button");

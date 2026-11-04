@@ -250,8 +250,11 @@
                 <input id="projectNameInput" type="text" maxlength="100" autocomplete="off" placeholder="例：新製品A 設計プロジェクト" required>
               </label>
               <label>
-                <span>ProjectURL <em>任意・1件</em></span>
-                <input id="projectUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://…">
+                <span>ProjectURL <em>任意・最大2件</em></span>
+                <span class="project-url-inputs">
+                  <input id="projectUrlInput" class="project-form-url-input" type="url" inputmode="url" autocomplete="off" placeholder="https://…" aria-label="ProjectURL 1件目">
+                  <input class="project-form-url-input" type="url" inputmode="url" autocomplete="off" placeholder="https://…（2件目）" aria-label="ProjectURL 2件目">
+                </span>
               </label>
               <button class="secondary-button" type="submit">Projectを追加</button>
               <small id="projectError" class="field-error" aria-live="polite"></small>
