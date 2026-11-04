@@ -1445,7 +1445,7 @@ function appendProjectActions(container, parentCase) {
     const pasteButton = document.createElement("button");
     pasteButton.className = "project-paste-link-button paste-link-button";
     pasteButton.type = "button";
-    pasteButton.textContent = "URL-Paste";
+    pasteButton.textContent = "📥 URL-Paste";
     pasteButton.title = `${parentCase.name}にクリップボードのURLを取り込む（最大${TODO_MEMO_MAX_PROJECT_LINKS}件）`;
     pasteButton.addEventListener("click", async () => {
       pasteButton.disabled = true;
@@ -1480,7 +1480,7 @@ function appendProjectActions(container, parentCase) {
   const copyButton = document.createElement("button");
   copyButton.className = "project-copy-button";
   copyButton.type = "button";
-  copyButton.textContent = "Project-Copy";
+  copyButton.textContent = "📋 Project-Copy";
   copyButton.title = `${parentCase.name}_${parentCase.caseNumber}をコピー`;
   copyButton.addEventListener("click", async () => {
     try {
