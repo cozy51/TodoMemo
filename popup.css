@@ -1022,9 +1022,15 @@ button:focus-visible,
   display: none !important;
 }
 
-/* Copy / Paste command buttons share a light-yellow fill so they read as
-   clipboard commands, distinct from blue navigation and edit buttons. */
+/* Copy buttons use a light-green fill and Paste buttons a light-yellow fill
+   so the two clipboard commands are easy to tell apart, and both stay
+   distinct from blue navigation and edit buttons. */
 :root {
+  --copy-ink: #2f6b3a;
+  --copy-border: #b9dfc0;
+  --copy-bg: #eefaf0;
+  --copy-hover-border: #86c492;
+  --copy-hover-bg: #dcf3e0;
   --command-ink: #7a5600;
   --command-border: #ecd27a;
   --command-bg: #fffbe3;
@@ -1033,15 +1039,25 @@ button:focus-visible,
 }
 
 .copy-task-button,
-.project-copy-button,
+.project-copy-button {
+  color: var(--copy-ink);
+  border-color: var(--copy-border);
+  background: var(--copy-bg);
+}
+
+.copy-task-button:hover:not(:disabled),
+.project-copy-button:hover:not(:disabled) {
+  color: #1f5229;
+  border-color: var(--copy-hover-border);
+  background: var(--copy-hover-bg);
+}
+
 .paste-link-button {
   color: var(--command-ink);
   border-color: var(--command-border);
   background: var(--command-bg);
 }
 
-.copy-task-button:hover:not(:disabled),
-.project-copy-button:hover:not(:disabled),
 .paste-link-button:hover:not(:disabled) {
   color: #5e4200;
   border-color: var(--command-hover-border);
