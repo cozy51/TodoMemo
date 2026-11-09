@@ -1868,7 +1868,8 @@ button {
 }
 
 .copy-task-button,
-.copy-task-heading-button {
+.copy-task-heading-button,
+.copy-task-number-button {
   padding: 2px 6px;
   color: var(--accent);
   cursor: pointer;
@@ -1880,9 +1881,16 @@ button {
 }
 
 .copy-task-button:hover,
-.copy-task-heading-button:hover {
+.copy-task-heading-button:hover,
+.copy-task-number-button:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+.copy-task-number-button {
+  margin-left: -4px;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
 .task-copy h3 {
@@ -4641,6 +4649,7 @@ button:focus-visible {
 .bulk-copy-button,
 .copy-task-button,
 .copy-task-heading-button,
+.copy-task-number-button,
 .project-copy-button {
   color: var(--copy-ink);
   border-color: var(--copy-border);
@@ -4650,6 +4659,7 @@ button:focus-visible {
 .bulk-copy-button:hover:not(:disabled),
 .copy-task-button:hover:not(:disabled),
 .copy-task-heading-button:hover:not(:disabled),
+.copy-task-number-button:hover:not(:disabled),
 .project-copy-button:hover:not(:disabled) {
   color: #1f5229;
   border-color: var(--copy-hover-border);
