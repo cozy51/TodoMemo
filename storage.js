@@ -270,7 +270,8 @@ function formatTaskForCopy(task) {
   const caseNumber = String(task.caseNumber || "").trim();
   const title = String(task.title || "").trim();
   const content = String(task.content || "").replace(/\r\n?/g, "\n");
-  return `${caseNumber}_${title} [\n${content}\n]\n`;
+  const heading = [title, caseNumber].filter(Boolean).join("_");
+  return content.trim() ? `${heading}\n${content}\n` : `${heading}\n`;
 }
 
 function formatTaskHeadingForCopy(task) {
