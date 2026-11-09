@@ -1903,6 +1903,19 @@ function closeTaskDetail() {
 }
 
 function attachTaskCopy(card, task) {
+  const numberButton = card.querySelector(".copy-task-number-button");
+  if (numberButton) {
+    const caseNumber = String(task.caseNumber || "").trim();
+    numberButton.hidden = !caseNumber;
+    numberButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(caseNumber);
+        showToast("Task番号をコピーしました");
+      } catch (_error) {
+        showToast("Task番号をコピーできませんでした");
+      }
+    });
+  }
   card.querySelector(".copy-task-button").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(formatTaskForCopy(task));
