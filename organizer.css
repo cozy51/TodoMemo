@@ -4736,3 +4736,17 @@ button:focus-visible {
   min-width: 0;
   margin-bottom: 0;
 }
+
+/* Show the parent Project row below the due/goal and link row. The ::after
+   item forces a line break so the Project row always starts on its own line. */
+.task-card .task-copy::after {
+  content: "";
+  order: 0;
+  flex: 0 0 100%;
+  height: 0;
+}
+
+.task-card .task-copy > .card-project {
+  order: 1;
+  flex: 0 1 auto;
+}
