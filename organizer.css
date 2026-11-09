@@ -4679,3 +4679,60 @@ button:focus-visible {
   border-color: var(--command-hover-border);
   background: var(--command-hover-bg);
 }
+
+/* Compact task cards: hide the content preview and tighten spacing so the
+   list needs less vertical scrolling. The full content stays available in
+   the task detail dialog. */
+.task-card .card-content,
+.task-card .content-line-count,
+.task-card .card-content-end-marker {
+  display: none !important;
+}
+
+.task-card {
+  min-height: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.task-card .task-copy h3 {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.task-card .card-project {
+  margin: 6px 0 0;
+}
+
+.task-card .task-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.task-card .task-copy > * {
+  flex: 0 0 100%;
+}
+
+.task-card .task-copy > .card-meta-row,
+.task-card .task-copy > .card-links-section {
+  flex: 0 1 auto;
+  margin-top: 6px;
+}
+
+.task-card .card-paste-link-button {
+  margin-left: 0;
+}
+
+/* Put the "今すること" badge on the same line as the Task number row. */
+.task-card .task-copy > .current-task-badge {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.task-card .task-copy > .current-task-badge + .card-case-row {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
