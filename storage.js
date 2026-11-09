@@ -277,7 +277,7 @@ function formatTaskForCopy(task) {
 function formatTaskHeadingForCopy(task) {
   const caseNumber = String(task.caseNumber || "").trim();
   const title = String(task.title || "").trim();
-  return `${caseNumber}_${title}`;
+  return [caseNumber, title].filter(Boolean).join(" ");
 }
 
 function formatParentCaseForCopy(parentCase) {
