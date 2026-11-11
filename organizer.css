@@ -4749,4 +4749,7 @@ button:focus-visible {
 .task-card .task-copy > .card-project {
   order: 1;
   flex: 0 1 auto;
+  /* Right-align the Project row so its links/buttons are clearly separated
+     from the Task's own links and are harder to click by mistake. */
+  margin-left: auto;
 }
