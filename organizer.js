@@ -154,11 +154,10 @@ let parentIdeaSaveRevision = 0;
 let detailTaskId = null;
 let ideaMemoProjectId = null;
 let searchQuery = "";
+let searchHistory = [];
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_SNIPPET_RADIUS = 42;
-const SEARCH_HISTORY_STORAGE_KEY = "todoMemo.searchHistory";
-const SEARCH_HISTORY_LIMIT = 10;
 
 function removeRetiredInlineIdeaMemoEditors(root = projectGroups) {
   if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
@@ -310,11 +309,12 @@ function createBackupTimestamp(date) {
 async function downloadBackup() {
   backupButton.disabled = true;
   try {
-    const [storedTasks, storedTags, storedProjects, storedHolidays] = await Promise.all([
+    const [storedTasks, storedTags, storedProjects, storedHolidays, storedSearchHistory] = await Promise.all([
       loadTasks(),
       loadTags(),
       loadParentCases(),
-      loadHolidays()
+      loadHolidays(),
+      loadSearchHistory()
     ]);
     const now = new Date();
     const timestamp = createBackupTimestamp(now);
@@ -337,7 +337,8 @@ async function downloadBackup() {
       tasks: storedTasks,
       tags: storedTags,
       parentCases: storedProjects,
-      holidays: storedHolidays
+      holidays: storedHolidays,
+      searchHistory: storedSearchHistory
     };
     const url = URL.createObjectURL(new Blob(
       [JSON.stringify(backup, null, 2)],
@@ -1301,9 +1302,15 @@ async function confirmRestore() {
     // The cloud sync layer normalizes the same way, so a restored file and a
     // cloud document stay directly comparable.
     const restored = normalizeDataset(pendingRestore.backup);
+    // Backups made before the history was synced carry none; keep the current
+    // list rather than wiping it.
+    if (pendingRestore.backup.searchHistory === undefined) {
+      restored.searchHistory = searchHistory;
+    }
     await saveTodoMemoDataset(restored);
 
-    ({ tasks, tags, parentCases, holidays } = restored);
+    ({ tasks, tags, parentCases, holidays, searchHistory } = restored);
+    renderSearchHistory();
     const restoredCount = restored.tasks.length;
     pendingRestore = null;
     restoreDialog.classList.remove("restore-dialog-danger");
@@ -2833,39 +2840,24 @@ function createSearchResultItem({ task, status }, query) {
   return item;
 }
 
-// Recent search words are a per-device convenience, so they live only in
-// localStorage and are not part of the synced task data or backups.
-function loadSearchHistory() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY) || "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => typeof item === "string" && item.trim()).slice(0, SEARCH_HISTORY_LIMIT)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSearchHistory(history) {
-  try {
-    localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(history));
-  } catch {
-    // Storage may be unavailable (private mode etc.); history is optional.
-  }
+// Recent search words are stored with the rest of the data, so they follow
+// the user to every PC through the cloud sync.
+async function updateSearchHistory(nextHistory) {
+  searchHistory = normalizeSearchHistory(nextHistory);
+  renderSearchHistory();
+  searchHistory = await saveSearchHistory(searchHistory);
 }
 
 function rememberSearchQuery(rawQuery = searchQuery) {
   const query = rawQuery.trim().replace(/\s+/g, " ");
   if (query.length < SEARCH_MIN_LENGTH) return;
-  const key = query.toLowerCase();
-  const history = loadSearchHistory().filter((item) => item.toLowerCase() !== key);
-  saveSearchHistory([query, ...history].slice(0, SEARCH_HISTORY_LIMIT));
-  renderSearchHistory();
+  // Re-running the newest search adds nothing worth another cloud upload.
+  if (searchHistory[0]?.query === query) return;
+  updateSearchHistory(addSearchHistoryEntry(searchHistory, query));
 }
 
 function removeSearchHistoryItem(query) {
-  saveSearchHistory(loadSearchHistory().filter((item) => item !== query));
-  renderSearchHistory();
+  updateSearchHistory(removeSearchHistoryEntry(searchHistory, query));
 }
 
 function applySearchHistoryItem(query) {
@@ -2873,17 +2865,18 @@ function applySearchHistoryItem(query) {
   searchInput.value = query;
   renderSearchResults();
   rememberSearchQuery(query);
+  renderSearchHistory();
   searchInput.focus();
 }
 
 function renderSearchHistory() {
-  const history = loadSearchHistory();
-  searchHistoryBox.hidden = history.length === 0;
+  const currentQuery = searchQuery.trim().replace(/\s+/g, " ");
+  searchHistoryBox.hidden = searchHistory.length === 0;
   searchHistoryList.replaceChildren(
-    ...history.map((query) => {
+    ...searchHistory.map(({ query }) => {
       const item = document.createElement("li");
       item.className = "search-history-item";
-      item.dataset.current = String(query === searchQuery.trim());
+      item.dataset.current = String(query === currentQuery);
 
       const apply = document.createElement("button");
       apply.type = "button";
@@ -3445,10 +3438,8 @@ searchInput.addEventListener("change", () => {
   if (searchResultsList.childElementCount > 0) rememberSearchQuery();
 });
 clearSearchHistoryButton.addEventListener("click", () => {
-  saveSearchHistory([]);
-  renderSearchHistory();
+  updateSearchHistory([]);
 });
-renderSearchHistory();
 clearSearchButton.addEventListener("click", () => {
   searchQuery = "";
   searchInput.value = "";
@@ -3705,14 +3696,16 @@ holidayList.addEventListener("click", async (event) => {
 
 async function refreshFromStorage() {
   const snapshotPromise = loadBackupSnapshot();
-  [tasks, tags, parentCases, holidays] = await Promise.all([
+  [tasks, tags, parentCases, holidays, searchHistory] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases(),
-    loadHolidays()
+    loadHolidays(),
+    loadSearchHistory()
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
+  renderSearchHistory();
   if (parentIdeaDialog.open) renderParentIdeaDialog();
 }
 
@@ -3727,12 +3720,14 @@ window.addEventListener("resize", hideDeadlineTooltip);
   }
 
   const snapshotPromise = loadBackupSnapshot();
-  [tasks, tags, parentCases, holidays] = await Promise.all([
+  [tasks, tags, parentCases, holidays, searchHistory] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases(),
-    loadHolidays()
+    loadHolidays(),
+    loadSearchHistory()
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
   render();
+  renderSearchHistory();
 })();
