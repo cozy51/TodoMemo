@@ -89,6 +89,11 @@
             <input id="searchInput" type="search" autocomplete="off" placeholder="タイトル・内容・Task番号・タグ・Project名で検索" aria-label="タスクを全文検索">
             <button id="clearSearchButton" class="icon-button" type="button" aria-label="検索条件をクリア" hidden>×</button>
           </div>
+          <div id="searchHistory" class="search-history" hidden>
+            <span class="search-history-label">最近の検索</span>
+            <ul id="searchHistoryList" class="search-history-list"></ul>
+            <button id="clearSearchHistoryButton" class="search-history-clear" type="button">履歴を消去</button>
+          </div>
           <p id="searchHint" class="search-hint">2文字以上入力すると、すること・完了・アーカイブのすべてのタスクから検索します。</p>
           <ul id="searchResultsList" class="search-results-list" aria-live="polite"></ul>
           <p id="searchEmpty" class="search-empty" hidden>該当するタスクは見つかりませんでした。</p>
