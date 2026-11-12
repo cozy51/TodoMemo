@@ -226,7 +226,8 @@
       tasks: dataset.tasks,
       tags: dataset.tags,
       parentCases: dataset.parentCases,
-      holidays: dataset.holidays
+      holidays: dataset.holidays,
+      searchHistory: dataset.searchHistory || []
     };
   }
 
@@ -329,7 +330,11 @@
     }
     const baseRevision = Math.max(remote?.revision || 0, loadTodoMemoSyncState(user.id).revision);
     const payload = createDocument(local, baseRevision + 1, remote?.revision ?? null);
-    if (remote) {
+    // A change that only touches recent searches is not worth a history entry:
+    // it would quickly push real edits out of the limited cloud history.
+    const searchHistoryOnly = remote && !force
+      && createCoreDatasetFingerprint(remote.dataset) === createCoreDatasetFingerprint(local);
+    if (remote && !searchHistoryOnly) {
       await archiveText(remote.raw, remote.revision, label, force);
     }
     await uploadObject(objectPath(LATEST_FILE), JSON.stringify(payload, null, 2));
@@ -361,6 +366,22 @@
     });
 
     lastError = "";
+    if (
+      action === "conflict"
+      && createCoreDatasetFingerprint(remote.dataset) === createCoreDatasetFingerprint(local)
+    ) {
+      // Both sides hold the same records and only searched for different words:
+      // keep the newest searches from both instead of asking which side wins.
+      const merged = {
+        ...local,
+        searchHistory: mergeSearchHistories(local.searchHistory, remote.dataset.searchHistory)
+      };
+      await saveTodoMemoDataset(merged, { origin: "cloud" });
+      const stored = await loadTodoMemoDataset();
+      await pushLocal(stored, createDatasetFingerprint(stored), remote, { label: "search-merge" });
+      if (!pendingConflict) reportIdle(loadTodoMemoSyncState(user.id));
+      return;
+    }
     if (action === "conflict") {
       pendingConflict = { kind: "diverged", remote, local, fingerprint: localFingerprint };
       openConflictDialog();

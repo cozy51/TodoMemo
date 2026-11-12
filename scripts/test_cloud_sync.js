@@ -22,7 +22,8 @@ const {
   loadTodoMemoSyncState, saveTodoMemoSyncState, countDatasetRecords, isDatasetEmpty,
   validateBackup, describeTodoMemoDevice, getTodoMemoDeviceId, selectExpiredHistory,
   assessRestoreRegression, getDatasetActivityAt, formatElapsedJa,
-  readDatasetCounts, formatRecordCounts
+  readDatasetCounts, formatRecordCounts, normalizeSearchHistory, mergeSearchHistories,
+  addSearchHistoryEntry, removeSearchHistoryEntry, createCoreDatasetFingerprint
 } = context;
 
 function check(actual, expected, label) {
@@ -427,5 +428,67 @@ check(rejected, true, "A foreign document is rejected before it can be applied")
 
 check(describeTodoMemoDevice(), "Windows / Chrome", "Devices are labelled for the conflict prompt");
 check(getTodoMemoDeviceId(), getTodoMemoDeviceId(), "The device id is stable across calls");
+
+// --- search history -------------------------------------------------------
+// Recent searches sync with the data but never count as records.
+
+const emptyCore = { tasks: [], tags: [], parentCases: [], holidays: [] };
+check(
+  createDatasetFingerprint({ ...emptyCore, searchHistory: [] }),
+  createDatasetFingerprint(emptyCore),
+  "An empty search history keeps the fingerprint data had before history synced"
+);
+const withHistory = { ...emptyCore, searchHistory: [{ query: "クランプ", searchedAt: "2026-11-12T09:00:00.000Z" }] };
+check(
+  createDatasetFingerprint(withHistory) !== createDatasetFingerprint(emptyCore),
+  true,
+  "A new search changes the fingerprint so it is uploaded"
+);
+check(
+  createCoreDatasetFingerprint(withHistory),
+  createCoreDatasetFingerprint(emptyCore),
+  "The core fingerprint ignores the search history"
+);
+check(countDatasetRecords(withHistory), 0, "Searches are not counted as records");
+check(isDatasetEmpty(withHistory), true, "A dataset with only searches is still empty");
+
+const legacyHistory = normalizeSearchHistory(["クランプ", " 会議  資料 ", "", "クランプ", 42]);
+check(legacyHistory.map((entry) => entry.query).join("|"), "クランプ|会議 資料", "Legacy string lists are migrated and junk dropped");
+
+const t1 = new Date("2026-11-12T09:00:00Z");
+const t2 = new Date("2026-11-12T10:00:00Z");
+let searches = addSearchHistoryEntry([], "Alpha", t1);
+searches = addSearchHistoryEntry(searches, "Beta", t2);
+searches = addSearchHistoryEntry(searches, "alpha", new Date("2026-11-12T11:00:00Z"));
+check(searches.map((entry) => entry.query).join("|"), "alpha|Beta", "Re-searching moves a word to the top without duplicates");
+check(removeSearchHistoryEntry(searches, "ALPHA").length, 1, "Entries are removed case-insensitively");
+
+const pcA = [{ query: "A", searchedAt: "2026-11-12T09:00:00Z" }, { query: "shared", searchedAt: "2026-11-12T08:00:00Z" }];
+const pcB = [{ query: "B", searchedAt: "2026-11-12T09:30:00Z" }, { query: "shared", searchedAt: "2026-11-12T09:45:00Z" }];
+check(
+  mergeSearchHistories(pcA, pcB).map((entry) => entry.query).join("|"),
+  "shared|B|A",
+  "Merging keeps the newest search from both PCs"
+);
+const many = Array.from({ length: 15 }, (_, index) => ({
+  query: `q${index}`,
+  searchedAt: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString()
+}));
+check(normalizeSearchHistory(many).length, 10, "History is capped at 10 entries");
+check(normalizeSearchHistory(many)[0].query, "q14", "The newest search comes first");
+
+check(
+  normalizeDataset({ ...emptyCore, searchHistory: ["x1"] }).searchHistory[0].query,
+  "x1",
+  "Cloud documents carry the search history"
+);
+check(normalizeDataset(emptyCore).searchHistory.length, 0, "Older documents normalize to an empty history");
+let badHistoryRejected = false;
+try {
+  validateBackup({ format: "TodoMemo Backup", schemaVersion: 3, tasks: [], tags: [], searchHistory: "x" });
+} catch (_error) {
+  badHistoryRejected = true;
+}
+check(badHistoryRejected, true, "A malformed search history is rejected");
 
 console.log("Cloud-sync tests: OK");

@@ -7,6 +7,11 @@ const TODO_MEMO_HOLIDAYS_STORAGE_KEY = "todoMemoHolidays";
 const TODO_MEMO_SYNC_STATE_STORAGE_KEY = "todoMemoSyncState";
 const TODO_MEMO_DEVICE_ID_STORAGE_KEY = "todoMemoDeviceId";
 const TODO_MEMO_DATA_UPDATED_AT_STORAGE_KEY = "todoMemoDataUpdatedAt";
+const TODO_MEMO_SEARCH_HISTORY_STORAGE_KEY = "todoMemoSearchHistory";
+// v1.11.0 kept the history only in this browser under this key.
+const TODO_MEMO_LEGACY_SEARCH_HISTORY_STORAGE_KEY = "todoMemo.searchHistory";
+const TODO_MEMO_SEARCH_HISTORY_LIMIT = 10;
+const TODO_MEMO_SEARCH_QUERY_MAX_LENGTH = 200;
 // Clocks between devices drift, so a file has to look meaningfully older than
 // the current data before the restore is treated as a step backwards.
 const TODO_MEMO_STALE_RESTORE_TOLERANCE_MS = 60 * 1000;
@@ -96,6 +101,67 @@ async function loadHolidays() {
     .map(normalizeHoliday)
     .filter(Boolean)
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Recent full-text search words.  They travel with the cloud document so every
+// PC sees the same list, but they are not "records": they never count towards
+// the empty / shrink guards, and the newest search wins when lists are merged.
+function normalizeSearchHistoryEntry(entry) {
+  const rawQuery = typeof entry === "string" ? entry : entry?.query;
+  const query = String(rawQuery || "").trim().replace(/\s+/g, " ")
+    .slice(0, TODO_MEMO_SEARCH_QUERY_MAX_LENGTH);
+  if (!query) return null;
+  const searchedAt = typeof entry === "object" && entry && !Number.isNaN(Date.parse(entry.searchedAt))
+    ? new Date(entry.searchedAt).toISOString()
+    : "";
+  return { query, searchedAt };
+}
+
+function normalizeSearchHistory(values) {
+  const entries = (Array.isArray(values) ? values : [])
+    .map(normalizeSearchHistoryEntry)
+    .filter(Boolean);
+  // Stable sort: entries without a time (older format) keep their order at the end.
+  entries.sort((a, b) => b.searchedAt.localeCompare(a.searchedAt));
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const key = entry.query.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, TODO_MEMO_SEARCH_HISTORY_LIMIT);
+}
+
+function mergeSearchHistories(...lists) {
+  return normalizeSearchHistory(lists.flatMap((list) => (Array.isArray(list) ? list : [])));
+}
+
+function addSearchHistoryEntry(history, query, now = new Date()) {
+  return mergeSearchHistories([{ query, searchedAt: now.toISOString() }], history);
+}
+
+function removeSearchHistoryEntry(history, query) {
+  const key = String(query || "").toLowerCase();
+  return normalizeSearchHistory(history).filter((entry) => entry.query.toLowerCase() !== key);
+}
+
+async function loadSearchHistory() {
+  const result = await todoMemoStorage.get(TODO_MEMO_SEARCH_HISTORY_STORAGE_KEY);
+  const stored = result[TODO_MEMO_SEARCH_HISTORY_STORAGE_KEY];
+  if (Array.isArray(stored)) return normalizeSearchHistory(stored);
+  const legacy = await todoMemoStorage.get(TODO_MEMO_LEGACY_SEARCH_HISTORY_STORAGE_KEY);
+  return normalizeSearchHistory(legacy[TODO_MEMO_LEGACY_SEARCH_HISTORY_STORAGE_KEY]);
+}
+
+async function saveSearchHistory(history) {
+  const normalized = normalizeSearchHistory(history);
+  await todoMemoStorage.set({ [TODO_MEMO_SEARCH_HISTORY_STORAGE_KEY]: normalized });
+  try {
+    localStorage.removeItem(TODO_MEMO_LEGACY_SEARCH_HISTORY_STORAGE_KEY);
+  } catch (_error) {
+    // The legacy copy is ignored once the new key exists.
+  }
+  return normalized;
 }
 
 async function saveHolidays(holidays) {
@@ -844,6 +910,9 @@ function validateBackup(data) {
     parentCaseIds.add(id);
   });
 
+  if (data.searchHistory !== undefined && !Array.isArray(data.searchHistory)) {
+    throw new Error("検索履歴のデータが不正です");
+  }
   data.parentCases = backupParentCases;
   data.holidays = backupHolidays;
   return data;
@@ -882,17 +951,20 @@ function normalizeDataset(source) {
     .filter(Boolean)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  return { tasks, tags, parentCases, holidays };
+  const searchHistory = normalizeSearchHistory(source?.searchHistory);
+
+  return { tasks, tags, parentCases, holidays, searchHistory };
 }
 
 async function loadTodoMemoDataset() {
-  const [tasks, tags, parentCases, holidays] = await Promise.all([
+  const [tasks, tags, parentCases, holidays, searchHistory] = await Promise.all([
     loadTasks(),
     loadTags(),
     loadParentCases(),
-    loadHolidays()
+    loadHolidays(),
+    loadSearchHistory()
   ]);
-  return { tasks, tags, parentCases, holidays };
+  return { tasks, tags, parentCases, holidays, searchHistory };
 }
 
 async function saveTodoMemoDataset(dataset, options = {}) {
@@ -900,7 +972,10 @@ async function saveTodoMemoDataset(dataset, options = {}) {
     [TODO_MEMO_STORAGE_KEY]: dataset.tasks,
     [TODO_MEMO_TAGS_STORAGE_KEY]: dataset.tags,
     [TODO_MEMO_PARENT_CASES_STORAGE_KEY]: dataset.parentCases,
-    [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: dataset.holidays
+    [TODO_MEMO_HOLIDAYS_STORAGE_KEY]: dataset.holidays,
+    ...(Array.isArray(dataset.searchHistory)
+      ? { [TODO_MEMO_SEARCH_HISTORY_STORAGE_KEY]: dataset.searchHistory }
+      : {})
   }, options);
   return dataset;
 }
@@ -919,10 +994,15 @@ function isDatasetEmpty(dataset) {
 // A 32-bit hash alone would make an undetected collision — a change that never
 // reaches the cloud — a real if unlikely risk, so combine two independent
 // hashes with the serialized length.
+//
+// The search history only joins the fingerprint when it has entries, so data
+// without any history keeps the fingerprint it had before history was synced.
 function createDatasetFingerprint(dataset) {
-  const source = JSON.stringify(
-    TODO_MEMO_DATASET_COLLECTIONS.map((name) => dataset?.[name] ?? [])
-  );
+  const collections = TODO_MEMO_DATASET_COLLECTIONS.map((name) => dataset?.[name] ?? []);
+  if (Array.isArray(dataset?.searchHistory) && dataset.searchHistory.length > 0) {
+    collections.push(dataset.searchHistory);
+  }
+  const source = JSON.stringify(collections);
   let low = 2166136261;
   let high = 40389;
   for (let index = 0; index < source.length; index += 1) {
@@ -931,6 +1011,13 @@ function createDatasetFingerprint(dataset) {
     high = Math.imul(high ^ (code + index), 2246822519);
   }
   return `${source.length.toString(36)}.${(low >>> 0).toString(36)}.${(high >>> 0).toString(36)}`;
+}
+
+// Fingerprint of the records alone, ignoring the search history.  Two copies
+// that only disagree on recent searches can be merged instead of asking the
+// user which one to keep.
+function createCoreDatasetFingerprint(dataset) {
+  return createDatasetFingerprint({ ...dataset, searchHistory: [] });
 }
 
 function getTodoMemoDeviceId() {
