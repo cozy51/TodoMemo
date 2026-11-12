@@ -42,6 +42,9 @@ const caseJumpRelatedToggle = document.querySelector("#caseJumpRelatedToggle");
 const searchInput = document.querySelector("#searchInput");
 const clearSearchButton = document.querySelector("#clearSearchButton");
 const searchHint = document.querySelector("#searchHint");
+const searchHistoryBox = document.querySelector("#searchHistory");
+const searchHistoryList = document.querySelector("#searchHistoryList");
+const clearSearchHistoryButton = document.querySelector("#clearSearchHistoryButton");
 const searchResultsList = document.querySelector("#searchResultsList");
 const searchEmpty = document.querySelector("#searchEmpty");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
@@ -154,6 +157,8 @@ let searchQuery = "";
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_SNIPPET_RADIUS = 42;
+const SEARCH_HISTORY_STORAGE_KEY = "todoMemo.searchHistory";
+const SEARCH_HISTORY_LIMIT = 10;
 
 function removeRetiredInlineIdeaMemoEditors(root = projectGroups) {
   if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
@@ -2787,6 +2792,7 @@ function createSearchResultItem({ task, status }, query) {
   link.title = `${task.caseNumber} ${task.title}の詳細カードへ移動`;
   link.addEventListener("click", (event) => {
     event.preventDefault();
+    rememberSearchQuery();
     navigateToSearchResult(task);
   });
 
@@ -2825,6 +2831,78 @@ function createSearchResultItem({ task, status }, query) {
   link.append(body);
   item.append(link);
   return item;
+}
+
+// Recent search words are a per-device convenience, so they live only in
+// localStorage and are not part of the synced task data or backups.
+function loadSearchHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => typeof item === "string" && item.trim()).slice(0, SEARCH_HISTORY_LIMIT)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(history) {
+  try {
+    localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(history));
+  } catch {
+    // Storage may be unavailable (private mode etc.); history is optional.
+  }
+}
+
+function rememberSearchQuery(rawQuery = searchQuery) {
+  const query = rawQuery.trim().replace(/\s+/g, " ");
+  if (query.length < SEARCH_MIN_LENGTH) return;
+  const key = query.toLowerCase();
+  const history = loadSearchHistory().filter((item) => item.toLowerCase() !== key);
+  saveSearchHistory([query, ...history].slice(0, SEARCH_HISTORY_LIMIT));
+  renderSearchHistory();
+}
+
+function removeSearchHistoryItem(query) {
+  saveSearchHistory(loadSearchHistory().filter((item) => item !== query));
+  renderSearchHistory();
+}
+
+function applySearchHistoryItem(query) {
+  searchQuery = query;
+  searchInput.value = query;
+  renderSearchResults();
+  rememberSearchQuery(query);
+  searchInput.focus();
+}
+
+function renderSearchHistory() {
+  const history = loadSearchHistory();
+  searchHistoryBox.hidden = history.length === 0;
+  searchHistoryList.replaceChildren(
+    ...history.map((query) => {
+      const item = document.createElement("li");
+      item.className = "search-history-item";
+      item.dataset.current = String(query === searchQuery.trim());
+
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "search-history-apply";
+      apply.textContent = query;
+      apply.title = `「${query}」で検索`;
+      apply.addEventListener("click", () => applySearchHistoryItem(query));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "search-history-remove";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `「${query}」を履歴から削除`);
+      remove.addEventListener("click", () => removeSearchHistoryItem(query));
+
+      item.append(apply, remove);
+      return item;
+    })
+  );
 }
 
 function renderSearchResults() {
@@ -3353,11 +3431,29 @@ archivedCollapsedNotice.addEventListener("click", () => {
 searchInput.addEventListener("input", () => {
   searchQuery = searchInput.value;
   renderSearchResults();
+  renderSearchHistory();
 });
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.isComposing) {
+    event.preventDefault();
+    rememberSearchQuery();
+  }
+});
+// Leaving the box after a search that found something also counts as a
+// finished search, so the word can be picked again without retyping.
+searchInput.addEventListener("change", () => {
+  if (searchResultsList.childElementCount > 0) rememberSearchQuery();
+});
+clearSearchHistoryButton.addEventListener("click", () => {
+  saveSearchHistory([]);
+  renderSearchHistory();
+});
+renderSearchHistory();
 clearSearchButton.addEventListener("click", () => {
   searchQuery = "";
   searchInput.value = "";
   renderSearchResults();
+  renderSearchHistory();
   searchInput.focus();
 });
 tagForm.addEventListener("submit", addTag);
