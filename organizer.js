@@ -2727,13 +2727,12 @@ function buildSnippetWindow(text, query) {
   return `${prefix}${flattened.slice(start, end)}${suffix}`;
 }
 
-// Lists every field (other than the title and Task番号, which are always shown)
+// Lists every field (other than the title, Task番号 and Project, which are always shown)
 // the query matched in, labelled so it is clear where the hit came from.
 function buildSearchSnippets(task, query) {
   const fields = getTaskSearchFields(task);
   return [
     { label: "内容", text: fields.content },
-    { label: "Project", text: fields.parentCase },
     { label: "タグ", text: fields.tags },
     { label: "リンク", text: fields.links }
   ]
@@ -2788,6 +2787,33 @@ function createSearchResultDateChips(task) {
   return [due, goal];
 }
 
+// The Project a task belongs to is always shown in its result row (not only
+// when the query matched it), so a hit can be placed in context at a glance.
+function createSearchResultProject(task, query) {
+  const parentCase = getProjectForTask(task);
+  const project = document.createElement("span");
+  project.className = "search-result-item-project";
+  const label = document.createElement("span");
+  label.className = "search-result-item-field";
+  label.textContent = "Project";
+  const text = document.createElement("span");
+  text.className = "search-result-item-project-text";
+  if (parentCase) {
+    const number = document.createElement("span");
+    number.className = "search-result-item-project-number";
+    appendHighlightedText(number, parentCase.caseNumber, query);
+    const name = document.createElement("span");
+    name.className = "search-result-item-project-name";
+    appendHighlightedText(name, ensureEmojiPresentation(parentCase.name), query);
+    text.append(number, name);
+  } else {
+    project.dataset.state = "none";
+    text.textContent = "未設定";
+  }
+  project.append(label, text);
+  return project;
+}
+
 function createSearchResultItem({ task, status }, query) {
   const item = document.createElement("li");
   item.className = "search-result-item-wrap";
@@ -2820,7 +2846,7 @@ function createSearchResultItem({ task, status }, query) {
 
   const body = document.createElement("span");
   body.className = "search-result-item-body";
-  body.append(meta, title);
+  body.append(meta, title, createSearchResultProject(task, query));
 
   buildSearchSnippets(task, query).forEach(({ label, text }) => {
     const snippet = document.createElement("span");
