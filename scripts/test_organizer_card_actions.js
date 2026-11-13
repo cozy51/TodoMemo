@@ -72,7 +72,7 @@ if (!completedCardFunction?.[1].includes("attachCardOpenActions(card, task)")) {
 }
 
 const parentGroupFunction = source.match(
-  /function createProjectTaskGroup\(parentCase, groupedTasks, priorityByTaskId\) \{([\s\S]*?)\n\}/
+  /function createProjectTaskGroup\(parentCase, groupedTasks, priorityByTaskId[^)]*\) \{([\s\S]*?)\n\}/
 )?.[1] || "";
 if (!parentGroupFunction.includes('appendProjectActions(identity, parentCase)')) {
   throw new Error("Parent-case groups must expose the shared link-status and copy actions");

@@ -2286,15 +2286,17 @@ function renderProjectSettings() {
   }));
 }
 
+// Project番号 / Task番号 are compared as plain codes, oldest number first.
+function compareCaseNumberAscending(a, b) {
+  return String(a.caseNumber || "").localeCompare(String(b.caseNumber || ""), "en");
+}
+
 // Finished Tasks stay listed under their Project (after the active ones), so
 // what has already been done remains visible at a glance.
 function getFinishedProjectTasks(parentCase) {
-  const getFinishedAt = (task) => new Date(
-    task.archivedAt || task.canceledAt || task.completedAt || 0
-  ).getTime() || 0;
   return tasks
     .filter((task) => task.completed && task.parentCaseId === parentCase.id)
-    .sort((a, b) => getFinishedAt(b) - getFinishedAt(a));
+    .sort(compareCaseNumberAscending);
 }
 
 function formatFinishedDate(task) {
@@ -2635,11 +2637,17 @@ function renderProjectGroups() {
   const priorityByTaskId = new Map(
     activeTasks.map((task, index) => [task.id, index + 1])
   );
+  // Projects in Project番号 order and their Tasks in Task番号 order;
+  // 「Projectなし」 stays last.
+  const groups = groupTasksByParentCase(parentCases, activeTasks).sort((a, b) => {
+    if (!a.parentCase || !b.parentCase) return Number(!a.parentCase) - Number(!b.parentCase);
+    return compareCaseNumberAscending(a.parentCase, b.parentCase);
+  });
   projectGroups.replaceChildren(
-    ...groupTasksByParentCase(parentCases, activeTasks).map(({ parentCase, tasks: groupedTasks }) =>
+    ...groups.map(({ parentCase, tasks: groupedTasks }) =>
       createProjectTaskGroup(
         parentCase,
-        groupedTasks,
+        [...groupedTasks].sort(compareCaseNumberAscending),
         priorityByTaskId,
         parentCase ? getFinishedProjectTasks(parentCase) : []
       )
