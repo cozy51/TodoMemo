@@ -3244,6 +3244,20 @@ button {
   background: #f6f1ff;
 }
 
+.project-number-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.project-row .project-row-copy-button {
+  padding: 3px 8px;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
 .project-number {
   color: var(--project-number);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
