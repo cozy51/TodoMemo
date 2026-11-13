@@ -2164,6 +2164,28 @@ function renderProjectSettings() {
     number.className = "project-number";
     number.textContent = parentCase.caseNumber;
 
+    // Copies "Project番号 Project名" (half-width space between) for pasting
+    // into mails, file names and so on.
+    const copyNumberName = document.createElement("button");
+    copyNumberName.className = "project-copy-button project-row-copy-button";
+    copyNumberName.type = "button";
+    copyNumberName.textContent = "📋 番号 名前";
+    copyNumberName.title = `「${parentCase.caseNumber} ${parentCase.name}」をコピー`;
+    copyNumberName.setAttribute("aria-label", `${parentCase.caseNumber}のProject番号とProject名をコピー`);
+    copyNumberName.addEventListener("click", async () => {
+      const text = `${parentCase.caseNumber} ${name.value.trim() || parentCase.name}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(`「${text}」をコピーしました`);
+      } catch (_error) {
+        showToast("コピーできませんでした");
+      }
+    });
+
+    const numberCell = document.createElement("div");
+    numberCell.className = "project-number-cell";
+    numberCell.append(number, copyNumberName);
+
     const name = document.createElement("input");
     name.className = "project-name-input";
     name.type = "text";
@@ -2259,7 +2281,7 @@ function renderProjectSettings() {
       showToast("Projectを削除しました");
     });
 
-    row.append(number, name, urls, usedCount, remove);
+    row.append(numberCell, name, urls, usedCount, remove);
     return row;
   }));
 }
