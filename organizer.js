@@ -2286,7 +2286,56 @@ function renderProjectSettings() {
   }));
 }
 
-function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
+// Finished Tasks stay listed under their Project (after the active ones), so
+// what has already been done remains visible at a glance.
+function getFinishedProjectTasks(parentCase) {
+  const getFinishedAt = (task) => new Date(
+    task.archivedAt || task.canceledAt || task.completedAt || 0
+  ).getTime() || 0;
+  return tasks
+    .filter((task) => task.completed && task.parentCaseId === parentCase.id)
+    .sort((a, b) => getFinishedAt(b) - getFinishedAt(a));
+}
+
+function formatFinishedDate(task) {
+  const status = getTaskStatusMeta(task);
+  const value = status.key === "archived"
+    ? task.archivedAt || task.completedAt
+    : status.key === "canceled"
+      ? task.canceledAt || task.completedAt
+      : task.completedAt;
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return `${status.label}日 記録なし`;
+  const formatted = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short"
+  }).format(date);
+  return `${status.label} ${formatted}`;
+}
+
+// "進行中" while any Task is still to do, "完了" once every Task is finished.
+function getProjectProgress(activeCount, finishedTasks) {
+  if (activeCount > 0) return { key: "active", label: "進行中" };
+  if (finishedTasks.length > 0) return { key: "done", label: "完了" };
+  return { key: "empty", label: "Taskなし" };
+}
+
+function formatProjectTaskSummary(activeCount, finishedTasks) {
+  const counts = new Map();
+  finishedTasks.forEach((task) => {
+    const { label } = getTaskStatusMeta(task);
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  const parts = [`すること ${activeCount}件`];
+  ["完了", "中止", "アーカイブ"].forEach((label) => {
+    if (counts.get(label)) parts.push(`${label} ${counts.get(label)}件`);
+  });
+  return parts.join(" · ");
+}
+
+function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId, finishedTasks = []) {
   const group = document.createElement("article");
   group.className = "parent-task-group";
   if (parentCase) group.id = getProjectAnchorId(parentCase);
@@ -2312,7 +2361,19 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 
   const summary = document.createElement("span");
   summary.className = "parent-task-group-summary";
-  summary.textContent = `${groupedTasks.length}件`;
+  summary.textContent = parentCase
+    ? formatProjectTaskSummary(groupedTasks.length, finishedTasks)
+    : `${groupedTasks.length}件`;
+
+  if (parentCase) {
+    const progress = getProjectProgress(groupedTasks.length, finishedTasks);
+    group.dataset.progress = progress.key;
+    const progressBadge = document.createElement("span");
+    progressBadge.className = "parent-task-group-progress";
+    progressBadge.dataset.progress = progress.key;
+    progressBadge.textContent = progress.label;
+    identity.prepend(progressBadge);
+  }
 
   header.append(identity);
   if (parentCase) {
@@ -2344,7 +2405,7 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
   }
   group.append(header);
 
-  if (groupedTasks.length === 0) {
+  if (groupedTasks.length === 0 && finishedTasks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "parent-task-group-empty";
     empty.textContent = "このProjectに紐づくTaskはありません。";
@@ -2354,19 +2415,36 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 
   const list = document.createElement("ul");
   list.className = "parent-task-group-list";
-  groupedTasks.forEach((task) => {
+  [...groupedTasks, ...finishedTasks].forEach((task) => {
+    const status = getTaskStatusMeta(task);
+    const finished = status.key !== "active";
     const item = document.createElement("li");
     item.className = "parent-task-group-list-item";
+    item.dataset.status = status.key;
     const link = document.createElement("a");
     link.className = "parent-task-item";
     link.href = getTaskAnchorHref(task);
     link.title = `${task.caseNumber} ${task.title}の詳細カードへ移動`;
+    if (finished) {
+      // Finished lists may be collapsed, so open the right one before jumping.
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        navigateToSearchResult(task);
+      });
+    }
 
     const priority = document.createElement("span");
-    priority.className = "parent-task-item-priority";
-    priority.textContent = String(priorityByTaskId.get(task.id) || "");
-    priority.title = `優先順位 ${priority.textContent}`;
-    priority.setAttribute("aria-label", `優先順位 ${priority.textContent}`);
+    if (finished) {
+      priority.className = "parent-task-item-status";
+      priority.dataset.status = status.key;
+      priority.textContent = status.label;
+      priority.title = `ステータス ${status.label}`;
+    } else {
+      priority.className = "parent-task-item-priority";
+      priority.textContent = String(priorityByTaskId.get(task.id) || "");
+      priority.title = `優先順位 ${priority.textContent}`;
+      priority.setAttribute("aria-label", `優先順位 ${priority.textContent}`);
+    }
 
     const caseNumber = document.createElement("span");
     caseNumber.className = "parent-task-item-case";
@@ -2378,7 +2456,10 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId) {
 
     const due = document.createElement("time");
     due.className = "parent-task-item-due";
-    if (task.dueDate) {
+    if (finished) {
+      due.dataset.state = "finished";
+      due.textContent = formatFinishedDate(task);
+    } else if (task.dueDate) {
       due.dateTime = task.dueDate;
       due.dataset.state = getDueState(task.dueDate);
       due.textContent = `${formatDueDate(task.dueDate)} · ${formatDueDistance(task.dueDate)}`;
@@ -2556,7 +2637,12 @@ function renderProjectGroups() {
   );
   projectGroups.replaceChildren(
     ...groupTasksByParentCase(parentCases, activeTasks).map(({ parentCase, tasks: groupedTasks }) =>
-      createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId)
+      createProjectTaskGroup(
+        parentCase,
+        groupedTasks,
+        priorityByTaskId,
+        parentCase ? getFinishedProjectTasks(parentCase) : []
+      )
     )
   );
   removeRetiredInlineIdeaMemoEditors();
