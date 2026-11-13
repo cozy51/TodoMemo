@@ -2982,7 +2982,7 @@ button {
 
 .parent-task-item {
   display: grid;
-  grid-template-columns: 30px 120px minmax(0, 1fr) 190px;
+  grid-template-columns: 56px 120px minmax(0, 1fr) 190px;
   gap: 12px;
   align-items: center;
   padding: 11px 16px;
@@ -3021,6 +3021,82 @@ button {
 .parent-task-item-edit:focus-visible {
   outline: 3px solid rgba(104, 66, 184, .22);
   outline-offset: 2px;
+}
+
+.parent-task-item-status {
+  justify-self: start;
+  padding: 2px 5px;
+  color: var(--muted);
+  border-radius: 999px;
+  background: #eef1f8;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.parent-task-item-status[data-status="completed"] {
+  color: #1d6b45;
+  background: #e3f4ea;
+  box-shadow: inset 0 0 0 1px #b7e0c8;
+}
+
+.parent-task-item-status[data-status="canceled"] {
+  color: #8a3434;
+  background: #f9e3e3;
+}
+
+.parent-task-item-status[data-status="archived"] {
+  color: #6a5a1f;
+  background: #fbf0d0;
+}
+
+.parent-task-group-list-item:not([data-status="active"]) {
+  background: rgba(246, 247, 250, .8);
+}
+
+.parent-task-group-list-item:not([data-status="active"]) .parent-task-item-case,
+.parent-task-group-list-item:not([data-status="active"]) .parent-task-item-title {
+  color: #8a95a8;
+}
+
+.parent-task-group-list-item[data-status="canceled"] .parent-task-item-title {
+  text-decoration: line-through;
+}
+
+.parent-task-item-due[data-state="finished"] {
+  color: #8a95a8;
+  font-weight: 650;
+}
+
+.parent-task-group-progress {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parent-task-group-progress[data-progress="active"] {
+  color: #9a4a00;
+  background: #ffe7c7;
+  box-shadow: inset 0 0 0 1px #f5c48a;
+}
+
+.parent-task-group-progress[data-progress="done"] {
+  color: #1d6b45;
+  background: #e3f4ea;
+  box-shadow: inset 0 0 0 1px #b7e0c8;
+}
+
+.parent-task-group-progress[data-progress="empty"] {
+  color: #8a95a8;
+  background: #f3f5f9;
+}
+
+.parent-task-group[data-progress="done"] .parent-task-group-header {
+  opacity: .85;
 }
 
 .parent-task-item-priority {
@@ -4618,11 +4694,12 @@ button:focus-visible {
   }
 
   .parent-task-item {
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
     gap: 5px 10px;
   }
 
-  .parent-task-item-priority {
+  .parent-task-item-priority,
+  .parent-task-item-status {
     grid-row: 1 / 4;
   }
 
