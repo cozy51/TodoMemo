@@ -4435,6 +4435,53 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.search-result-item-project {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.search-result-item-project .search-result-item-field {
+  color: #3b5bdb;
+  border-color: #c5d0fa;
+  background: #eef2ff;
+}
+
+.search-result-item-project-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.search-result-item-project-number {
+  flex: none;
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.search-result-item-project-name {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.search-result-item-project[data-state="none"] .search-result-item-field,
+.search-result-item-project[data-state="none"] .search-result-item-project-text {
+  color: #8a95a8;
+  border-color: var(--line);
+  background: transparent;
+  font-weight: 600;
+}
+
 .search-result-item-snippet {
   display: flex;
   align-items: baseline;
