@@ -1,4 +1,4 @@
-const TODO_MEMO_APP_VERSION = "1.11.0";
+const TODO_MEMO_APP_VERSION = "1.12.0";
 const TODO_MEMO_STORAGE_KEY = "todoMemoTasks";
 const TODO_MEMO_TAGS_STORAGE_KEY = "todoMemoTags";
 const TODO_MEMO_PARENT_CASES_STORAGE_KEY = "todoMemoParentCases";

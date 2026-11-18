@@ -788,6 +788,12 @@
     notifyLocalChange,
     syncNow,
     resumeSync,
-    isPaused: () => paused
+    isPaused: () => paused,
+    // AI検索の /api/embed がログイン中のユーザーか確かめるためのトークン（未ログインなら null）
+    async getAuthToken() {
+      if (!client) return null;
+      const { data } = await client.auth.getSession();
+      return data?.session?.access_token || null;
+    }
   };
 })();
