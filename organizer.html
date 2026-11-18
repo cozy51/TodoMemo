@@ -104,6 +104,31 @@
           <p id="searchEmpty" class="search-empty" hidden>該当するタスクは見つかりませんでした。</p>
         </section>
 
+        <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
+          <div class="case-jump-heading">
+            <p class="section-kicker">Taskへジャンプ</p>
+            <h2 id="caseJumpHeading">目的のTaskを選択</h2>
+            <button class="case-jump-related-toggle" id="caseJumpRelatedToggle" type="button" data-state="expanded" aria-expanded="true" title="プルダウン内の関連Project・Taskを折りたたみます">
+              <span class="case-jump-related-toggle-icon" aria-hidden="true">▾</span>
+              <span class="case-jump-related-toggle-label">関連を折りたたむ</span>
+            </button>
+          </div>
+          <div class="case-jump-fields">
+            <label for="projectJumpSelect">
+              <span>Project</span>
+              <select id="projectJumpSelect">
+                <option value="" selected disabled hidden>Projectコード・Project名から選択</option>
+              </select>
+            </label>
+            <label for="taskJumpSelect">
+              <span>Task</span>
+              <select id="taskJumpSelect">
+                <option value="" selected disabled hidden>Taskコード・Task名から選択</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
         <section id="deadlineCalendarSection" class="task-section deadline-calendar-section" aria-labelledby="deadlineCalendarHeading">
           <div class="section-heading calendar-section-heading">
             <div>
@@ -146,31 +171,6 @@
           </div>
           <p class="section-note">期限を過ぎても完了していないTaskです。月をまたいでも、完了かアーカイブにするまでここに表示され続けます。</p>
           <ul id="overdueTaskList" class="overdue-task-list" aria-live="polite"></ul>
-        </section>
-
-        <section class="case-jump-panel" aria-labelledby="caseJumpHeading">
-          <div class="case-jump-heading">
-            <p class="section-kicker">Taskへジャンプ</p>
-            <h2 id="caseJumpHeading">目的のTaskを選択</h2>
-            <button class="case-jump-related-toggle" id="caseJumpRelatedToggle" type="button" data-state="expanded" aria-expanded="true" title="プルダウン内の関連Project・Taskを折りたたみます">
-              <span class="case-jump-related-toggle-icon" aria-hidden="true">▾</span>
-              <span class="case-jump-related-toggle-label">関連を折りたたむ</span>
-            </button>
-          </div>
-          <div class="case-jump-fields">
-            <label for="projectJumpSelect">
-              <span>Project</span>
-              <select id="projectJumpSelect">
-                <option value="" selected disabled hidden>Projectコード・Project名から選択</option>
-              </select>
-            </label>
-            <label for="taskJumpSelect">
-              <span>Task</span>
-              <select id="taskJumpSelect">
-                <option value="" selected disabled hidden>Taskコード・Task名から選択</option>
-              </select>
-            </label>
-          </div>
         </section>
 
         <section id="compactTaskSection" class="task-section compact-task-section" aria-labelledby="compactTaskHeading">
