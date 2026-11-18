@@ -77,8 +77,12 @@
         <section id="searchSection" class="task-section search-section" aria-labelledby="searchHeading">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">全文検索</p>
+              <p id="searchKicker" class="section-kicker">全文検索</p>
               <h2 id="searchHeading">Search</h2>
+            </div>
+            <div class="search-mode-toggle" role="radiogroup" aria-label="検索の種類">
+              <button id="keywordSearchModeButton" class="search-mode-button" type="button" role="radio" aria-checked="true" data-mode="keyword" title="入力した文字を含むタスクを探します">キーワード</button>
+              <button id="semanticSearchModeButton" class="search-mode-button" type="button" role="radio" aria-checked="false" data-mode="semantic" title="言葉が一致しなくても、意味の近いタスクをAI（Gemini）で探します">✨ AI検索</button>
             </div>
           </div>
           <div class="search-input-row">
@@ -95,6 +99,7 @@
             <button id="clearSearchHistoryButton" class="search-history-clear" type="button">履歴を消去</button>
           </div>
           <p id="searchHint" class="search-hint">2文字以上入力すると、すること・完了・アーカイブのすべてのタスクから検索します。</p>
+          <p id="semanticSearchStatus" class="semantic-search-status" role="status" hidden></p>
           <ul id="searchResultsList" class="search-results-list" aria-live="polite"></ul>
           <p id="searchEmpty" class="search-empty" hidden>該当するタスクは見つかりませんでした。</p>
         </section>
@@ -843,6 +848,7 @@
     <script src="markdown.js"></script>
     <script src="date-picker.js"></script>
     <script src="search-normalize.js"></script>
+    <script src="semantic-search.js"></script>
     <script src="organizer.js"></script>
   </body>
 </html>

@@ -47,6 +47,10 @@ const searchHistoryList = document.querySelector("#searchHistoryList");
 const clearSearchHistoryButton = document.querySelector("#clearSearchHistoryButton");
 const searchResultsList = document.querySelector("#searchResultsList");
 const searchEmpty = document.querySelector("#searchEmpty");
+const searchSection = document.querySelector("#searchSection");
+const searchKicker = document.querySelector("#searchKicker");
+const searchModeButtons = document.querySelectorAll(".search-mode-button");
+const semanticSearchStatus = document.querySelector("#semanticSearchStatus");
 const compactTaskTableBody = document.querySelector("#compactTaskTableBody");
 const compactTaskCount = document.querySelector("#compactTaskCount");
 const compactTaskEmpty = document.querySelector("#compactTaskEmpty");
@@ -155,9 +159,31 @@ let detailTaskId = null;
 let ideaMemoProjectId = null;
 let searchQuery = "";
 let searchHistory = [];
+let searchMode = "keyword";
+let semanticSearchEngine = null;
+let semanticSearchTimer = null;
+let semanticSearchRequestId = 0;
+// 検索文ごとのAI検索の結果（同じ検索文で画面を描き直すときは、APIを呼ばずにこれを使う）
+let semanticSearchResult = null;
 const TASK_AUTO_SAVE_DELAY_MS = 1200;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_SNIPPET_RADIUS = 42;
+const SEARCH_MODE_STORAGE_KEY = "todoMemoSearchMode";
+const SEMANTIC_QUERY_DELAY_MS = 500;
+const SEARCH_MODE_TEXT = {
+  keyword: {
+    kicker: "全文検索",
+    placeholder: "タイトル・内容・Task番号・タグ・Project名で検索",
+    hint: "2文字以上入力すると、すること・完了・アーカイブのすべてのタスクから検索します。",
+    empty: "該当するタスクは見つかりませんでした。"
+  },
+  semantic: {
+    kicker: "AI検索（意味で探す）",
+    placeholder: "例: 客先に出す資料の準備 / 部品の固定方法を考える",
+    hint: "やりたいことや状況を文章で入力すると、言葉が一致しなくても意味の近いタスクをAI（Gemini）が探して、近い順に並べます。",
+    empty: "意味の近いタスクは見つかりませんでした。"
+  }
+};
 
 function removeRetiredInlineIdeaMemoEditors(root = projectGroups) {
   if (root instanceof Element && root.matches(".parent-idea-memos")) root.remove();
@@ -2930,7 +2956,7 @@ function createSearchResultProject(task, query) {
   return project;
 }
 
-function createSearchResultItem({ task, status }, query) {
+function createSearchResultItem({ task, status, semantic }, query) {
   const item = document.createElement("li");
   item.className = "search-result-item-wrap";
 
@@ -2955,6 +2981,14 @@ function createSearchResultItem({ task, status }, query) {
   caseNumber.className = "search-result-item-case";
   appendHighlightedText(caseNumber, task.caseNumber, query);
   meta.append(statusBadge, caseNumber, ...createSearchResultDateChips(task));
+  if (typeof semantic === "number") {
+    const score = document.createElement("span");
+    score.className = "search-result-item-score";
+    const percent = Math.max(0, Math.round(semantic * 100));
+    score.textContent = `関連度 ${percent}%`;
+    score.title = "検索文とこのタスクの意味の近さ（AIによるコサイン類似度）";
+    meta.append(score);
+  }
 
   const title = document.createElement("span");
   title.className = "search-result-item-title";
@@ -3040,16 +3074,162 @@ function renderSearchHistory() {
   );
 }
 
+function loadSearchMode() {
+  try {
+    return localStorage.getItem(SEARCH_MODE_STORAGE_KEY) === "semantic" ? "semantic" : "keyword";
+  } catch {
+    return "keyword";
+  }
+}
+
+function setSearchMode(mode) {
+  searchMode = mode === "semantic" ? "semantic" : "keyword";
+  try {
+    localStorage.setItem(SEARCH_MODE_STORAGE_KEY, searchMode);
+  } catch {
+    // 覚えておけなくても切り替えはできる
+  }
+  const text = SEARCH_MODE_TEXT[searchMode];
+  searchSection.dataset.mode = searchMode;
+  searchKicker.textContent = text.kicker;
+  searchInput.placeholder = text.placeholder;
+  searchInput.setAttribute("aria-label", searchMode === "semantic" ? "意味の近いタスクをAIで検索" : "タスクを全文検索");
+  searchHint.textContent = text.hint;
+  searchEmpty.textContent = text.empty;
+  searchModeButtons.forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.mode === searchMode));
+  });
+  renderSearchResults();
+}
+
+function setSemanticSearchStatus(message, state = "info") {
+  semanticSearchStatus.hidden = !message;
+  semanticSearchStatus.textContent = message || "";
+  semanticSearchStatus.dataset.state = state;
+}
+
+// AI検索に送るタスクの検索用テキスト（タイトル・内容・Project・タグ）
+function getSemanticSearchDocuments() {
+  return tasks.map((task) => {
+    const parentCase = getProjectForTask(task);
+    const tagNames = task.tagIds
+      .map((tagId) => tags.find((tag) => tag.id === tagId)?.name)
+      .filter(Boolean);
+    return {
+      id: task.id,
+      text: buildSemanticText({
+        title: task.title,
+        content: task.content,
+        project: parentCase?.name || "",
+        tags: tagNames.join(" ")
+      })
+    };
+  });
+}
+
+function renderSemanticResultItems(ranked, query) {
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  const items = ranked
+    .map(({ id, semantic }) => {
+      const task = byId.get(id);
+      return task ? { task, status: getTaskStatusMeta(task), semantic } : null;
+    })
+    .filter(Boolean);
+  searchEmpty.hidden = items.length > 0;
+  searchResultsList.replaceChildren(...items.map((item) => createSearchResultItem(item, query)));
+}
+
+// 検索文が変わったときだけAPIを呼ぶ。タスクの編集などで画面を描き直すときは、
+// 前の結果をそのまま表示しておき、変わったタスクのベクトルだけ裏で更新して並べ直す。
+function renderSemanticSearchResults() {
+  const text = searchQuery.trim();
+  const query = parseSearchQuery(text);
+  searchHint.hidden = true;
+  clearTimeout(semanticSearchTimer);
+  if (!wantsSemanticSearch(text)) return;
+
+  const sameQuery = semanticSearchResult?.query === text;
+  if (sameQuery) {
+    renderSemanticResultItems(rankSemanticTasks(text, semanticSearchResult.scores), query);
+  } else {
+    searchResultsList.replaceChildren();
+    searchEmpty.hidden = true;
+    setSemanticSearchStatus("AIが意味の近いタスクを探しています…");
+  }
+  semanticSearchTimer = setTimeout(() => runSemanticSearch(text), sameQuery ? 0 : SEMANTIC_QUERY_DELAY_MS);
+}
+
+function rankSemanticTasks(text, scores) {
+  const query = parseSearchQuery(text);
+  return rankSemanticResults(tasks.map((task) => ({
+    id: task.id,
+    semantic: scores.get(task.id),
+    keyword: taskMatchesQuery(task, query)
+  })));
+}
+
+async function runSemanticSearch(text) {
+  const requestId = ++semanticSearchRequestId;
+  const isCurrent = () => requestId === semanticSearchRequestId && searchMode === "semantic" && searchQuery.trim() === text;
+  semanticSearchEngine ??= createBrowserSemanticSearchEngine();
+  try {
+    const { index, error } = await semanticSearchEngine.updateIndex(getSemanticSearchDocuments(), ({ done, total }) => {
+      if (isCurrent() && done < total && total > 1) {
+        setSemanticSearchStatus(`AI検索の準備中… タスクの内容を読み込んでいます（${done}/${total}件）`);
+      }
+    });
+    if (!isCurrent()) return;
+    if (!index.model) throw error || new SemanticSearchError("AI検索のデータを作れませんでした。");
+    const { model, vector } = await semanticSearchEngine.embedQuery(text);
+    if (!isCurrent()) return;
+    if (model !== index.model) {
+      // サーバー側でモデルを変えた直後。全件を計算し直してから検索し直す
+      setSemanticSearchStatus("AIのモデルが変わったため、検索データを作り直しています…");
+      await semanticSearchEngine.rebuild(getSemanticSearchDocuments());
+      if (isCurrent()) runSemanticSearch(text);
+      return;
+    }
+    const scores = semanticSearchEngine.scores(index, tasks.map((task) => task.id), vector);
+    semanticSearchResult = { query: text, scores };
+    renderSemanticResultItems(rankSemanticTasks(text, scores), parseSearchQuery(text));
+    const indexed = tasks.filter((task) => index.entries[task.id]).length;
+    if (error) {
+      setSemanticSearchStatus(`一部のタスク（${tasks.length - indexed}件）はAI検索の準備ができていません: ${error.message}`, "error");
+    } else {
+      setSemanticSearchStatus(`意味の近い順に表示しています（${indexed}件のタスクから検索）。`);
+    }
+  } catch (caught) {
+    if (!isCurrent()) return;
+    semanticSearchResult = null;
+    // AIが使えないときも、キーワードで見つかるタスクは表示しておく
+    const fallback = searchTasks(text);
+    searchEmpty.hidden = fallback.length > 0;
+    searchResultsList.replaceChildren(...fallback.map((result) => createSearchResultItem(result, parseSearchQuery(text))));
+    setSemanticSearchStatus(`AI検索を使えませんでした: ${caught?.message || caught}${fallback.length ? "（キーワードで一致したタスクを表示しています）" : ""}`, "error");
+  }
+}
+
 function renderSearchResults() {
   const normalizedQuery = searchQuery.trim().toLowerCase();
   clearSearchButton.hidden = normalizedQuery.length === 0;
 
   if (normalizedQuery.length < SEARCH_MIN_LENGTH) {
+    clearTimeout(semanticSearchTimer);
+    semanticSearchRequestId += 1;
     searchResultsList.replaceChildren();
     searchEmpty.hidden = true;
     searchHint.hidden = false;
+    setSemanticSearchStatus("");
     return;
   }
+
+  if (searchMode === "semantic") {
+    renderSemanticSearchResults();
+    return;
+  }
+  clearTimeout(semanticSearchTimer);
+  semanticSearchRequestId += 1;
+  setSemanticSearchStatus("");
 
   const results = searchTasks(searchQuery);
   const query = parseSearchQuery(searchQuery);
@@ -3579,6 +3759,13 @@ searchInput.addEventListener("keydown", (event) => {
 searchInput.addEventListener("change", () => {
   if (searchResultsList.childElementCount > 0) rememberSearchQuery();
 });
+searchModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.dataset.mode === searchMode) return;
+    setSearchMode(button.dataset.mode);
+    searchInput.focus();
+  });
+});
 clearSearchHistoryButton.addEventListener("click", () => {
   updateSearchHistory([]);
 });
@@ -3870,6 +4057,7 @@ window.addEventListener("resize", hideDeadlineTooltip);
     loadSearchHistory()
   ]);
   updateBackupChangeCount(tasks, tags, parentCases, await snapshotPromise);
+  setSearchMode(loadSearchMode());
   render();
   renderSearchHistory();
 })();
