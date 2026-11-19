@@ -5059,3 +5059,30 @@ button:focus-visible {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* Small code-only copy button next to Project / Task numbers */
+.code-copy-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  vertical-align: middle;
+  cursor: pointer;
+  border: 1px solid var(--copy-border, #bfd0ef);
+  border-radius: 4px;
+  background: var(--copy-bg, #f7faff);
+  font-size: 10px;
+  line-height: 1;
+  opacity: .7;
+}
+
+.code-copy-button:hover,
+.code-copy-button:focus-visible {
+  border-color: var(--copy-hover-border, var(--accent));
+  background: var(--copy-hover-bg, var(--accent-soft));
+  opacity: 1;
+}

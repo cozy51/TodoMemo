@@ -1006,6 +1006,8 @@ function createCompactTaskRow(task, index) {
   caseNumber.className = "compact-task-case";
   caseNumber.textContent = task.caseNumber;
   caseCell.append(caseNumber);
+  const compactCode = String(task.caseNumber || "").trim();
+  if (compactCode) caseCell.append(createCodeCopyButton(compactCode, "Task"));
 
   let dragArmed = false;
   row.draggable = true;
@@ -1427,6 +1429,27 @@ async function commitProjectNameEdit(input, parentCase) {
   showToast("Project名を更新しました");
 }
 
+function createCodeCopyButton(code, kindLabel) {
+  const button = document.createElement("button");
+  button.className = "code-copy-button";
+  button.type = "button";
+  button.textContent = "📋";
+  button.title = `${kindLabel}番号 ${code} をコピー`;
+  button.setAttribute("aria-label", `${kindLabel}番号 ${code} をコピー`);
+  button.addEventListener("click", async (event) => {
+    // The button can sit inside a row link, so keep the click from navigating.
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast(`${kindLabel}番号をコピーしました`);
+    } catch (_error) {
+      showToast(`${kindLabel}番号をコピーできませんでした`);
+    }
+  });
+  return button;
+}
+
 function appendProjectLabel(container, parentCase, { editableTitle = false } = {}) {
   const kind = document.createElement("span");
   kind.className = "project-kind";
@@ -1437,6 +1460,10 @@ function appendProjectLabel(container, parentCase, { editableTitle = false } = {
   number.textContent = parentCase.caseNumber;
 
   container.append(kind, number);
+  const projectCode = String(parentCase.caseNumber || "").trim();
+  if (editableTitle && projectCode) {
+    container.append(createCodeCopyButton(projectCode, "Project"));
+  }
 
   if (editableTitle) {
     const titleInput = document.createElement("input");
@@ -2477,6 +2504,8 @@ function createProjectTaskGroup(parentCase, groupedTasks, priorityByTaskId, fini
     const caseNumber = document.createElement("span");
     caseNumber.className = "parent-task-item-case";
     caseNumber.textContent = task.caseNumber;
+    const groupTaskCode = String(task.caseNumber || "").trim();
+    if (groupTaskCode) caseNumber.append(createCodeCopyButton(groupTaskCode, "Task"));
 
     const title = document.createElement("span");
     title.className = "parent-task-item-title";
